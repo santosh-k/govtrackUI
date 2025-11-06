@@ -93,7 +93,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingTop: 20,
+    paddingBottom: 24,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 12,
+    marginBottom: 5,
   },
   appTitle: {
     fontSize: 20,
@@ -113,15 +114,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
+    marginBottom:15
   },
   menuSection: {
-    paddingVertical: 16,
+    paddingVertical: 5,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: 5,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
