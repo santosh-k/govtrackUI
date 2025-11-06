@@ -25,11 +25,12 @@ interface ProfileItemProps {
   label: string;
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
+  reducedMargin?: boolean;
 }
 
-function ProfileItem({ label, value, icon }: ProfileItemProps) {
+function ProfileItem({ label, value, icon, reducedMargin }: ProfileItemProps) {
   return (
-    <View style={styles.profileItem}>
+    <View style={[styles.profileItem, reducedMargin && styles.profileItemReduced]}>
       <View style={styles.profileItemHeader}>
         <Ionicons name={icon} size={20} color={COLORS.profileBorder} style={styles.itemIcon} />
         <Text style={styles.profileLabel}>{label}</Text>
@@ -53,7 +54,7 @@ export default function ProfileScreen() {
         {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
           <View style={styles.profilePicture}>
-            <Ionicons name="person" size={64} color={COLORS.profileBorder} />
+            <Ionicons name="person" size={48} color={COLORS.profileBorder} />
           </View>
           <Text style={styles.profileName}>Er Sabir Ali</Text>
           <Text style={styles.profileDesignation}>Assistant Engineer</Text>
@@ -75,6 +76,7 @@ export default function ProfileScreen() {
             label="Designation"
             value="Assistant Engineer"
             icon="briefcase-outline"
+            reducedMargin={true}
           />
           <ProfileItem
             label="Department"
@@ -117,9 +119,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: COLORS.profileBg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -176,6 +178,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 24,
     marginLeft: 28,
+  },
+  profileItemReduced: {
+    marginBottom: 6,
   },
   buttonContainer: {
     paddingHorizontal: 16,
