@@ -13,9 +13,13 @@ import {
   Animated,
   Keyboard,
   TouchableWithoutFeedback,
+  ActionSheetIOS,
+  Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 
 const COLORS = {
   primary: '#2196F3', // Blue
@@ -102,12 +106,134 @@ export default function EditProfileScreen() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Profile picture state
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [originalProfileImage] = useState<string | null>(null);
+
   const slideAnim = React.useRef(new Animated.Value(100)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const requestCameraPermission = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please allow camera access to take photos.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error requesting camera permission:', error);
+      return false;
+    }
+  };
+
+  const requestGalleryPermission = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Gallery Permission Required',
+          'Please allow photo library access to choose images.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error requesting gallery permission:', error);
+      return false;
+    }
+  };
+
+  const openCamera = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const openGallery = async () => {
+    const hasPermission = await requestGalleryPermission();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error opening gallery:', error);
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    }
+  };
+
+  const showImagePickerOptions = () => {
+    if (Platform.OS === 'ios') {
+      // iOS Action Sheet
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo...', 'Choose from Gallery...'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            openCamera();
+          } else if (buttonIndex === 2) {
+            openGallery();
+          }
+        }
+      );
+    } else {
+      // Android Alert (Action Sheet style)
+      Alert.alert(
+        'Update Profile Picture',
+        'Choose an option',
+        [
+          {
+            text: 'Take Photo...',
+            onPress: openCamera,
+          },
+          {
+            text: 'Choose from Gallery...',
+            onPress: openGallery,
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ],
+        { cancelable: true }
+      );
+    }
   };
 
   const validateForm = () => {
@@ -191,8 +317,11 @@ export default function EditProfileScreen() {
     // Simulate API call
     setTimeout(() => {
       console.log('Saving profile data:', {
-        fullName, email, designation, department, address
+        fullName, email, designation, department, address, profileImage
       });
+
+      // Here you would upload the profile image to your server
+      // and save all the profile data
 
       setIsLoading(false);
       showSuccessToast('Profile updated successfully');
@@ -200,6 +329,10 @@ export default function EditProfileScreen() {
   };
 
   const handleBack = () => {
+    // Revert profile image if not saved
+    if (profileImage !== originalProfileImage) {
+      setProfileImage(originalProfileImage);
+    }
     router.back();
   };
 
@@ -239,10 +372,22 @@ export default function EditProfileScreen() {
             {/* Profile Picture on Left */}
             <View style={styles.profilePictureWrapper}>
               <View style={styles.profilePicture}>
-                <Ionicons name="person" size={60} color={COLORS.primary} />
+                {profileImage ? (
+                  <Image
+                    source={{ uri: profileImage }}
+                    style={styles.profileImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name="person" size={60} color={COLORS.primary} />
+                )}
               </View>
               {/* Edit Icon Button Overlay */}
-              <TouchableOpacity style={styles.editIconButton} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.editIconButton}
+                activeOpacity={0.8}
+                onPress={showImagePickerOptions}
+              >
                 <Ionicons name="pencil" size={16} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
@@ -403,6 +548,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: COLORS.cardBackground,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -414,6 +560,10 @@ const styles = StyleSheet.create({
         elevation: 6,
       },
     }),
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
   editIconButton: {
     position: 'absolute',
