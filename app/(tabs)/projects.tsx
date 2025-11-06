@@ -16,26 +16,26 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
-export default function ProfileScreen() {
+export default function ProjectsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Projects</Text>
       </View>
 
       {/* Main Content */}
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="person-outline" size={80} color={COLORS.primary} />
+          <Ionicons name="folder-outline" size={80} color={COLORS.primary} />
         </View>
-        <Text style={styles.title}>Profile Screen</Text>
+        <Text style={styles.title}>Projects Screen</Text>
         <Text style={styles.description}>
-          This is a placeholder for the Profile section.
+          This is a placeholder for the Projects section.
           {'\n\n'}
-          Future features will include user profile information, settings, and preferences.
+          Future features will include project management, tracking, and collaboration tools.
         </Text>
       </View>
     </SafeAreaView>

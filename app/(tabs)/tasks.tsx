@@ -16,26 +16,26 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
-export default function InfoScreen() {
+export default function TasksScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Info</Text>
+        <Text style={styles.headerTitle}>Tasks</Text>
       </View>
 
       {/* Main Content */}
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="information-circle-outline" size={80} color={COLORS.primary} />
+          <Ionicons name="checkmark-done-outline" size={80} color={COLORS.primary} />
         </View>
-        <Text style={styles.title}>Info Screen</Text>
+        <Text style={styles.title}>Tasks Screen</Text>
         <Text style={styles.description}>
-          This is a placeholder for the Info section.
+          This is a placeholder for the Tasks section.
           {'\n\n'}
-          Future features will include helpful information, FAQs, and documentation.
+          Future features will include task management, to-do lists, and progress tracking.
         </Text>
       </View>
     </SafeAreaView>

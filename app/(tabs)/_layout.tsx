@@ -51,20 +51,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="info"
+        name="projects"
         options={{
-          title: 'Info',
+          title: 'Projects',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="information-circle-outline" size={size} color={color} />
+            <Ionicons name="folder-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="tasks"
         options={{
-          title: 'Profile',
+          title: 'Tasks',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="checkmark-done-outline" size={size} color={color} />
           ),
         }}
       />
