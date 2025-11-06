@@ -30,6 +30,13 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     router.replace('/');
   };
 
+  const handleMyProfile = () => {
+    // Close drawer first
+    props.navigation.closeDrawer();
+    // Navigate to profile screen
+    router.push('/(drawer)/(tabs)/profile');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <DrawerContentScrollView
@@ -52,6 +59,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.6}
+            onPress={handleMyProfile}
           >
             <Ionicons name="person-outline" size={22} color={COLORS.primary} />
             <Text style={styles.menuItemText}>My Profile</Text>
