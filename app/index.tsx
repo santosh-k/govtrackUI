@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,10 +64,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.scrollContent}>
         <View style={styles.contentContainer}>
           {/* Logo Section */}
           <View style={styles.logoContainer}>
@@ -168,16 +164,19 @@ export default function LoginScreen() {
                 <Text style={styles.loginButtonText}>Login</Text>
               )}
             </TouchableOpacity>
-          </View>
 
-          {/* Helper Text */}
-          <View style={styles.helperContainer}>
-            <Text style={styles.helperText}>
-              For testing: username: testuser, password: password
-            </Text>
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              style={styles.forgotPasswordContainer}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.forgotPasswordText}>
+                Forgot your password?
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -188,10 +187,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    flexGrow: 1,
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 0,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   contentContainer: {
     width: '100%',
@@ -305,14 +305,15 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     letterSpacing: 0.5,
   },
-  helperContainer: {
-    marginTop: 24,
+  forgotPasswordContainer: {
+    marginTop: 20,
     alignItems: 'center',
+    paddingVertical: 8,
   },
-  helperText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
+  forgotPasswordText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
 });
