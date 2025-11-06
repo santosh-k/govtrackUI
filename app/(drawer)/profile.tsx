@@ -126,23 +126,23 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.profileBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 3,
     borderColor: COLORS.profileBorder,
   },
   profileName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
   },
   profileDesignation: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   profileInfoSection: {
-    marginTop: 16,
+    marginTop: 0,
     paddingHorizontal: 16,
   },
   profileItem: {

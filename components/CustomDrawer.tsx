@@ -37,6 +37,13 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     router.push('/(drawer)/profile');
   };
 
+  const handleSettings = () => {
+    // Close drawer first
+    props.navigation.closeDrawer();
+    // Navigate to settings screen
+    router.push('/(drawer)/settings');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <DrawerContentScrollView
@@ -68,6 +75,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.6}
+            onPress={handleSettings}
           >
             <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
             <Text style={styles.menuItemText}>Settings</Text>
