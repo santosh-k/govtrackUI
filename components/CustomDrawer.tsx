@@ -35,6 +35,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       <DrawerContentScrollView
         {...props}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         {/* User Profile Section */}
         <View style={styles.profileContainer}>
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingTop: 0,
   },
   profileContainer: {
     alignItems: 'center',
