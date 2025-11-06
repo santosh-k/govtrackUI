@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileHeader from '@/components/ProfileHeader';
@@ -54,16 +53,8 @@ export default function ProfileScreen() {
       >
         {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
-          <View style={styles.profilePictureContainer}>
-            <View style={styles.profilePicture}>
-              <Ionicons name="person" size={48} color={COLORS.profileBorder} />
-            </View>
-            <TouchableOpacity
-              style={styles.editButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="pencil" size={16} color={COLORS.white} />
-            </TouchableOpacity>
+          <View style={styles.profilePicture}>
+            <Ionicons name="person" size={48} color={COLORS.profileBorder} />
           </View>
           <Text style={styles.profileName}>Er Sabir Ali</Text>
           <Text style={styles.profileDesignation}>Assistant Engineer</Text>
@@ -127,10 +118,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: COLORS.white,
   },
-  profilePictureContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
   profilePicture: {
     width: 100,
     height: 100,
@@ -138,26 +125,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.profileBg,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 16,
     borderWidth: 3,
     borderColor: COLORS.profileBorder,
-  },
-  editButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   profileName: {
     fontSize: 24,

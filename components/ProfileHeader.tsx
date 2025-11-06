@@ -21,6 +21,10 @@ export default function ProfileHeader() {
     router.push('/(drawer)/(tabs)/dashboard');
   };
 
+  const handleEdit = () => {
+    // Placeholder for future edit functionality
+  };
+
   return (
     <View style={styles.container}>
       {/* Left: Back Arrow Icon */}
@@ -37,8 +41,14 @@ export default function ProfileHeader() {
         <Text style={styles.title}>Profile</Text>
       </View>
 
-      {/* Right: Empty space for balance */}
-      <View style={styles.rightSpacer} />
+      {/* Right: Edit Icon */}
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={handleEdit}
+        activeOpacity={0.6}
+      >
+        <Ionicons name="pencil-outline" size={24} color={COLORS.iconColor} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -78,7 +88,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
-  rightSpacer: {
-    width: 44, // Same width as back button for balance
+  editButton: {
+    padding: 8,
+    marginRight: -8,
   },
 });
