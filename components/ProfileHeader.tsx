@@ -48,7 +48,7 @@ export default function ProfileHeader() {
         activeOpacity={0.6}
       >
         <Text style={styles.editText}>Edit</Text>
-        <Ionicons name="pencil-outline" size={18} color={COLORS.iconColor} />
+        <Ionicons name="pencil-sharp" size={16} color={COLORS.iconColor} />
       </TouchableOpacity>
     </View>
   );
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   editText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.text,
     marginRight: 4,
   },
