@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,15 +36,13 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         {...props}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Logo Section */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/pwd-logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.appTitle}>PWD Delhi</Text>
-          <Text style={styles.appSubtitle}>Employee Portal</Text>
+        {/* User Profile Section */}
+        <View style={styles.profileContainer}>
+          <View style={styles.profilePicture}>
+            <Ionicons name="person" size={48} color={COLORS.primary} />
+          </View>
+          <Text style={styles.userName}>Test User</Text>
+          <Text style={styles.userDesignation}>Engineer</Text>
         </View>
 
         {/* Menu Items */}
@@ -91,7 +88,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  logoContainer: {
+  profileContainer: {
     alignItems: 'center',
     paddingTop: 20,
     paddingBottom: 24,
@@ -99,31 +96,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 5,
+  profilePicture: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
-  appTitle: {
+  userName: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 8,
+    marginTop: 4,
   },
-  appSubtitle: {
+  userDesignation: {
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 4,
-    marginBottom:15
+    fontWeight: '500',
   },
   menuSection: {
-    paddingVertical: 5,
+    paddingVertical: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 5,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
