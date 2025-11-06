@@ -41,10 +41,18 @@ function ProfileItem({ label, value, icon, reducedMargin }: ProfileItemProps) {
 }
 
 export default function ProfileScreen() {
+  const userData = {
+    fullName: 'Er Sabir Ali',
+    email: 'sabir.ali@pwd.gov.in',
+    designation: 'Assistant Engineer',
+    department: 'Public Works Department',
+    address: '123, PWD Staff Quarters, New Delhi',
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <ProfileHeader />
+      <ProfileHeader userData={userData} />
 
       <ScrollView
         style={styles.scrollView}

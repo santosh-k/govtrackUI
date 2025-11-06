@@ -16,13 +16,34 @@ const COLORS = {
   iconColor: '#1A1A1A',
 };
 
-export default function ProfileHeader() {
+interface ProfileHeaderProps {
+  userData?: {
+    fullName: string;
+    email: string;
+    designation: string;
+    department: string;
+    address: string;
+  };
+}
+
+export default function ProfileHeader({ userData }: ProfileHeaderProps) {
   const handleBack = () => {
     router.push('/(drawer)/(tabs)/dashboard');
   };
 
   const handleEdit = () => {
-    // Placeholder for future edit functionality
+    if (userData) {
+      router.push({
+        pathname: '/(drawer)/(tabs)/profile-edit',
+        params: {
+          fullName: userData.fullName,
+          email: userData.email,
+          designation: userData.designation,
+          department: userData.department,
+          address: userData.address,
+        },
+      });
+    }
   };
 
   return (
