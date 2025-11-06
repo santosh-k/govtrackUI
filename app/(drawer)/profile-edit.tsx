@@ -236,6 +236,7 @@ export default function EditProfileScreen() {
         >
           {/* Profile Picture Section */}
           <View style={styles.profileSection}>
+            {/* Profile Picture on Left */}
             <View style={styles.profilePictureWrapper}>
               <View style={styles.profilePicture}>
                 <Ionicons name="person" size={60} color={COLORS.primary} />
@@ -246,9 +247,12 @@ export default function EditProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* User Name and Designation */}
-            <Text style={styles.userName}>Er Sabir Ali</Text>
-            <Text style={styles.userDesignation}>Assistant Engineer</Text>
+            {/* User Information on Right */}
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.userName}>Er Sabir Ali</Text>
+              <Text style={styles.userDesignation}>Assistant Engineer</Text>
+              <Text style={styles.userDepartment}>Public Works Department</Text>
+            </View>
           </View>
 
           {/* White Form Card */}
@@ -379,24 +383,25 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   profileSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
     paddingHorizontal: 24,
     backgroundColor: COLORS.cardBackground,
     marginBottom: 16,
   },
   profilePictureWrapper: {
     position: 'relative',
-    marginBottom: 20,
+    marginRight: 20,
   },
   profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: COLORS.profileBg,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: COLORS.cardBackground,
     ...Platform.select({
       ios: {
@@ -414,9 +419,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.saffron,
     justifyContent: 'center',
     alignItems: 'center',
@@ -434,18 +439,27 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  userInfoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   userName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
-    textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   userDesignation: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    marginBottom: 2,
+  },
+  userDepartment: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: COLORS.textLight,
+    lineHeight: 18,
   },
   formCard: {
     backgroundColor: COLORS.cardBackground,
