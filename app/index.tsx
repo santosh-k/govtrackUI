@@ -81,7 +81,7 @@ export default function LoginScreen() {
 
           {/* Title Section */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Employee Login</Text>
+            <Text style={styles.title}>Login</Text>
             <Text style={styles.subtitle}>
               Public Works Department, Delhi
             </Text>
