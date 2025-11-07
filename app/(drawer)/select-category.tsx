@@ -3,16 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import SelectionScreen from '@/components/SelectionScreen';
 
 const CATEGORIES = [
-  'Pothole Repair Request',
-  'Street Light Not Working',
-  'Water Supply Issue',
-  'Garbage Collection Delay',
-  'Illegal Construction Report',
-  'Traffic Signal Malfunction',
-  'Park Maintenance Required',
-  'Drainage Problem',
-  'Road Resurfacing Needed',
-  'Public Toilet Cleaning',
+  'Pothole Repair',
+  'Streetlight Outage',
+  'Water Leakage',
+  'Building Maintenance',
+  'Garbage Collection Issue',
+  'Damaged Signage',
+  'Park Maintenance',
 ];
 
 export default function SelectCategoryScreen() {

@@ -10,6 +10,7 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -59,6 +60,7 @@ export default function FilterBottomSheet({
   onReset,
 }: FilterBottomSheetProps) {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const lastGestureDy = useRef(0);
 
   useEffect(() => {
     if (visible) {
@@ -76,6 +78,43 @@ export default function FilterBottomSheet({
       }).start();
     }
   }, [visible, translateY]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only capture swipe down gestures
+        return gestureState.dy > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow dragging down (positive dy)
+        if (gestureState.dy > 0) {
+          lastGestureDy.current = gestureState.dy;
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // If dragged down more than 150px or swiped fast, close the sheet
+        if (gestureState.dy > 150 || gestureState.vy > 0.5) {
+          Animated.timing(translateY, {
+            toValue: SHEET_HEIGHT,
+            duration: 250,
+            useNativeDriver: true,
+          }).start(() => {
+            onClose();
+          });
+        } else {
+          // Otherwise, snap back to open position
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   const handleBackdropPress = () => {
     onClose();
@@ -100,6 +139,7 @@ export default function FilterBottomSheet({
               transform: [{ translateY }],
             },
           ]}
+          {...panResponder.panHandlers}
         >
           {/* Handle Bar */}
           <View style={styles.handleBar} />

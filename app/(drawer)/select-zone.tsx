@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import SelectionScreen from '@/components/SelectionScreen';
 
 const ZONES = [
-  'Zone West',
-  'Zone East',
-  'Zone North',
-  'Zone South',
-  'Zone Central',
+  'North Delhi',
+  'South Delhi',
+  'East Delhi',
+  'West Delhi',
+  'Central Delhi',
+  'New Delhi',
 ];
 
 export default function SelectZoneScreen() {
