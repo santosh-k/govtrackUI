@@ -21,6 +21,7 @@ const COLORS = {
   textSecondary: '#666666',
   textLight: '#9E9E9E',
   primary: '#2196F3',
+  saffron: '#FF9800', // Saffron accent
   border: '#E0E0E0',
   searchBg: '#F8F8F8',
 
@@ -38,6 +39,9 @@ const COLORS = {
   // Filter chip colors
   chipActive: '#2196F3',
   chipInactive: '#E0E0E0',
+
+  // Attachment icon color
+  attachmentIcon: '#9E9E9E',
 };
 
 interface Complaint {
@@ -48,6 +52,9 @@ interface Complaint {
   status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
   sla: 'Breached' | 'Nearing' | 'On Track';
   createdAt: string;
+  hasPhotos?: boolean;
+  hasVideos?: boolean;
+  hasDocuments?: boolean;
 }
 
 const SAMPLE_COMPLAINTS: Complaint[] = [
@@ -59,6 +66,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'Open',
     sla: 'Breached',
     createdAt: '2023-12-01',
+    hasPhotos: true,
+    hasVideos: false,
+    hasDocuments: true,
   },
   {
     id: 'C-2023-4514',
@@ -68,6 +78,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'In Progress',
     sla: 'Nearing',
     createdAt: '2023-12-02',
+    hasPhotos: true,
+    hasVideos: false,
+    hasDocuments: false,
   },
   {
     id: 'C-2023-4515',
@@ -77,6 +90,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'Resolved',
     sla: 'On Track',
     createdAt: '2023-12-03',
+    hasPhotos: false,
+    hasVideos: false,
+    hasDocuments: false,
   },
   {
     id: 'C-2023-4516',
@@ -86,6 +102,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'In Progress',
     sla: 'On Track',
     createdAt: '2023-12-04',
+    hasPhotos: true,
+    hasVideos: true,
+    hasDocuments: true,
   },
   {
     id: 'C-2023-4517',
@@ -95,6 +114,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'Open',
     sla: 'Breached',
     createdAt: '2023-12-05',
+    hasPhotos: true,
+    hasVideos: true,
+    hasDocuments: false,
   },
   {
     id: 'C-2023-4518',
@@ -104,6 +126,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'Closed',
     sla: 'On Track',
     createdAt: '2023-12-06',
+    hasPhotos: false,
+    hasVideos: false,
+    hasDocuments: true,
   },
   {
     id: 'C-2023-4519',
@@ -113,6 +138,9 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     status: 'In Progress',
     sla: 'Nearing',
     createdAt: '2023-12-07',
+    hasPhotos: false,
+    hasVideos: false,
+    hasDocuments: false,
   },
 ];
 
@@ -159,39 +187,21 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
     }
   };
 
-  const getSlaColor = (sla: string) => {
-    switch (sla) {
-      case 'Breached':
-        return COLORS.slaBreached;
-      case 'Nearing':
-        return COLORS.slaNearing;
-      case 'On Track':
-        return COLORS.slaOnTrack;
-      default:
-        return COLORS.textSecondary;
-    }
-  };
-
   return (
     <TouchableOpacity
       style={styles.complaintCard}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Top Row - ID and Badges */}
+      {/* Top Row - ID (left) and Status Badge (right) */}
       <View style={styles.cardTopRow}>
-        <Text style={styles.complaintId}>ID: {complaint.id}</Text>
-        <View style={styles.badgeContainer}>
-          <View style={[styles.badge, { backgroundColor: getStatusColor(complaint.status) }]}>
-            <Text style={styles.badgeText}>{complaint.status}</Text>
-          </View>
-          <View style={[styles.badge, styles.slaBadge, { backgroundColor: getSlaColor(complaint.sla) }]}>
-            <Text style={styles.badgeText}>SLA: {complaint.sla}</Text>
-          </View>
+        <Text style={styles.complaintId}>{complaint.id}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(complaint.status) }]}>
+          <Text style={styles.statusBadgeText}>{complaint.status}</Text>
         </View>
       </View>
 
-      {/* Middle Section - Details */}
+      {/* Middle Section - Core Details (Left Aligned) */}
       <View style={styles.cardMiddleSection}>
         <Text style={styles.complaintCategory} numberOfLines={2}>
           {complaint.category}
@@ -207,11 +217,25 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
         </View>
       </View>
 
-      {/* Bottom Section - Action Button */}
+      {/* Bottom Section - Attachments (left) and Action Button (right) */}
       <View style={styles.cardBottomSection}>
-        <TouchableOpacity style={styles.viewDetailsButton} onPress={onPress} activeOpacity={0.8}>
-          <Text style={styles.viewDetailsText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+        <View style={styles.attachmentsContainer}>
+          {complaint.hasPhotos && (
+            <Ionicons name="camera-outline" size={20} color={COLORS.attachmentIcon} style={styles.attachmentIcon} />
+          )}
+          {complaint.hasVideos && (
+            <Ionicons name="videocam-outline" size={20} color={COLORS.attachmentIcon} style={styles.attachmentIcon} />
+          )}
+          {complaint.hasDocuments && (
+            <Ionicons name="document-attach-outline" size={20} color={COLORS.attachmentIcon} style={styles.attachmentIcon} />
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -415,7 +439,7 @@ const styles = StyleSheet.create({
   complaintCard: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -423,60 +447,55 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
   cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 14,
   },
   complaintId: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textLight,
+    letterSpacing: 0.5,
   },
-  badgeContainer: {
-    flexDirection: 'row',
-    gap: 6,
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  slaBadge: {
-    paddingHorizontal: 8,
-  },
-  badgeText: {
+  statusBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.cardBackground,
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   cardMiddleSection: {
-    marginBottom: 16,
+    marginBottom: 18,
+    alignItems: 'flex-start',
   },
   complaintCategory: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   complaintDepartment: {
     fontSize: 14,
     fontWeight: '400',
     color: COLORS.textSecondary,
     marginBottom: 6,
+    lineHeight: 20,
   },
   locationContainer: {
     flexDirection: 'row',
@@ -488,28 +507,41 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
     flex: 1,
+    lineHeight: 20,
   },
   cardBottomSection: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 12,
+    paddingTop: 4,
   },
-  viewDetailsButton: {
+  attachmentsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
+    gap: 12,
+    flex: 1,
   },
-  viewDetailsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginRight: 4,
+  attachmentIcon: {
+    opacity: 0.6,
+  },
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.saffron,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.saffron,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   emptyState: {
     flex: 1,
