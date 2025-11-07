@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import Toast from '@/components/Toast';
@@ -209,6 +209,7 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
 
 export default function ComplaintDetailsScreen() {
   // In a real app, fetch complaint details based on ID using useLocalSearchParams()
+  const params = useLocalSearchParams();
   const [complaintData, setComplaintData] = useState(MOCK_COMPLAINT);
 
   const [mediaViewerVisible, setMediaViewerVisible] = useState(false);
@@ -216,6 +217,25 @@ export default function ComplaintDetailsScreen() {
   const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Handle assignment return
+  useEffect(() => {
+    if (params.assignedUser && params.showAssignmentToast === 'true') {
+      // Update complaint data with assigned user
+      setComplaintData((prev) => ({
+        ...prev,
+        assignedTo: params.assignedUser as string,
+        assignedToDesignation: params.assignedDesignation as string,
+      }));
+
+      // Show success toast
+      setToastMessage('Complaint assigned successfully!');
+      setToastVisible(true);
+
+      // Clear params
+      router.setParams({ assignedUser: undefined, assignedDesignation: undefined, showAssignmentToast: undefined });
+    }
+  }, [params.assignedUser, params.assignedDesignation, params.showAssignmentToast]);
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
@@ -265,7 +285,12 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleAssignTask = () => {
-    Alert.alert('Coming Soon', 'Assign Task functionality will be available soon');
+    router.push({
+      pathname: '/assign-complaint',
+      params: {
+        complaintId: complaintData.id,
+      },
+    });
   };
 
   const handleUpdateStatus = () => {
