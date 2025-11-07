@@ -22,26 +22,29 @@ const COLORS = {
   logoutButton: '#FF851B',
 };
 
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  route: string;
+}
+
+const menuItems: MenuItem[] = [
+  { id: 'home', label: 'Home', icon: 'home-outline', route: '/(drawer)/(tabs)/dashboard' },
+  { id: 'complaints', label: 'Complaints', icon: 'document-text-outline', route: '/(drawer)/(tabs)/complaints' },
+  { id: 'projects', label: 'Projects', icon: 'folder-outline', route: '/(drawer)/(tabs)/projects' },
+  { id: 'my-task', label: 'My Task', icon: 'checkmark-done-outline', route: '/(drawer)/my-task' },
+  { id: 'assign-task', label: 'Assign Task', icon: 'add-circle-outline', route: '/(drawer)/assign-task' },
+  { id: 'my-profile', label: 'My Profile', icon: 'person-outline', route: '/(drawer)/profile' },
+  { id: 'settings', label: 'Settings', icon: 'settings-outline', route: '/(drawer)/settings' },
+];
+
 export default function CustomDrawer(props: DrawerContentComponentProps) {
-  const handleLogout = () => {
+  const handleMenuItemPress = (route: string) => {
     // Close drawer first
     props.navigation.closeDrawer();
-    // Navigate to login screen
-    router.replace('/');
-  };
-
-  const handleMyProfile = () => {
-    // Close drawer first
-    props.navigation.closeDrawer();
-    // Navigate to profile screen
-    router.push('/(drawer)/profile');
-  };
-
-  const handleSettings = () => {
-    // Close drawer first
-    props.navigation.closeDrawer();
-    // Navigate to settings screen
-    router.push('/(drawer)/settings');
+    // Navigate to the route
+    router.push(route as any);
   };
 
   return (
@@ -63,37 +66,20 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.6}
-            onPress={handleMyProfile}
-          >
-            <Ionicons name="person-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.menuItemText}>My Profile</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.6}
-            onPress={handleSettings}
-          >
-            <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.menuItemText}>Settings</Text>
-          </TouchableOpacity>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuItem}
+              activeOpacity={0.6}
+              onPress={() => handleMenuItemPress(item.route)}
+            >
+              <Ionicons name={item.icon} size={24} color={COLORS.text} />
+              <Text style={styles.menuItemText}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} style={styles.chevronIcon} />
+            </TouchableOpacity>
+          ))}
         </View>
       </DrawerContentScrollView>
-
-      {/* Logout Button at Bottom */}
-      <View style={styles.logoutSection}>
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="log-out-outline" size={22} color={COLORS.background} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -148,45 +134,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   menuSection: {
-    paddingVertical: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 5,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   menuItemText: {
+    flex: 1,
     fontSize: 16,
     color: COLORS.text,
     fontWeight: '500',
     marginLeft: 16,
   },
-  logoutSection: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.logoutButton,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: COLORS.logoutButton,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.background,
-    marginLeft: 8,
+  chevronIcon: {
+    marginLeft: 'auto',
   },
 });
