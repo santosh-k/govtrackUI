@@ -17,6 +17,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
+import Toast from '@/components/Toast';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -207,10 +209,13 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
 
 export default function ComplaintDetailsScreen() {
   // In a real app, fetch complaint details based on ID using useLocalSearchParams()
-  const complaint = MOCK_COMPLAINT;
+  const [complaintData, setComplaintData] = useState(MOCK_COMPLAINT);
 
   const [mediaViewerVisible, setMediaViewerVisible] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
@@ -230,7 +235,7 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleLocationPress = async () => {
-    const address = encodeURIComponent(complaint.location);
+    const address = encodeURIComponent(complaintData.location);
     const url = Platform.select({
       ios: `maps:0,0?q=${address}`,
       android: `geo:0,0?q=${address}`,
@@ -264,7 +269,22 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleUpdateStatus = () => {
-    Alert.alert('Coming Soon', 'Update Status functionality will be available soon');
+    setUpdateSheetVisible(true);
+  };
+
+  const handleUpdateSubmit = (status: string, description: string, attachments: any[]) => {
+    // Update complaint data with new status
+    setComplaintData((prev) => ({
+      ...prev,
+      status: status.toUpperCase(),
+    }));
+
+    // Close bottom sheet
+    setUpdateSheetVisible(false);
+
+    // Show success toast
+    setToastMessage('Activity updated successfully!');
+    setToastVisible(true);
   };
 
   return (
@@ -283,7 +303,7 @@ export default function ComplaintDetailsScreen() {
             <Ionicons name="arrow-back" size={28} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={styles.headerComplaintId} numberOfLines={1}>
-            {complaint.id}
+            {complaintData.id}
           </Text>
         </View>
 
@@ -294,10 +314,10 @@ export default function ComplaintDetailsScreen() {
         <View
           style={[
             styles.headerStatusBadge,
-            { backgroundColor: getStatusColor(complaint.status) },
+            { backgroundColor: getStatusColor(complaintData.status) },
           ]}
         >
-          <Text style={styles.headerStatusText}>{complaint.status}</Text>
+          <Text style={styles.headerStatusText}>{complaintData.status}</Text>
         </View>
       </View>
 
@@ -310,7 +330,7 @@ export default function ComplaintDetailsScreen() {
         {/* Card 1: Complaint Details (Primary Card - Comprehensive Summary) */}
         <View style={[styles.card, styles.primaryCard]}>
           {/* Subject - Main Title */}
-          <Text style={styles.subjectTitle}>{complaint.subject}</Text>
+          <Text style={styles.subjectTitle}>{complaintData.subject}</Text>
 
           {/* Location with Map Pin Icon */}
           <TouchableOpacity
@@ -319,21 +339,21 @@ export default function ComplaintDetailsScreen() {
             activeOpacity={0.7}
           >
             <Ionicons name="location" size={20} color={COLORS.linkBlue} />
-            <Text style={styles.locationLink}>{complaint.location}</Text>
+            <Text style={styles.locationLink}>{complaintData.location}</Text>
           </TouchableOpacity>
 
           {/* Key Details Grid */}
           <View style={styles.detailsGrid}>
             {/* Two-Column Row: Complaint Type and Poll Number */}
             <View style={styles.gridRow}>
-              <GridItem label="Complaint Type" value={complaint.complaintType} />
-              <GridItem label="Poll Number" value={complaint.pollNumber} />
+              <GridItem label="Complaint Type" value={complaintData.complaintType} />
+              <GridItem label="Poll Number" value={complaintData.pollNumber} />
             </View>
 
             {/* Full-Width Row: Category */}
             <View style={styles.fullWidthRow}>
               <Text style={styles.gridLabel}>Category</Text>
-              <Text style={styles.gridValue}>{complaint.category}</Text>
+              <Text style={styles.gridValue}>{complaintData.category}</Text>
             </View>
           </View>
 
@@ -343,14 +363,14 @@ export default function ComplaintDetailsScreen() {
           {/* Assignment Footer Section */}
           <View style={styles.assignmentFooter}>
             <Text style={styles.assignmentLabel}>Assigned To:</Text>
-            {complaint.assignedTo ? (
+            {complaintData.assignedTo ? (
               <View style={styles.assignedPersonContainer}>
                 <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
                 <View style={styles.assignedPersonDetails}>
-                  <Text style={styles.assignedPersonName}>{complaint.assignedTo}</Text>
-                  {complaint.assignedToDesignation && (
+                  <Text style={styles.assignedPersonName}>{complaintData.assignedTo}</Text>
+                  {complaintData.assignedToDesignation && (
                     <Text style={styles.assignedPersonDesignation}>
-                      {complaint.assignedToDesignation}
+                      {complaintData.assignedToDesignation}
                     </Text>
                   )}
                 </View>
@@ -370,18 +390,18 @@ export default function ComplaintDetailsScreen() {
 
           <View style={styles.detailsGrid}>
             <View style={styles.gridRow}>
-              <GridItem label="Priority" value={complaint.priority} />
-              <GridItem label="Source" value={complaint.source} />
+              <GridItem label="Priority" value={complaintData.priority} />
+              <GridItem label="Source" value={complaintData.source} />
             </View>
             <View style={styles.gridRow}>
-              <GridItem label="Created At" value={complaint.createdAt} />
-              <GridItem label="Last Updated" value={complaint.lastUpdated} />
+              <GridItem label="Created At" value={complaintData.createdAt} />
+              <GridItem label="Last Updated" value={complaintData.lastUpdated} />
             </View>
           </View>
         </View>
 
         {/* Card 3: Media Attachments */}
-        {complaint.media.length > 0 && (
+        {complaintData.media.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Media Attachments</Text>
 
@@ -390,7 +410,7 @@ export default function ComplaintDetailsScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.mediaScrollContent}
             >
-              {complaint.media.map((item, index) => (
+              {complaintData.media.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.mediaThumbnail}
@@ -420,15 +440,15 @@ export default function ComplaintDetailsScreen() {
           <View style={styles.reportedByContainer}>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Name</Text>
-              <Text style={styles.reportedByValue}>{complaint.reportedByName}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedByName}</Text>
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Contact Number</Text>
-              <Text style={styles.reportedByValue}>{complaint.reportedByContact}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedByContact}</Text>
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Address</Text>
-              <Text style={styles.reportedByValue}>{complaint.reportedByAddress}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedByAddress}</Text>
             </View>
           </View>
         </View>
@@ -461,9 +481,25 @@ export default function ComplaintDetailsScreen() {
       {/* Media Viewer Modal */}
       <MediaViewer
         visible={mediaViewerVisible}
-        media={complaint.media}
+        media={complaintData.media}
         initialIndex={selectedMediaIndex}
         onClose={() => setMediaViewerVisible(false)}
+      />
+
+      {/* Update Activity Bottom Sheet */}
+      <UpdateActivityBottomSheet
+        visible={updateSheetVisible}
+        currentStatus={complaintData.status}
+        onClose={() => setUpdateSheetVisible(false)}
+        onSubmit={handleUpdateSubmit}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type="success"
+        onHide={() => setToastVisible(false)}
       />
     </SafeAreaView>
   );
