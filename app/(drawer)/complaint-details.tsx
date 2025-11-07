@@ -11,6 +11,8 @@ import {
   Dimensions,
   Modal,
   Image,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -25,6 +27,8 @@ const COLORS = {
   primary: '#2196F3',
   saffron: '#FF9800',
   border: '#E0E0E0',
+  linkBlue: '#1976D2',
+  divider: '#EEEEEE',
 
   // Status colors
   statusSubmitted: '#FF9800',
@@ -46,18 +50,17 @@ interface ComplaintDetails {
   id: string;
   subject: string;
   status: string;
-  description: string;
-  name: string;
-  contactNumber: string;
   location: string;
-  serviceType: string;
-  complaintCategory: string;
+  complaintType: string;
+  category: string;
+  pollNumber: string;
   priority: string;
   source: string;
-  pollNumber: string;
-  flatNumber: string;
   createdAt: string;
   lastUpdated: string;
+  reportedByName: string;
+  reportedByContact: string;
+  assignedTo?: string;
   media: MediaItem[];
 }
 
@@ -66,18 +69,17 @@ const MOCK_COMPLAINT: ComplaintDetails = {
   id: 'PWD202511070002',
   subject: 'Complaint from neil sparx',
   status: 'SUBMITTED',
-  description: 'sdfsfdsfsdsfdsfdsf',
-  name: 'neil sparx',
-  contactNumber: '5555555555',
   location: 'Patparganj, New Delhi, Delhi, India',
-  serviceType: 'Residential Colony',
-  complaintCategory: 'House alloted, possession not given',
+  complaintType: 'Residential Colony',
+  category: 'House alloted, possession not given',
+  pollNumber: 'dsfsfsfsf',
   priority: '3',
   source: 'Mobile App',
-  pollNumber: 'dsfsfsfsf',
-  flatNumber: 'sdfdsfdsf',
   createdAt: '07/11/2025 09:02',
   lastUpdated: '07/11/2025 09:02',
+  reportedByName: 'neil sparx',
+  reportedByContact: '5555555555',
+  assignedTo: 'Er Sabir Ali', // Set to undefined or remove this line to test "Not Yet Assigned"
   media: [
     {
       type: 'image',
@@ -95,16 +97,16 @@ const MOCK_COMPLAINT: ComplaintDetails = {
   ],
 };
 
-interface InfoRowProps {
+interface GridItemProps {
   label: string;
   value: string;
 }
 
-function InfoRow({ label, value }: InfoRowProps) {
+function GridItem({ label, value }: GridItemProps) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={styles.gridItem}>
+      <Text style={styles.gridLabel}>{label}</Text>
+      <Text style={styles.gridValue}>{value}</Text>
     </View>
   );
 }
@@ -223,19 +225,42 @@ export default function ComplaintDetailsScreen() {
     }
   };
 
+  const handleLocationPress = async () => {
+    const address = encodeURIComponent(complaint.location);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${address}`,
+      android: `geo:0,0?q=${address}`,
+    });
+
+    const webUrl = `https://www.google.com/maps/search/?api=1&query=${address}`;
+
+    try {
+      if (url) {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          await Linking.openURL(webUrl);
+        }
+      } else {
+        await Linking.openURL(webUrl);
+      }
+    } catch {
+      Alert.alert('Error', 'Unable to open maps');
+    }
+  };
+
   const handleMediaPress = (index: number) => {
     setSelectedMediaIndex(index);
     setMediaViewerVisible(true);
   };
 
   const handleAssignTask = () => {
-    // Show toast notification
-    alert('Coming Soon: Assign Task functionality');
+    Alert.alert('Coming Soon', 'Assign Task functionality will be available soon');
   };
 
   const handleUpdateStatus = () => {
-    // Show toast notification
-    alert('Coming Soon: Update Status functionality');
+    Alert.alert('Coming Soon', 'Update Status functionality will be available soon');
   };
 
   return (
@@ -267,10 +292,9 @@ export default function ComplaintDetailsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Card 1: Primary Details */}
-        <View style={styles.card}>
-          <Text style={styles.subjectTitle}>{complaint.subject}</Text>
-
+        {/* Card 1: Complaint Details (Primary Card) */}
+        <View style={[styles.card, styles.primaryCard]}>
+          {/* Status Badge */}
           <View
             style={[
               styles.statusBadge,
@@ -280,13 +304,52 @@ export default function ComplaintDetailsScreen() {
             <Text style={styles.statusBadgeText}>{complaint.status}</Text>
           </View>
 
-          <Text style={styles.description}>{complaint.description}</Text>
+          {/* Subject */}
+          <Text style={styles.subjectTitle}>{complaint.subject}</Text>
+
+          {/* Location with Map Pin Icon */}
+          <TouchableOpacity
+            style={styles.locationContainer}
+            onPress={handleLocationPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="location" size={20} color={COLORS.linkBlue} />
+            <Text style={styles.locationLink}>{complaint.location}</Text>
+          </TouchableOpacity>
+
+          {/* Sub-Details Grid */}
+          <View style={styles.detailsGrid}>
+            <View style={styles.gridRow}>
+              <GridItem label="Complaint Type" value={complaint.complaintType} />
+              <GridItem label="Category" value={complaint.category} />
+            </View>
+            <View style={styles.gridRow}>
+              <GridItem label="Poll Number" value={complaint.pollNumber} />
+              <View style={styles.gridItem} />
+            </View>
+          </View>
         </View>
 
-        {/* Card 2: Media Attachments */}
+        {/* Card 2: Additional Information */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Additional Information</Text>
+
+          <View style={styles.detailsGrid}>
+            <View style={styles.gridRow}>
+              <GridItem label="Priority" value={complaint.priority} />
+              <GridItem label="Source" value={complaint.source} />
+            </View>
+            <View style={styles.gridRow}>
+              <GridItem label="Created At" value={complaint.createdAt} />
+              <GridItem label="Last Updated" value={complaint.lastUpdated} />
+            </View>
+          </View>
+        </View>
+
+        {/* Card 3: Media Attachments */}
         {complaint.media.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Attached Media</Text>
+            <Text style={styles.cardTitle}>Media Attachments</Text>
 
             <ScrollView
               horizontal
@@ -315,55 +378,41 @@ export default function ComplaintDetailsScreen() {
           </View>
         )}
 
-        {/* Card 3: Complainant & Location Details */}
+        {/* Card 4: People & Assignment */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Complainant & Location</Text>
+          <Text style={styles.cardTitle}>People & Assignment</Text>
 
-          <InfoRow label="Name" value={complaint.name} />
-          <InfoRow label="Contact Number" value={complaint.contactNumber} />
-          <InfoRow label="Location" value={complaint.location} />
-          <InfoRow label="Service Type" value={complaint.serviceType} />
-          <InfoRow label="Complaint Category" value={complaint.complaintCategory} />
-        </View>
-
-        {/* Card 4: Additional Information */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Additional Information</Text>
-
-          <View style={styles.gridContainer}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Priority</Text>
-              <Text style={styles.gridValue}>{complaint.priority}</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Source</Text>
-              <Text style={styles.gridValue}>{complaint.source}</Text>
+          {/* Reported By Section */}
+          <View style={styles.peopleSection}>
+            <Text style={styles.peopleSectionLabel}>Reported By</Text>
+            <View style={styles.personInfo}>
+              <Ionicons name="person-circle-outline" size={24} color={COLORS.textSecondary} />
+              <View style={styles.personDetails}>
+                <Text style={styles.personName}>{complaint.reportedByName}</Text>
+                <Text style={styles.personContact}>{complaint.reportedByContact}</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.gridContainer}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Poll Number</Text>
-              <Text style={styles.gridValue}>{complaint.pollNumber}</Text>
-            </View>
+          {/* Divider */}
+          <View style={styles.peopleDivider} />
 
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Flat Number</Text>
-              <Text style={styles.gridValue}>{complaint.flatNumber}</Text>
-            </View>
-          </View>
-
-          <View style={styles.gridContainer}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Created At</Text>
-              <Text style={styles.gridValue}>{complaint.createdAt}</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Last Updated</Text>
-              <Text style={styles.gridValue}>{complaint.lastUpdated}</Text>
-            </View>
+          {/* Assigned To Section */}
+          <View style={styles.peopleSection}>
+            <Text style={styles.peopleSectionLabel}>Assigned To</Text>
+            {complaint.assignedTo ? (
+              <View style={styles.personInfo}>
+                <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
+                <View style={styles.personDetails}>
+                  <Text style={styles.personName}>{complaint.assignedTo}</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.notAssignedContainer}>
+                <Ionicons name="person-add-outline" size={20} color={COLORS.textLight} />
+                <Text style={styles.notAssignedText}>Not Yet Assigned</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -462,27 +511,34 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 16,
       },
       android: {
-        elevation: 3,
+        elevation: 4,
+      },
+    }),
+  },
+  primaryCard: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 6,
       },
     }),
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 16,
-  },
-  subjectTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-    lineHeight: 30,
+    marginBottom: 20,
+    letterSpacing: 0.2,
   },
   statusBadge: {
     alignSelf: 'flex-start',
@@ -496,11 +552,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.cardBackground,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
-  description: {
+  subjectTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 16,
+    lineHeight: 32,
+    letterSpacing: 0.2,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    gap: 8,
+  },
+  locationLink: {
+    flex: 1,
     fontSize: 15,
-    color: COLORS.textSecondary,
+    fontWeight: '500',
+    color: COLORS.linkBlue,
+    lineHeight: 22,
+    textDecorationLine: 'underline',
+  },
+  detailsGrid: {
+    gap: 16,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  gridItem: {
+    flex: 1,
+  },
+  gridLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  gridValue: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.text,
     lineHeight: 22,
   },
   mediaScrollContent: {
@@ -513,6 +610,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.background,
     position: 'relative',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   thumbnailImage: {
     width: '100%',
@@ -528,45 +627,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
-  infoRow: {
-    marginBottom: 16,
+  peopleSection: {
+    marginBottom: 0,
   },
-  infoLabel: {
+  peopleSectionLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.textLight,
-    marginBottom: 4,
+    marginBottom: 12,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
-  infoValue: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.text,
-    lineHeight: 22,
-  },
-  gridContainer: {
+  personInfo: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    alignItems: 'center',
     gap: 12,
   },
-  gridItem: {
+  personDetails: {
     flex: 1,
   },
-  gridLabel: {
-    fontSize: 12,
+  personName: {
+    fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textLight,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  gridValue: {
-    fontSize: 14,
-    fontWeight: '500',
     color: COLORS.text,
-    lineHeight: 20,
+    marginBottom: 4,
+  },
+  personContact: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+  },
+  peopleDivider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
+    marginVertical: 20,
+  },
+  notAssignedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  notAssignedText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.textLight,
+    fontStyle: 'italic',
   },
   bottomSpacer: {
     height: 80,
