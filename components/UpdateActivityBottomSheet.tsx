@@ -216,12 +216,14 @@ export default function UpdateActivityBottomSheet({
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          {/* Content Container */}
+          <View style={styles.contentContainer}>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
             {/* Status Selector */}
             <View style={styles.section}>
               <Text style={styles.label}>Status</Text>
@@ -353,6 +355,7 @@ export default function UpdateActivityBottomSheet({
               )}
             </TouchableOpacity>
           </View>
+          </View>
         </View>
       </View>
     </Modal>
@@ -372,7 +375,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.85,
+    height: SCREEN_HEIGHT * 0.85,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -413,11 +416,16 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  contentContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 24,
+    flexGrow: 1,
   },
   section: {
     marginBottom: 24,
