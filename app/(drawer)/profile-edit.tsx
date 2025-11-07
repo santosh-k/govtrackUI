@@ -297,7 +297,7 @@ export default function EditProfileScreen() {
       ]).start(() => {
         setShowToast(false);
         setToastMessage('');
-        router.back();
+        router.push('/(drawer)/profile');
       });
     }, 3000);
   };
