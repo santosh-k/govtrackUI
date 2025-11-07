@@ -271,21 +271,32 @@ export default function ComplaintDetailsScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.6}
-        >
-          <Ionicons name="arrow-back" size={28} color={COLORS.text} />
-        </TouchableOpacity>
-
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+        {/* Left: Back Arrow + Complaint ID */}
+        <View style={styles.headerLeftSection}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.6}
+          >
+            <Ionicons name="arrow-back" size={28} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerComplaintId} numberOfLines={1}>
             {complaint.id}
           </Text>
         </View>
 
-        <View style={styles.headerSpacer} />
+        {/* Center: Empty */}
+        <View style={styles.headerCenter} />
+
+        {/* Right: Status Badge */}
+        <View
+          style={[
+            styles.headerStatusBadge,
+            { backgroundColor: getStatusColor(complaint.status) },
+          ]}
+        >
+          <Text style={styles.headerStatusText}>{complaint.status}</Text>
+        </View>
       </View>
 
       {/* Scrollable Content */}
@@ -308,16 +319,6 @@ export default function ComplaintDetailsScreen() {
             <Ionicons name="location" size={20} color={COLORS.linkBlue} />
             <Text style={styles.locationLink}>{complaint.location}</Text>
           </TouchableOpacity>
-
-          {/* Status Badge */}
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(complaint.status) },
-            ]}
-          >
-            <Text style={styles.statusBadgeText}>{complaint.status}</Text>
-          </View>
 
           {/* Key Details Grid */}
           <View style={styles.detailsGrid}>
@@ -482,22 +483,37 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  headerLeftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
   backButton: {
     padding: 8,
     marginLeft: -8,
   },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  headerTitle: {
+  headerComplaintId: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
+    flex: 1,
   },
-  headerSpacer: {
-    width: 44,
+  headerCenter: {
+    flex: 0,
+  },
+  headerStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  headerStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.cardBackground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
@@ -544,20 +560,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: 0.2,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.cardBackground,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
   subjectTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 24,
     gap: 8,
   },
   locationLink: {
