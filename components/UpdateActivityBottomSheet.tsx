@@ -83,23 +83,28 @@ export default function UpdateActivityBottomSheet({
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleTakePhoto = async () => {
+  const handleTakePhotoOrVideo = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
+      Alert.alert('Permission Denied', 'Camera permission is required to take photos or videos.');
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Changed from Images to All
       quality: 0.8,
-      allowsEditing: true,
+      allowsEditing: false, // Disabled editing to support videos
+      videoMaxDuration: 60, // Optional: limit video to 60 seconds
     });
 
     if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
       setAttachments((prev) => [
         ...prev,
-        { uri: result.assets[0].uri, type: 'image' },
+        {
+          uri: asset.uri,
+          type: (asset.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+        },
       ]);
     }
   };
@@ -152,11 +157,11 @@ export default function UpdateActivityBottomSheet({
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Take Photo', 'Choose from Gallery', 'Choose File'],
+          options: ['Cancel', 'Take Photo or Video', 'Choose from Gallery', 'Choose File'],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
-          if (buttonIndex === 1) handleTakePhoto();
+          if (buttonIndex === 1) handleTakePhotoOrVideo();
           else if (buttonIndex === 2) handleChooseFromGallery();
           else if (buttonIndex === 3) handleChooseFile();
         }
@@ -166,7 +171,7 @@ export default function UpdateActivityBottomSheet({
         'Attach Files',
         'Choose an option',
         [
-          { text: 'Take Photo', onPress: handleTakePhoto },
+          { text: 'Take Photo or Video', onPress: handleTakePhotoOrVideo },
           { text: 'Choose from Gallery', onPress: handleChooseFromGallery },
           { text: 'Choose File', onPress: handleChooseFile },
           { text: 'Cancel', style: 'cancel' },
