@@ -417,21 +417,18 @@ export default function ComplaintDetailsScreen() {
           <Text style={styles.cardTitle}>Reported By</Text>
 
           {/* Reported By Section */}
-          <View style={styles.personInfo}>
-            <Ionicons name="person-circle-outline" size={28} color={COLORS.textSecondary} />
-            <View style={styles.personDetails}>
-              <View style={styles.personDetailRow}>
-                <Text style={styles.personLabel}>Name:</Text>
-                <Text style={styles.personName}>{complaint.reportedByName}</Text>
-              </View>
-              <View style={styles.personDetailRow}>
-                <Text style={styles.personLabel}>Contact Number:</Text>
-                <Text style={styles.personContact}>{complaint.reportedByContact}</Text>
-              </View>
-              <View style={styles.personDetailRow}>
-                <Text style={styles.personLabel}>Address:</Text>
-                <Text style={styles.personContact}>{complaint.reportedByAddress}</Text>
-              </View>
+          <View style={styles.reportedByContainer}>
+            <View style={styles.reportedByField}>
+              <Text style={styles.reportedByLabel}>Name</Text>
+              <Text style={styles.reportedByValue}>{complaint.reportedByName}</Text>
+            </View>
+            <View style={styles.reportedByField}>
+              <Text style={styles.reportedByLabel}>Contact Number</Text>
+              <Text style={styles.reportedByValue}>{complaint.reportedByContact}</Text>
+            </View>
+            <View style={styles.reportedByField}>
+              <Text style={styles.reportedByLabel}>Address</Text>
+              <Text style={styles.reportedByValue}>{complaint.reportedByAddress}</Text>
             </View>
           </View>
         </View>
@@ -737,6 +734,25 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.textSecondary,
     lineHeight: 20,
+  },
+  reportedByContainer: {
+    gap: 20,
+  },
+  reportedByField: {
+    gap: 6,
+  },
+  reportedByLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  reportedByValue: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.text,
+    lineHeight: 22,
   },
   peopleDivider: {
     height: 1,
