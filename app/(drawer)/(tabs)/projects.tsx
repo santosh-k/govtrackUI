@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Header from '@/components/Header';
 
@@ -34,9 +35,8 @@ const cardWidth = (width - 48) / 2; // 2 columns with padding
 interface StatCardProps {
   title: string;
   value: string | number;
-  statusLabel?: string;
-  statusColor?: string;
-  accentColor?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  backgroundColor: string;
   onPress: () => void;
 }
 
@@ -61,27 +61,19 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ label, progress, details }) =
 const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
-  statusLabel,
-  statusColor,
-  accentColor,
+  icon,
+  backgroundColor,
   onPress,
 }) => {
   return (
     <TouchableOpacity
-      style={[
-        styles.statCard,
-        accentColor && { borderLeftWidth: 4, borderLeftColor: accentColor },
-      ]}
+      style={[styles.statCard, { backgroundColor }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <Ionicons name={icon} size={56} color="#1A1A1A" style={styles.cardIcon} />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
-      {statusLabel && (
-        <View style={[styles.statusPill, { backgroundColor: statusColor }]}>
-          <Text style={styles.statusText}>{statusLabel}</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 };
@@ -111,29 +103,29 @@ export default function ProjectsDashboardScreen() {
             <StatCard
               title="Construction Work"
               value="24"
-              statusLabel="On Track"
-              statusColor={COLORS.green}
+              icon="construct-outline"
+              backgroundColor="#C8E6C9"
               onPress={() => navigateToProjectList('Construction Work')}
             />
             <StatCard
               title="Maintenance Work"
               value="18"
-              statusLabel="In Progress"
-              statusColor={COLORS.primary}
+              icon="build-outline"
+              backgroundColor="#FFCCBC"
               onPress={() => navigateToProjectList('Maintenance Work')}
             />
             <StatCard
               title="Other Works"
               value="12"
-              statusLabel="Active"
-              statusColor={COLORS.green}
+              icon="cube-outline"
+              backgroundColor="#E1BEE7"
               onPress={() => navigateToProjectList('Other Works')}
             />
             <StatCard
               title="Total Projects"
               value="54"
-              statusLabel="Overall"
-              statusColor={COLORS.textSecondary}
+              icon="apps-outline"
+              backgroundColor="#BBDEFB"
               onPress={() => navigateToProjectList('All Projects')}
             />
           </View>
@@ -163,25 +155,29 @@ export default function ProjectsDashboardScreen() {
             <StatCard
               title="Delayed Projects"
               value="8"
-              accentColor={COLORS.red}
+              icon="time-outline"
+              backgroundColor="#FFCDD2"
               onPress={() => navigateToProjectList('Delayed Projects')}
             />
             <StatCard
               title="Critical Issues"
               value="5"
-              accentColor={COLORS.red}
+              icon="alert-circle-outline"
+              backgroundColor="#FFE0B2"
               onPress={() => navigateToProjectList('Projects with Critical Issues')}
             />
             <StatCard
               title="Inspections Overdue"
               value="12"
-              accentColor={COLORS.orange}
+              icon="calendar-outline"
+              backgroundColor="#FFF9C4"
               onPress={() => navigateToProjectList('Inspections Overdue')}
             />
             <StatCard
               title="Inspected Today"
               value="7"
-              accentColor={COLORS.green}
+              icon="checkmark-circle-outline"
+              backgroundColor="#B2DFDB"
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
@@ -263,39 +259,27 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: cardWidth,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 160,
+  },
+  cardIcon: {
+    marginBottom: 12,
   },
   statValue: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
   },
   statTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-  },
-  statusPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.white,
+    color: COLORS.text,
+    textAlign: 'center',
   },
   bottomSpacer: {
     height: 24,
