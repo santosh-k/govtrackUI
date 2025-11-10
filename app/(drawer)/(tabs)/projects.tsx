@@ -37,6 +37,7 @@ interface StatCardProps {
   value: string | number;
   icon: keyof typeof Ionicons.glyphMap;
   backgroundColor: string;
+  iconColor: string;
   onPress: () => void;
 }
 
@@ -63,6 +64,7 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   backgroundColor,
+  iconColor,
   onPress,
 }) => {
   return (
@@ -71,8 +73,8 @@ const StatCard: React.FC<StatCardProps> = ({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Top: Minimalist icon */}
-      <Ionicons name={icon} size={48} color="#1A1A1A" />
+      {/* Top: Minimalist icon with unique color */}
+      <Ionicons name={icon} size={48} color={iconColor} />
 
       {/* Middle: Large bold number */}
       <Text style={styles.statValue}>{value}</Text>
@@ -110,6 +112,7 @@ export default function ProjectsDashboardScreen() {
               value="24"
               icon="construct-outline"
               backgroundColor="#D8F3DC"
+              iconColor="#2E7D32"
               onPress={() => navigateToProjectList('Construction Work')}
             />
             <StatCard
@@ -117,6 +120,7 @@ export default function ProjectsDashboardScreen() {
               value="18"
               icon="build-outline"
               backgroundColor="#FFE5D4"
+              iconColor="#F57C00"
               onPress={() => navigateToProjectList('Maintenance Work')}
             />
             <StatCard
@@ -124,6 +128,7 @@ export default function ProjectsDashboardScreen() {
               value="12"
               icon="cube-outline"
               backgroundColor="#E8D7F1"
+              iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
             />
             <StatCard
@@ -131,6 +136,7 @@ export default function ProjectsDashboardScreen() {
               value="54"
               icon="apps-outline"
               backgroundColor="#D4E9F7"
+              iconColor="#1976D2"
               onPress={() => navigateToProjectList('All Projects')}
             />
           </View>
@@ -162,6 +168,7 @@ export default function ProjectsDashboardScreen() {
               value="8"
               icon="time-outline"
               backgroundColor="#FFE4E9"
+              iconColor="#C2185B"
               onPress={() => navigateToProjectList('Delayed Projects')}
             />
             <StatCard
@@ -169,6 +176,7 @@ export default function ProjectsDashboardScreen() {
               value="5"
               icon="alert-circle-outline"
               backgroundColor="#FFF4D6"
+              iconColor="#F9A825"
               onPress={() => navigateToProjectList('Projects with Critical Issues')}
             />
             <StatCard
@@ -176,6 +184,7 @@ export default function ProjectsDashboardScreen() {
               value="12"
               icon="calendar-outline"
               backgroundColor="#FFEBCC"
+              iconColor="#EF6C00"
               onPress={() => navigateToProjectList('Inspections Overdue')}
             />
             <StatCard
@@ -183,6 +192,7 @@ export default function ProjectsDashboardScreen() {
               value="7"
               icon="checkmark-circle-outline"
               backgroundColor="#D3F5F7"
+              iconColor="#00838F"
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
