@@ -1,3 +1,8 @@
+/**
+ * Complaint Dashboard - White Card Design v2.0
+ * Clean, professional layout with horizontal card structure
+ * Updated: Latest version with white cards and colored icon circles
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -78,6 +83,7 @@ function StatCard({ title, value, icon, iconCircleColor, iconBackgroundColor, on
   );
 }
 
+// Clean white card design with horizontal layout - v2.0
 export default function ComplaintDashboardScreen() {
   const navigation = useNavigation();
   const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('month');
