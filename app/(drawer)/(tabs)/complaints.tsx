@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -84,6 +85,10 @@ export default function ComplaintDashboardScreen() {
   const navigation = useNavigation();
   const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('month');
   const [dateRange, setDateRange] = useState('01 Jan - 31 Jan');
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Simulated stats - would come from API based on selected filter
   const stats = {
@@ -136,8 +141,83 @@ export default function ComplaintDashboardScreen() {
   };
 
   const handleCustomDateRange = () => {
-    // TODO: Open date picker modal
-    console.log('Open date picker');
+    setShowCalendarModal(true);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+      // First selection or reset
+      setSelectedStartDate(date);
+      setSelectedEndDate(null);
+    } else {
+      // Second selection
+      if (date < selectedStartDate) {
+        // If selected date is before start, swap them
+        setSelectedEndDate(selectedStartDate);
+        setSelectedStartDate(date);
+      } else {
+        setSelectedEndDate(date);
+      }
+    }
+  };
+
+  const handleApplyDateRange = () => {
+    if (selectedStartDate && selectedEndDate) {
+      const startStr = selectedStartDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      const endStr = selectedEndDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      setDateRange(`${startStr} - ${endStr}`);
+      setSelectedFilter('custom');
+      setShowCalendarModal(false);
+    }
+  };
+
+  const handleCancelDateRange = () => {
+    setShowCalendarModal(false);
+    setSelectedStartDate(null);
+    setSelectedEndDate(null);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(currentMonth);
+    if (direction === 'prev') {
+      newMonth.setMonth(currentMonth.getMonth() - 1);
+    } else {
+      newMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+    setCurrentMonth(newMonth);
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days: (Date | null)[] = [];
+
+    // Add empty slots for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+
+    // Add all days in month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const isDateInRange = (date: Date) => {
+    if (!selectedStartDate || !selectedEndDate) return false;
+    return date >= selectedStartDate && date <= selectedEndDate;
+  };
+
+  const isSameDay = (date1: Date | null, date2: Date | null) => {
+    if (!date1 || !date2) return false;
+    return date1.toDateString() === date2.toDateString();
   };
 
   const openDrawer = () => {
@@ -313,6 +393,102 @@ export default function ComplaintDashboardScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Calendar Modal */}
+      <Modal
+        visible={showCalendarModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelDateRange}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Date Range</Text>
+              <TouchableOpacity onPress={handleCancelDateRange} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Month Navigation */}
+            <View style={styles.monthNavigation}>
+              <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
+                <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+              <Text style={styles.monthYear}>
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
+                <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Weekday Headers */}
+            <View style={styles.weekdayHeader}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <Text key={day} style={styles.weekdayText}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+
+            {/* Calendar Grid */}
+            <View style={styles.calendarGrid}>
+              {getDaysInMonth(currentMonth).map((date, index) => {
+                if (!date) {
+                  return <View key={`empty-${index}`} style={styles.dayCell} />;
+                }
+
+                const isStart = isSameDay(date, selectedStartDate);
+                const isEnd = isSameDay(date, selectedEndDate);
+                const inRange = isDateInRange(date);
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.dayCell,
+                      inRange && styles.dayCellInRange,
+                      (isStart || isEnd) && styles.dayCellSelected,
+                    ]}
+                    onPress={() => handleDateSelect(date)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        (isStart || isEnd) && styles.dayTextSelected,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelDateRange}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.applyButton,
+                  (!selectedStartDate || !selectedEndDate) && styles.applyButtonDisabled,
+                ]}
+                onPress={handleApplyDateRange}
+                disabled={!selectedStartDate || !selectedEndDate}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -443,5 +619,130 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  // Calendar Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  navButton: {
+    padding: 8,
+  },
+  monthYear: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  weekdayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  weekdayText: {
+    width: '14.28%',
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
+  },
+  dayCellInRange: {
+    backgroundColor: `${COLORS.primary}20`,
+  },
+  dayCellSelected: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  dayTextSelected: {
+    color: COLORS.cardBackground,
+    fontWeight: '700',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  applyButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+  },
+  applyButtonDisabled: {
+    backgroundColor: COLORS.border,
+  },
+  applyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.cardBackground,
   },
 });
