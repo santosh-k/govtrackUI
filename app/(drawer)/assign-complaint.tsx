@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import Toast from '@/components/Toast';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -198,6 +199,8 @@ export default function AssignComplaintScreen() {
   const [user, setUser] = useState<Selection | null>(null);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // Handle selection from searchable screen - FIXED: No cascading resets
   useEffect(() => {
@@ -313,13 +316,37 @@ export default function AssignComplaintScreen() {
 
   const handleAssign = async () => {
     setIsSubmitting(true);
+
+    // Simulate assignment process
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    router.back();
-    router.setParams({
-      assignedUser: user?.name,
-      assignedDesignation: user?.designation,
-      showAssignmentToast: 'true',
+    setIsSubmitting(false);
+
+    // Show success toast
+    setToastMessage('Complaint assigned successfully!');
+    setToastVisible(true);
+
+    // Navigate back to complaint details after a brief delay
+    setTimeout(() => {
+      router.replace({
+        pathname: '/complaint-details',
+        params: {
+          complaintId: complaintId,
+          assignedUser: user?.name,
+          assignedDesignation: user?.designation,
+          showAssignmentToast: 'true',
+        },
+      });
+    }, 1500);
+  };
+
+  const handleBackPress = () => {
+    // Navigate back to complaint details
+    router.replace({
+      pathname: '/complaint-details',
+      params: {
+        complaintId: complaintId,
+      },
     });
   };
 
@@ -353,7 +380,7 @@ export default function AssignComplaintScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleBackPress}
           activeOpacity={0.6}
         >
           <Ionicons name="arrow-back" size={28} color={COLORS.text} />
@@ -459,6 +486,14 @@ export default function AssignComplaintScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type="success"
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }
