@@ -162,7 +162,7 @@ export default function ProjectsDashboardScreen() {
         >
           <Ionicons name="search" size={20} color={COLORS.textSecondary} />
           <Text style={styles.searchPlaceholder}>
-            Search by Project Name, ID, or Contractor...
+            Search by Project Name, ID, or Location...
           </Text>
         </TouchableOpacity>
 
