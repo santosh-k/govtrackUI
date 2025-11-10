@@ -97,31 +97,14 @@ export default function ProjectsDashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <Header title="Projects Dashboard" />
+      <Header title="Projects" />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section 1: Financial Summary */}
-        <View style={styles.section}>
-          <View style={styles.financialCard}>
-            <ProgressBar
-              label="Budget vs. Expenditure"
-              progress={79}
-              details="Budget ₹12.4 Cr | Spent ₹9.8 Cr (79% Utilized)"
-            />
-            <View style={styles.divider} />
-            <ProgressBar
-              label="Average Project Progress"
-              progress={72}
-              details="72% Average Completion"
-            />
-          </View>
-        </View>
-
-        {/* Section 2: Project Categories */}
+        {/* Section 1: Project Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Categories</Text>
           <View style={styles.gridContainer}>
@@ -152,6 +135,23 @@ export default function ProjectsDashboardScreen() {
               statusLabel="Overall"
               statusColor={COLORS.textSecondary}
               onPress={() => navigateToProjectList('All Projects')}
+            />
+          </View>
+        </View>
+
+        {/* Section 2: Financial Summary */}
+        <View style={styles.section}>
+          <View style={styles.financialCard}>
+            <ProgressBar
+              label="Budget vs. Expenditure"
+              progress={79}
+              details="Budget ₹12.4 Cr | Spent ₹9.8 Cr (79% Utilized)"
+            />
+            <View style={styles.divider} />
+            <ProgressBar
+              label="Average Project Progress"
+              progress={72}
+              details="72% Average Completion"
             />
           </View>
         </View>
