@@ -10,9 +10,14 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  Image,
+  ActionSheetIOS,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import Toast from '@/components/Toast';
 
 const COLORS = {
@@ -151,6 +156,12 @@ interface Selection {
   designation?: string;
 }
 
+interface Attachment {
+  uri: string;
+  type: 'image' | 'video' | 'document';
+  name?: string;
+}
+
 interface DropdownFieldProps {
   label: string;
   value?: string;
@@ -202,6 +213,7 @@ export default function AssignComplaintScreen() {
   const [user, setUser] = useState<Selection | null>(null);
 
   const [comment, setComment] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -244,6 +256,109 @@ export default function AssignComplaintScreen() {
       router.setParams({ selectedItem: undefined, selectedField: undefined });
     }
   }, [params.selectedItem, params.selectedField]);
+
+  // Attachment handlers
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleTakePhotoOrVideo = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Camera permission is required to take photos or videos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      quality: 0.8,
+      allowsEditing: false,
+      videoMaxDuration: 60,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setAttachments((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          type: (asset.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+        },
+      ]);
+    }
+  };
+
+  const handleChooseFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Gallery permission is required to select photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      quality: 0.8,
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+    });
+
+    if (!result.canceled) {
+      const newAttachments = result.assets.map((asset) => ({
+        uri: asset.uri,
+        type: (asset.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+      }));
+      setAttachments((prev) => [...prev, ...newAttachments]);
+    }
+  };
+
+  const handleChooseFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets) {
+        const newAttachments = result.assets.map((asset) => ({
+          uri: asset.uri,
+          type: 'document' as const,
+          name: asset.name,
+        }));
+        setAttachments((prev) => [...prev, ...newAttachments]);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to pick document');
+    }
+  };
+
+  const showAttachmentOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo or Video', 'Choose from Gallery', 'Choose File'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleTakePhotoOrVideo();
+          else if (buttonIndex === 2) handleChooseFromGallery();
+          else if (buttonIndex === 3) handleChooseFile();
+        }
+      );
+    } else {
+      Alert.alert(
+        'Attach Files',
+        'Choose an option',
+        [
+          { text: 'Take Photo or Video', onPress: handleTakePhotoOrVideo },
+          { text: 'Choose from Gallery', onPress: handleChooseFromGallery },
+          { text: 'Choose File', onPress: handleChooseFile },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
 
   const handleDivisionSelect = () => {
     router.push({
@@ -314,6 +429,17 @@ export default function AssignComplaintScreen() {
   const handleAssign = async () => {
     setIsSubmitting(true);
 
+    // Log attachments for API submission
+    console.log('Assignment data:', {
+      division,
+      subDivision,
+      department,
+      designation,
+      user,
+      comment,
+      attachments,
+    });
+
     // Simulate assignment process
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
@@ -345,6 +471,15 @@ export default function AssignComplaintScreen() {
       assignedDesignation = 'Division';
       setToastMessage(`Assigned to ${division.name}!`);
     }
+
+    // Reset form after successful assignment
+    setDivision(null);
+    setSubDivision(null);
+    setDepartment(null);
+    setDesignation(null);
+    setUser(null);
+    setComment('');
+    setAttachments([]);
 
     // Show success toast
     setToastVisible(true);
@@ -468,6 +603,61 @@ export default function AssignComplaintScreen() {
             value={comment}
             onChangeText={setComment}
           />
+        </View>
+
+        {/* Attachments Card */}
+        <View style={styles.card}>
+          <Text style={styles.commentLabel}>Add Attachments (Optional)</Text>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={showAttachmentOptions}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="attach" size={24} color={COLORS.textSecondary} />
+            <Text style={styles.attachButtonText}>Add Photo, Video, or File</Text>
+          </TouchableOpacity>
+
+          {/* Attachment Previews */}
+          {attachments.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.attachmentPreviewContainer}
+            >
+              {attachments.map((attachment, index) => (
+                <View key={index} style={styles.attachmentPreview}>
+                  {attachment.type === 'document' ? (
+                    <View style={styles.documentPreview}>
+                      <Ionicons name="document" size={32} color={COLORS.textSecondary} />
+                      <Text
+                        style={styles.documentName}
+                        numberOfLines={2}
+                        ellipsizeMode="middle"
+                      >
+                        {attachment.name || 'Document'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: attachment.uri }}
+                      style={styles.previewImage}
+                    />
+                  )}
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveAttachment(index)}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                  </TouchableOpacity>
+                  {attachment.type === 'video' && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play-circle" size={32} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* Spacer for button */}
@@ -697,5 +887,73 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  // Attachment styles
+  attachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: COLORS.cardBackground,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  attachButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  attachmentPreviewContainer: {
+    gap: 12,
+    marginTop: 16,
+  },
+  attachmentPreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  documentPreview: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  documentName: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+  },
+  videoIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });
