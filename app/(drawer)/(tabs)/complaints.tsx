@@ -330,6 +330,16 @@ export default function ComplaintDashboardScreen() {
           />
 
           <StatCard
+            title="Closed"
+            value={stats.closed}
+            icon="close-circle-outline"
+            backgroundColor={COLORS.pastelPeach}
+            iconColor={COLORS.iconPeach}
+            filterType="closed"
+            onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
+          />
+
+          <StatCard
             title="Pending"
             value={stats.pending}
             icon="time-outline"
@@ -350,26 +360,6 @@ export default function ComplaintDashboardScreen() {
           />
 
           <StatCard
-            title="Completed"
-            value={stats.completed}
-            icon="checkmark-circle-outline"
-            backgroundColor={COLORS.pastelGreen}
-            iconColor={COLORS.iconGreen}
-            filterType="completed"
-            onPress={() => handleStatCardPress('completed', 'Completed Complaints')}
-          />
-
-          <StatCard
-            title="Assigned by You"
-            value={stats.assignedByYou}
-            icon="person-add-outline"
-            backgroundColor={COLORS.pastelYellow}
-            iconColor={COLORS.iconOrange}
-            filterType="assignedByYou"
-            onPress={() => handleStatCardPress('assignedByYou', 'Assigned by You')}
-          />
-
-          <StatCard
             title="Completed by You"
             value={stats.completedByYou}
             icon="checkmark-done-outline"
@@ -380,13 +370,13 @@ export default function ComplaintDashboardScreen() {
           />
 
           <StatCard
-            title="Closed"
-            value={stats.closed}
-            icon="close-circle-outline"
-            backgroundColor={COLORS.pastelPeach}
-            iconColor={COLORS.iconPeach}
-            filterType="closed"
-            onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
+            title="Assigned by You"
+            value={stats.assignedByYou}
+            icon="person-add-outline"
+            backgroundColor={COLORS.pastelYellow}
+            iconColor={COLORS.iconOrange}
+            filterType="assignedByYou"
+            onPress={() => handleStatCardPress('assignedByYou', 'Assigned by You')}
           />
         </View>
       </ScrollView>
