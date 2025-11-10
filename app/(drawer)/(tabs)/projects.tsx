@@ -67,22 +67,18 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      style={styles.statCard}
+      style={[styles.statCard, { backgroundColor }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.cardContent}>
-        {/* Left: Colored circle with white icon */}
-        <View style={[styles.iconCircle, { backgroundColor }]}>
-          <Ionicons name={icon} size={32} color="#FFFFFF" />
-        </View>
+      {/* Top: Minimalist icon */}
+      <Ionicons name={icon} size={48} color="#1A1A1A" />
 
-        {/* Right: Data section */}
-        <View style={styles.dataSection}>
-          <Text style={styles.statValue}>{value}</Text>
-          <Text style={styles.statTitle}>{title}</Text>
-        </View>
-      </View>
+      {/* Middle: Large bold number */}
+      <Text style={styles.statValue}>{value}</Text>
+
+      {/* Bottom: Clear label */}
+      <Text style={styles.statTitle}>{title}</Text>
     </TouchableOpacity>
   );
 };
@@ -112,29 +108,29 @@ export default function ProjectsDashboardScreen() {
             <StatCard
               title="Construction Work"
               value="24"
-              icon="construct"
-              backgroundColor="#66BB6A"
+              icon="construct-outline"
+              backgroundColor="#D8F3DC"
               onPress={() => navigateToProjectList('Construction Work')}
             />
             <StatCard
               title="Maintenance Work"
               value="18"
-              icon="build"
-              backgroundColor="#FF7043"
+              icon="build-outline"
+              backgroundColor="#FFE5D4"
               onPress={() => navigateToProjectList('Maintenance Work')}
             />
             <StatCard
               title="Other Works"
               value="12"
-              icon="cube"
-              backgroundColor="#AB47BC"
+              icon="cube-outline"
+              backgroundColor="#E8D7F1"
               onPress={() => navigateToProjectList('Other Works')}
             />
             <StatCard
               title="Total Projects"
               value="54"
-              icon="apps"
-              backgroundColor="#42A5F5"
+              icon="apps-outline"
+              backgroundColor="#D4E9F7"
               onPress={() => navigateToProjectList('All Projects')}
             />
           </View>
@@ -164,29 +160,29 @@ export default function ProjectsDashboardScreen() {
             <StatCard
               title="Delayed Projects"
               value="8"
-              icon="time"
-              backgroundColor="#EF5350"
+              icon="time-outline"
+              backgroundColor="#FFE4E9"
               onPress={() => navigateToProjectList('Delayed Projects')}
             />
             <StatCard
               title="Critical Issues"
               value="5"
-              icon="alert-circle"
-              backgroundColor="#FF9800"
+              icon="alert-circle-outline"
+              backgroundColor="#FFF4D6"
               onPress={() => navigateToProjectList('Projects with Critical Issues')}
             />
             <StatCard
               title="Inspections Overdue"
               value="12"
-              icon="calendar"
-              backgroundColor="#FDD835"
+              icon="calendar-outline"
+              backgroundColor="#FFEBCC"
               onPress={() => navigateToProjectList('Inspections Overdue')}
             />
             <StatCard
               title="Inspected Today"
               value="7"
-              icon="checkmark-circle"
-              backgroundColor="#26A69A"
+              icon="checkmark-circle-outline"
+              backgroundColor="#D3F5F7"
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
@@ -268,43 +264,25 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: cardWidth,
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  dataSection: {
-    flex: 1,
-    justifyContent: 'center',
+    minHeight: 160,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 2,
+    marginTop: 12,
+    marginBottom: 8,
   },
   statTitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    lineHeight: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
   },
   bottomSpacer: {
     height: 24,
