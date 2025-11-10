@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -22,11 +22,22 @@ const COLORS = {
 };
 
 export default function SearchProjectScreen() {
+  const params = useLocalSearchParams();
+
   const [selectedProjectType, setSelectedProjectType] = useState<string>('');
   const [selectedDivision, setSelectedDivision] = useState<string>('');
   const [selectedSubDivision, setSelectedSubDivision] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<string>('');
+
+  // Update state when returning from selection screen
+  useEffect(() => {
+    if (params.projectType) setSelectedProjectType(params.projectType as string);
+    if (params.division) setSelectedDivision(params.division as string);
+    if (params.subDivision) setSelectedSubDivision(params.subDivision as string);
+    if (params.department) setSelectedDepartment(params.department as string);
+    if (params.zone) setSelectedZone(params.zone as string);
+  }, [params]);
 
   const goBack = () => {
     router.back();
@@ -89,11 +100,10 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-category',
+                  pathname: '/(drawer)/select-project-filter',
                   params: {
-                    returnScreen: '/(drawer)/advanced-project-search',
-                    fieldName: 'projectType',
-                    title: 'Select Project Type',
+                    filterType: 'projectType',
+                    currentValue: selectedProjectType,
                   },
                 });
               }}
@@ -113,11 +123,10 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-category',
+                  pathname: '/(drawer)/select-project-filter',
                   params: {
-                    returnScreen: '/(drawer)/advanced-project-search',
-                    fieldName: 'division',
-                    title: 'Select Division',
+                    filterType: 'division',
+                    currentValue: selectedDivision,
                   },
                 });
               }}
@@ -137,11 +146,10 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-category',
+                  pathname: '/(drawer)/select-project-filter',
                   params: {
-                    returnScreen: '/(drawer)/advanced-project-search',
-                    fieldName: 'subDivision',
-                    title: 'Select Sub-Division',
+                    filterType: 'subDivision',
+                    currentValue: selectedSubDivision,
                   },
                 });
               }}
@@ -161,9 +169,10 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-department',
+                  pathname: '/(drawer)/select-project-filter',
                   params: {
-                    returnScreen: '/(drawer)/advanced-project-search',
+                    filterType: 'department',
+                    currentValue: selectedDepartment,
                   },
                 });
               }}
@@ -183,9 +192,10 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-zone',
+                  pathname: '/(drawer)/select-project-filter',
                   params: {
-                    returnScreen: '/(drawer)/advanced-project-search',
+                    filterType: 'zone',
+                    currentValue: selectedZone,
                   },
                 });
               }}
