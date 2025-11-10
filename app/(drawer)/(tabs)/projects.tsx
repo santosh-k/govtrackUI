@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import Svg, { Circle } from 'react-native-svg';
 import Header from '@/components/Header';
 
 const COLORS = {
@@ -41,20 +43,69 @@ interface StatCardProps {
   onPress: () => void;
 }
 
-interface ProgressBarProps {
+interface DonutChartProps {
+  percentage: number;
+  color: string;
   label: string;
-  progress: number;
-  details: string;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ label, progress, details }) => {
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+const DonutChart: React.FC<DonutChartProps> = ({ percentage, color, label }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const size = 120;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    Animated.timing(animatedValue, {
+      toValue: percentage,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  }, [percentage, animatedValue]);
+
+  const strokeDashoffset = animatedValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
+
   return (
-    <View style={styles.progressContainer}>
-      <Text style={styles.progressLabel}>{label}</Text>
-      <View style={styles.progressBarBackground}>
-        <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+    <View style={styles.donutContainer}>
+      <View style={styles.donutChartWrapper}>
+        <Svg width={size} height={size}>
+          {/* Background circle */}
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#E8E8E8"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          {/* Animated progress circle */}
+          <AnimatedCircle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
+        {/* Center percentage text */}
+        <View style={styles.donutCenterText}>
+          <Text style={styles.donutPercentage}>{percentage}%</Text>
+        </View>
       </View>
-      <Text style={styles.progressDetails}>{details}</Text>
+      {/* Label below chart */}
+      <Text style={styles.donutLabel}>{label}</Text>
     </View>
   );
 };
@@ -145,17 +196,18 @@ export default function ProjectsDashboardScreen() {
         {/* Section 2: Financial Summary */}
         <View style={styles.section}>
           <View style={styles.financialCard}>
-            <ProgressBar
-              label="Budget vs. Expenditure"
-              progress={79}
-              details="Budget ₹12.4 Cr | Spent ₹9.8 Cr (79% Utilized)"
-            />
-            <View style={styles.divider} />
-            <ProgressBar
-              label="Average Project Progress"
-              progress={72}
-              details="72% Average Completion"
-            />
+            <View style={styles.donutChartsContainer}>
+              <DonutChart
+                percentage={79}
+                color="#4CAF50"
+                label="Spent of ₹12.4 Cr Budget"
+              />
+              <DonutChart
+                percentage={72}
+                color="#2196F3"
+                label="Average Project Progress"
+              />
+            </View>
           </View>
         </View>
 
@@ -229,43 +281,47 @@ const styles = StyleSheet.create({
   financialCard: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
-    padding: 20,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  progressContainer: {
-    marginVertical: 8,
+  donutChartsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
-  progressLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+  donutContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  donutChartWrapper: {
+    position: 'relative',
     marginBottom: 12,
   },
-  progressBarBackground: {
-    height: 12,
-    backgroundColor: COLORS.progressBackground,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 8,
+  donutCenterText: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: COLORS.progressFill,
-    borderRadius: 6,
+  donutPercentage: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  progressDetails: {
-    fontSize: 14,
+  donutLabel: {
+    fontSize: 13,
+    fontWeight: '500',
     color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 16,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    lineHeight: 18,
   },
   gridContainer: {
     flexDirection: 'row',
