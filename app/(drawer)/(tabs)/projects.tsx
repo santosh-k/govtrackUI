@@ -154,6 +154,18 @@ export default function ProjectsDashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Search Entry Point */}
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => router.push('/(drawer)/advanced-project-search')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+          <Text style={styles.searchPlaceholder}>
+            Search by Project Name, ID, or Contractor...
+          </Text>
+        </TouchableOpacity>
+
         {/* Section 1: Project Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Categories</Text>
@@ -322,6 +334,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
     lineHeight: 18,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchPlaceholder: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    marginLeft: 12,
+    flex: 1,
   },
   gridContainer: {
     flexDirection: 'row',
