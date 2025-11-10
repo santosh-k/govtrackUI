@@ -1,3 +1,7 @@
+/**
+ * Complaint Dashboard - White Card Design v2.0
+ * Clean, professional layout with horizontal card structure
+ */
 import React, { useState } from 'react';
 import {
   View,
@@ -22,14 +26,25 @@ const COLORS = {
   primary: '#FF9800',
   border: '#E8E8E8',
 
-  // Status accent colors
-  orange: '#FF9800',
-  blue: '#2196F3',
-  green: '#4CAF50',
-  purple: '#9C27B0',
-  teal: '#00ACC1',
-  grey: '#757575',
-  red: '#F44336',
+  // Soft pastel colors for icon circle backgrounds
+  pastelBlue: '#E3F2FD',
+  pastelPink: '#FCE4EC',
+  pastelPurple: '#F3E5F5',
+  pastelGreen: '#E8F5E9',
+  pastelYellow: '#FFF9E6',
+  pastelPeach: '#FFE8DC',
+  pastelLavender: '#EDE7F6',
+  pastelMint: '#E0F7FA',
+
+  // Vibrant colors for icons (white icons on these backgrounds)
+  iconBlue: '#42A5F5',
+  iconPink: '#EC407A',
+  iconPurple: '#AB47BC',
+  iconGreen: '#66BB6A',
+  iconOrange: '#FFA726',
+  iconTeal: '#26C6DA',
+  iconGrey: '#78909C',
+  iconPeach: '#FF7043',
 };
 
 type QuickFilter = 'today' | 'week' | 'month' | 'custom';
@@ -38,28 +53,25 @@ interface StatCardProps {
   title: string;
   value: number;
   icon: keyof typeof Ionicons.glyphMap;
-  accentColor: string;
+  iconBackgroundColor: string;
   filterType: string;
   onPress: () => void;
 }
 
-function StatCard({ title, value, icon, accentColor, onPress }: StatCardProps) {
+function StatCard({ title, value, icon, iconBackgroundColor, onPress }: StatCardProps) {
   return (
     <TouchableOpacity
       style={styles.statCard}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Colored left accent bar */}
-      <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
-
       <View style={styles.cardContent}>
-        {/* Icon */}
-        <View style={[styles.iconWrapper, { backgroundColor: `${accentColor}10` }]}>
-          <Ionicons name={icon} size={32} color={accentColor} />
+        {/* Left: Colored circle with white icon */}
+        <View style={[styles.iconCircle, { backgroundColor: iconBackgroundColor }]}>
+          <Ionicons name={icon} size={28} color="#FFFFFF" />
         </View>
 
-        {/* Number and Label */}
+        {/* Right: Stats info (number on top, label below) */}
         <View style={styles.statsInfo}>
           <Text style={styles.statNumber}>{value.toLocaleString()}</Text>
           <Text style={styles.statTitle}>{title}</Text>
@@ -235,7 +247,7 @@ export default function ComplaintDashboardScreen() {
             title="Total Complaints"
             value={stats.total}
             icon="documents-outline"
-            accentColor={COLORS.orange}
+            iconBackgroundColor={COLORS.iconBlue}
             filterType="all"
             onPress={() => handleStatCardPress('all', 'All Complaints')}
           />
@@ -244,7 +256,7 @@ export default function ComplaintDashboardScreen() {
             title="Pending"
             value={stats.pending}
             icon="time-outline"
-            accentColor={COLORS.orange}
+            iconBackgroundColor={COLORS.iconPink}
             filterType="pending"
             onPress={() => handleStatCardPress('pending', 'Pending Complaints')}
           />
@@ -253,7 +265,7 @@ export default function ComplaintDashboardScreen() {
             title="In Progress"
             value={stats.inProgress}
             icon="sync-outline"
-            accentColor={COLORS.blue}
+            iconBackgroundColor={COLORS.iconPurple}
             filterType="inProgress"
             onPress={() => handleStatCardPress('inProgress', 'In Progress Complaints')}
           />
@@ -262,7 +274,7 @@ export default function ComplaintDashboardScreen() {
             title="Completed"
             value={stats.completed}
             icon="checkmark-circle-outline"
-            accentColor={COLORS.green}
+            iconBackgroundColor={COLORS.iconGreen}
             filterType="completed"
             onPress={() => handleStatCardPress('completed', 'Completed Complaints')}
           />
@@ -271,7 +283,7 @@ export default function ComplaintDashboardScreen() {
             title="Assigned by You"
             value={stats.assignedByYou}
             icon="person-add-outline"
-            accentColor={COLORS.purple}
+            iconBackgroundColor={COLORS.iconOrange}
             filterType="assignedByYou"
             onPress={() => handleStatCardPress('assignedByYou', 'Assigned by You')}
           />
@@ -280,7 +292,7 @@ export default function ComplaintDashboardScreen() {
             title="Completed by You"
             value={stats.completedByYou}
             icon="checkmark-done-outline"
-            accentColor={COLORS.teal}
+            iconBackgroundColor={COLORS.iconTeal}
             filterType="completedByYou"
             onPress={() => handleStatCardPress('completedByYou', 'Completed by You')}
           />
@@ -289,7 +301,7 @@ export default function ComplaintDashboardScreen() {
             title="Closed"
             value={stats.closed}
             icon="close-circle-outline"
-            accentColor={COLORS.grey}
+            iconBackgroundColor={COLORS.iconPeach}
             filterType="closed"
             onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
           />
@@ -347,13 +359,13 @@ const styles = StyleSheet.create({
   },
   filterPillsContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
+    paddingVertical: 8,
+    gap: 8,
   },
   filterPill: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     backgroundColor: COLORS.background,
     borderWidth: 1.5,
     borderColor: COLORS.border,
@@ -361,16 +373,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: COLORS.orange,
-    borderColor: COLORS.orange,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   customRangePill: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: 6,
+    paddingHorizontal: 12,
   },
   filterPillText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -385,64 +397,53 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   statCard: {
-    width: '47%',
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 20,
-    overflow: 'hidden',
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
-        shadowRadius: 16,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 6,
+        elevation: 2,
       },
     }),
   },
-  accentBar: {
-    width: 6,
-    height: '100%',
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-  },
   cardContent: {
-    paddingLeft: 18,
-    paddingRight: 16,
-    paddingVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 16,
   },
-  iconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   statsInfo: {
+    flex: 1,
     gap: 4,
   },
   statNumber: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '700',
     color: COLORS.text,
-    letterSpacing: -1,
-    lineHeight: 42,
+    letterSpacing: -0.5,
   },
   statTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
 });
