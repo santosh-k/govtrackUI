@@ -15,6 +15,9 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector, useDispatch } from 'react-redux';
+import ApiManager from '../src/services/ApiManager';
+import { RootState } from '../src/store';
 
 const COLORS = {
   primary: '#FF851B', // Saffron/Orange
@@ -31,16 +34,15 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const slideAnim = useRef(new Animated.Value(100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   // Toast animation effect
   useEffect(() => {
-    if (showToast && error) {
+    if (showToast && localError) {
       // Slide up and fade in
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -71,21 +73,24 @@ export default function LoginScreen() {
           }),
         ]).start(() => {
           setShowToast(false);
-          setError('');
+          setLocalError('');
         });
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [showToast, error, slideAnim, opacityAnim]);
+  }, [showToast, localError, slideAnim, opacityAnim]);
 
   const showErrorToast = (message: string) => {
-    setError(message);
+    setLocalError(message);
     setShowToast(true);
     // Reset animation values
     slideAnim.setValue(100);
     opacityAnim.setValue(0);
   };
+
+  const dispatch = useDispatch();
+  const { isLoading, error } = useSelector((state: RootState) => state.auth);
 
   const handleLogin = async () => {
     // Basic validation
@@ -94,22 +99,21 @@ export default function LoginScreen() {
       return;
     }
 
-    // Show loading state
-    setIsLoading(true);
+    try {
+      const apiManager = ApiManager.getInstance();
+      const response = await apiManager.login({
+        username: username.trim(),
+        password: password.trim()
+      });
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock authentication check
-      if (username === 'testuser' && password === 'password') {
-        // Success - navigate to dashboard
-        setIsLoading(false);
+      if (response.success) {
+        console.log(response)
         router.replace('/(drawer)/(tabs)/dashboard');
-      } else {
-        // Failure - show error
-        setIsLoading(false);
-        showErrorToast('Invalid Username or password.');
       }
-    }, 1500);
+    } catch (error) {
+      showErrorToast(error instanceof Error ? error.message : 'An error occurred during login.');
+    }
+    // Navigation now happens based on real API response (see above). Removed mock redirect.
   };
 
   return (
@@ -227,7 +231,7 @@ export default function LoginScreen() {
       </TouchableWithoutFeedback>
 
       {/* Toast Notification */}
-      {showToast && error && (
+      {showToast && localError && (
         <Animated.View
           style={[
             styles.toastContainer,
@@ -239,7 +243,7 @@ export default function LoginScreen() {
         >
           <View style={styles.toastContent}>
             <Ionicons name="alert-circle" size={20} color={COLORS.white} />
-            <Text style={styles.toastText}>{error}</Text>
+            <Text style={styles.toastText}>{localError}</Text>
           </View>
         </Animated.View>
       )}

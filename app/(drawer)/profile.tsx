@@ -8,7 +8,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 import ProfileHeader from '@/components/ProfileHeader';
+import { RootState } from '../../src/store';
 
 const COLORS = {
   primary: '#FF851B', // Saffron/Orange
@@ -41,12 +43,14 @@ function ProfileItem({ label, value, icon, reducedMargin }: ProfileItemProps) {
 }
 
 export default function ProfileScreen() {
+  const user = useSelector((state: RootState) => state.auth.user);
+  
   const userData = {
-    fullName: 'Er Sabir Ali',
-    email: 'sabir.ali@pwd.gov.in',
-    designation: 'Assistant Engineer',
-    department: 'Public Works Department',
-    address: '123, PWD Staff Quarters, New Delhi',
+    fullName: user ? `${user.firstName} ${user.lastName}` : '',
+    email: user?.email || '',
+    designation: user?.designations[0]?.displayName || '',
+    department: user?.departments[0]?.name || '',
+    address: user?.address || '',
   };
 
   return (
@@ -64,36 +68,36 @@ export default function ProfileScreen() {
           <View style={styles.profilePicture}>
             <Ionicons name="person" size={48} color={COLORS.profileBorder} />
           </View>
-          <Text style={styles.profileName}>Er Sabir Ali</Text>
-          <Text style={styles.profileDesignation}>Assistant Engineer</Text>
+            <Text style={styles.profileName}>{userData.fullName}</Text>
+            <Text style={styles.profileDesignation}>{userData.designation}</Text>
         </View>
 
         {/* Profile Information */}
         <View style={styles.profileInfoSection}>
           <ProfileItem
             label="Full Name"
-            value="Er Sabir Ali"
+              value={userData.fullName}
             icon="person-outline"
           />
           <ProfileItem
             label="Email Address"
-            value="sabir.ali@pwd.gov.in"
+              value={userData.email}
             icon="mail-outline"
           />
           <ProfileItem
             label="Designation"
-            value="Assistant Engineer"
+              value={userData.designation}
             icon="briefcase-outline"
             reducedMargin={true}
           />
           <ProfileItem
             label="Department"
-            value="Public Works Department"
+              value={userData.department}
             icon="business-outline"
           />
           <ProfileItem
             label="Residential Address"
-            value="123, PWD Staff Quarters, New Delhi"
+              value={userData.address || 'Not provided'}
             icon="location-outline"
           />
         </View>

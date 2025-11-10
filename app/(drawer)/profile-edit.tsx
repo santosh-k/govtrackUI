@@ -394,9 +394,9 @@ export default function EditProfileScreen() {
 
             {/* User Information on Right */}
             <View style={styles.userInfoContainer}>
-              <Text style={styles.userName}>Er Sabir Ali</Text>
-              <Text style={styles.userDesignation}>Assistant Engineer</Text>
-              <Text style={styles.userDepartment}>Public Works Department</Text>
+              <Text style={styles.userName}>{fullName}</Text>
+              <Text style={styles.userDesignation}>{designation}</Text>
+              <Text style={styles.userDepartment}>{department}</Text>
             </View>
           </View>
 
