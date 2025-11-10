@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,6 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -19,87 +17,41 @@ const COLORS = {
   text: '#1A1A1A',
   textSecondary: '#666666',
   border: '#E0E0E0',
-  primary: '#2196F3',
+  primary: '#FF9800', // Saffron/Orange accent
   inputBackground: '#F8F8F8',
 };
 
-interface Project {
-  id: string;
-  name: string;
-  contractor: string;
-  status: 'On Track' | 'Delayed' | 'At Risk';
-  category: 'Construction' | 'Maintenance';
-}
-
-// Mock project data
-const ALL_PROJECTS: Project[] = [
-  { id: 'PRJ-2024-001', name: 'Road Construction - NH 44', contractor: 'ABC Builders', status: 'On Track', category: 'Construction' },
-  { id: 'PRJ-2024-002', name: 'Bridge Maintenance - City Center', contractor: 'XYZ Infrastructure', status: 'On Track', category: 'Maintenance' },
-  { id: 'PRJ-2024-003', name: 'Street Lighting Upgrade', contractor: 'LightTech Solutions', status: 'Delayed', category: 'Maintenance' },
-  { id: 'PRJ-2024-004', name: 'Water Supply Pipeline', contractor: 'AquaFlow Systems', status: 'On Track', category: 'Construction' },
-  { id: 'PRJ-2024-005', name: 'School Building Renovation', contractor: 'BuildPro Contractors', status: 'At Risk', category: 'Construction' },
-  { id: 'PRJ-2024-006', name: 'Park Development - North Zone', contractor: 'Green Spaces Ltd', status: 'On Track', category: 'Construction' },
-  { id: 'PRJ-2024-007', name: 'Drainage System Repair', contractor: 'ABC Builders', status: 'Delayed', category: 'Maintenance' },
-  { id: 'PRJ-2024-008', name: 'Hospital Wing Extension', contractor: 'MedBuild Corp', status: 'On Track', category: 'Construction' },
-  { id: 'PRJ-2024-009', name: 'Traffic Signal Maintenance', contractor: 'SignalTech', status: 'On Track', category: 'Maintenance' },
-  { id: 'PRJ-2024-010', name: 'Community Hall Construction', contractor: 'BuildPro Contractors', status: 'At Risk', category: 'Construction' },
-];
-
-export default function AdvancedProjectSearchScreen() {
-  const [searchText, setSearchText] = useState('');
-  const [contractor, setContractor] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-
-  const statusOptions = ['On Track', 'Delayed', 'At Risk'];
-  const categoryOptions = ['Construction', 'Maintenance'];
-
-  // Live filtering logic
-  const filteredProjects = useMemo(() => {
-    return ALL_PROJECTS.filter((project) => {
-      // Filter by search text (Project Name or ID)
-      const matchesSearch = searchText === '' ||
-        project.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        project.id.toLowerCase().includes(searchText.toLowerCase());
-
-      // Filter by contractor
-      const matchesContractor = contractor === '' ||
-        project.contractor.toLowerCase().includes(contractor.toLowerCase());
-
-      // Filter by status
-      const matchesStatus = selectedStatus === '' || project.status === selectedStatus;
-
-      // Filter by category
-      const matchesCategory = selectedCategory === '' || project.category === selectedCategory;
-
-      return matchesSearch && matchesContractor && matchesStatus && matchesCategory;
-    });
-  }, [searchText, contractor, selectedStatus, selectedCategory]);
+export default function SearchProjectScreen() {
+  const [selectedProjectType, setSelectedProjectType] = useState<string>('');
+  const [selectedDivision, setSelectedDivision] = useState<string>('');
+  const [selectedSubDivision, setSelectedSubDivision] = useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedZone, setSelectedZone] = useState<string>('');
 
   const goBack = () => {
     router.back();
   };
 
-  const navigateToProjectDetails = (projectId: string) => {
-    router.push({
-      pathname: '/(drawer)/project-details',
-      params: { projectId },
-    });
-  };
+  const handleFindProjects = () => {
+    // Build filter string
+    const filterParts = [];
+    if (selectedProjectType) filterParts.push(selectedProjectType);
+    if (selectedDivision) filterParts.push(selectedDivision);
+    if (selectedSubDivision) filterParts.push(selectedSubDivision);
+    if (selectedDepartment) filterParts.push(selectedDepartment);
+    if (selectedZone) filterParts.push(selectedZone);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'On Track':
-        return '#4CAF50';
-      case 'Delayed':
-        return '#F44336';
-      case 'At Risk':
-        return '#FF9800';
-      default:
-        return COLORS.textSecondary;
-    }
+    const filterDisplay = filterParts.length > 0
+      ? `Search Results - ${filterParts.join(', ')}`
+      : 'Search Results';
+
+    // Navigate to project list with filters
+    router.push({
+      pathname: '/(drawer)/project-list',
+      params: {
+        filter: filterDisplay,
+      },
+    });
   };
 
   return (
@@ -115,7 +67,7 @@ export default function AdvancedProjectSearchScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Advanced Project Search</Text>
+        <Text style={styles.headerTitle}>Search Project</Text>
       </View>
 
       <ScrollView
@@ -123,225 +75,142 @@ export default function AdvancedProjectSearchScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Form Section */}
+        {/* Filter Form Section */}
         <View style={styles.formSection}>
-          {/* Project Name/ID Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Project Name/ID</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="document-text-outline" size={20} color={COLORS.textSecondary} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter project name or ID"
-                placeholderTextColor={COLORS.textSecondary}
-                value={searchText}
-                onChangeText={setSearchText}
-              />
-              {searchText !== '' && (
-                <TouchableOpacity onPress={() => setSearchText('')}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {/* Contractor Name Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contractor Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="business-outline" size={20} color={COLORS.textSecondary} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter contractor name"
-                placeholderTextColor={COLORS.textSecondary}
-                value={contractor}
-                onChangeText={setContractor}
-              />
-              {contractor !== '' && (
-                <TouchableOpacity onPress={() => setContractor('')}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {/* Status Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Status</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => setShowStatusModal(true)}
-            >
-              <Ionicons name="flag-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedStatus && styles.dropdownTextSelected]}>
-                {selectedStatus || 'Select status'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Work Category Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Work Category</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => setShowCategoryModal(true)}
-            >
-              <Ionicons name="grid-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedCategory && styles.dropdownTextSelected]}>
-                {selectedCategory || 'Select category'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Clear Filters Button */}
-          {(searchText || contractor || selectedStatus || selectedCategory) && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => {
-                setSearchText('');
-                setContractor('');
-                setSelectedStatus('');
-                setSelectedCategory('');
-              }}
-            >
-              <Ionicons name="refresh" size={18} color={COLORS.primary} />
-              <Text style={styles.clearButtonText}>Clear All Filters</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Results Section */}
-        <View style={styles.resultsSection}>
-          <Text style={styles.resultsTitle}>
-            Results ({filteredProjects.length})
+          <Text style={styles.formTitle}>Select Filters</Text>
+          <Text style={styles.formSubtitle}>
+            Choose one or more criteria to search for projects
           </Text>
 
-          {filteredProjects.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={64} color={COLORS.textSecondary} />
-              <Text style={styles.emptyStateText}>No projects found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Try adjusting your search criteria
+          {/* Project Type Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Project Type</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-category',
+                  params: {
+                    returnScreen: '/(drawer)/advanced-project-search',
+                    fieldName: 'projectType',
+                    title: 'Select Project Type',
+                  },
+                });
+              }}
+            >
+              <Ionicons name="construct-outline" size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.dropdownText, selectedProjectType && styles.dropdownTextSelected]}>
+                {selectedProjectType || 'Select project type'}
               </Text>
-            </View>
-          ) : (
-            filteredProjects.map((project) => (
-              <TouchableOpacity
-                key={project.id}
-                style={styles.projectCard}
-                onPress={() => navigateToProjectDetails(project.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.projectCardHeader}>
-                  <Text style={styles.projectName}>{project.name}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(project.status) }]}>
-                      {project.status}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.projectId}>{project.id}</Text>
-                <View style={styles.projectMeta}>
-                  <Ionicons name="business" size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.projectMetaText}>{project.contractor}</Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Division Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Division</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-category',
+                  params: {
+                    returnScreen: '/(drawer)/advanced-project-search',
+                    fieldName: 'division',
+                    title: 'Select Division',
+                  },
+                });
+              }}
+            >
+              <Ionicons name="business-outline" size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.dropdownText, selectedDivision && styles.dropdownTextSelected]}>
+                {selectedDivision || 'Select division'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Sub-Division Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Sub-Division</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-category',
+                  params: {
+                    returnScreen: '/(drawer)/advanced-project-search',
+                    fieldName: 'subDivision',
+                    title: 'Select Sub-Division',
+                  },
+                });
+              }}
+            >
+              <Ionicons name="git-branch-outline" size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.dropdownText, selectedSubDivision && styles.dropdownTextSelected]}>
+                {selectedSubDivision || 'Select sub-division'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Department Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Department</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-department',
+                  params: {
+                    returnScreen: '/(drawer)/advanced-project-search',
+                  },
+                });
+              }}
+            >
+              <Ionicons name="briefcase-outline" size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.dropdownText, selectedDepartment && styles.dropdownTextSelected]}>
+                {selectedDepartment || 'Select department'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Zone Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Zone</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-zone',
+                  params: {
+                    returnScreen: '/(drawer)/advanced-project-search',
+                  },
+                });
+              }}
+            >
+              <Ionicons name="map-outline" size={20} color={COLORS.textSecondary} />
+              <Text style={[styles.dropdownText, selectedZone && styles.dropdownTextSelected]}>
+                {selectedZone || 'Select zone'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Status Modal */}
-      <Modal
-        visible={showStatusModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowStatusModal(false)}
-      >
+      {/* Find Project Button */}
+      <View style={styles.bottomButtonContainer}>
         <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowStatusModal(false)}
+          style={styles.findButton}
+          onPress={handleFindProjects}
+          activeOpacity={0.8}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Status</Text>
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setSelectedStatus('');
-                setShowStatusModal(false);
-              }}
-            >
-              <Text style={styles.modalOptionText}>All Statuses</Text>
-              {selectedStatus === '' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-              )}
-            </TouchableOpacity>
-            {statusOptions.map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={styles.modalOption}
-                onPress={() => {
-                  setSelectedStatus(status);
-                  setShowStatusModal(false);
-                }}
-              >
-                <Text style={styles.modalOptionText}>{status}</Text>
-                {selectedStatus === status && (
-                  <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Ionicons name="search" size={20} color="#FFFFFF" />
+          <Text style={styles.findButtonText}>Find Project</Text>
         </TouchableOpacity>
-      </Modal>
-
-      {/* Category Modal */}
-      <Modal
-        visible={showCategoryModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCategoryModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCategoryModal(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Category</Text>
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setSelectedCategory('');
-                setShowCategoryModal(false);
-              }}
-            >
-              <Text style={styles.modalOptionText}>All Categories</Text>
-              {selectedCategory === '' && (
-                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-              )}
-            </TouchableOpacity>
-            {categoryOptions.map((category) => (
-              <TouchableOpacity
-                key={category}
-                style={styles.modalOption}
-                onPress={() => {
-                  setSelectedCategory(category);
-                  setShowCategoryModal(false);
-                }}
-              >
-                <Text style={styles.modalOptionText}>{category}</Text>
-                {selectedCategory === category && (
-                  <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      </View>
     </SafeAreaView>
   );
 }
@@ -376,18 +245,29 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   formSection: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
     padding: 20,
-    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  formSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   inputGroup: {
     marginBottom: 20,
@@ -398,29 +278,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 8,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.inputBackground,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  textInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: COLORS.text,
-  },
   dropdownContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.inputBackground,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -432,121 +296,41 @@ const styles = StyleSheet.create({
   },
   dropdownTextSelected: {
     color: COLORS.text,
+    fontWeight: '500',
   },
-  clearButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  clearButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginLeft: 6,
-  },
-  resultsSection: {
-    marginBottom: 24,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  projectCard: {
+  bottomButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 8,
   },
-  projectCardHeader: {
+  findButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  projectName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginRight: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  projectId: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  projectMeta: {
-    flexDirection: 'row',
+    paddingVertical: 16,
     alignItems: 'center',
-  },
-  projectMetaText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginLeft: 6,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginTop: 16,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  modalContent: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontSize: 18,
+  findButtonText: {
+    fontSize: 17,
     fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: COLORS.text,
+    color: '#FFFFFF',
+    marginLeft: 8,
   },
 });
