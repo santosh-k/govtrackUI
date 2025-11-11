@@ -6,147 +6,164 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 const COLORS = {
-  primary: '#2196F3',
-  background: '#F5F5F5',
-  cardBackground: '#FFFFFF',
+  background: '#FFFFFF',
   text: '#1A1A1A',
-  textSecondary: '#666666',
+  textSecondary: '#9E9E9E',
+  separator: '#E8E8E8',
   border: '#E0E0E0',
-  white: '#FFFFFF',
 };
 
-interface ProjectCardProps {
-  projectName: string;
-  projectId: string;
-  status: string;
-  progress: number;
-  budget: string;
+interface Project {
+  id: string;
+  name: string;
+  zone: string;
+  department: string;
+  division: string;
+  subDivision: string;
+  projectType: string;
 }
-
-const ProjectCard: React.FC<ProjectCardProps> = ({
-  projectName,
-  projectId,
-  status,
-  progress,
-  budget,
-}) => {
-  return (
-    <TouchableOpacity style={styles.projectCard} activeOpacity={0.7}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.projectName}>{projectName}</Text>
-        <Text style={styles.projectId}>{projectId}</Text>
-      </View>
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Status:</Text>
-          <Text style={styles.infoValue}>{status}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Progress:</Text>
-          <Text style={styles.infoValue}>{progress}%</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Budget:</Text>
-          <Text style={styles.infoValue}>{budget}</Text>
-        </View>
-      </View>
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
 
 export default function ProjectListScreen() {
   const params = useLocalSearchParams();
   const filter = params.filter as string || 'All Projects';
 
-  const goBack = () => {
-    router.back();
+  const navigateBack = () => {
+    // Always navigate back to Projects Dashboard
+    router.push('/(drawer)/(tabs)/projects');
   };
 
-  // Placeholder project data
-  const projects: ProjectCardProps[] = [
+  const navigateToProjectDetails = (projectId: string) => {
+    router.push({
+      pathname: '/(drawer)/project-details',
+      params: { projectId },
+    });
+  };
+
+  // Placeholder project data with PWD hierarchy
+  const projects: Project[] = [
     {
-      projectName: 'Road Construction - NH 44',
-      projectId: 'PRJ-2024-001',
-      status: 'In Progress',
-      progress: 68,
-      budget: '₹2.5 Cr',
+      id: 'PRJ-2024-001',
+      name: 'Road Construction - NH 44',
+      zone: 'North Delhi',
+      department: 'PWD Roads',
+      division: 'Division 1',
+      subDivision: 'Sub-Division A',
+      projectType: 'Construction',
     },
     {
-      projectName: 'Bridge Maintenance - City Center',
-      projectId: 'PRJ-2024-002',
-      status: 'On Track',
-      progress: 82,
-      budget: '₹1.8 Cr',
+      id: 'PRJ-2024-002',
+      name: 'Bridge Maintenance - City Center',
+      zone: 'Central Delhi',
+      department: 'PWD Bridges',
+      division: 'Division 2',
+      subDivision: 'Sub-Division B',
+      projectType: 'Maintenance',
     },
     {
-      projectName: 'Street Lighting Upgrade',
-      projectId: 'PRJ-2024-003',
-      status: 'Delayed',
-      progress: 45,
-      budget: '₹0.9 Cr',
+      id: 'PRJ-2024-003',
+      name: 'Street Lighting Upgrade',
+      zone: 'South Delhi',
+      department: 'PWD Electrical',
+      division: 'Division 3',
+      subDivision: 'Sub-Division C',
+      projectType: 'Upgrade',
     },
     {
-      projectName: 'Water Supply Pipeline',
-      projectId: 'PRJ-2024-004',
-      status: 'In Progress',
-      progress: 72,
-      budget: '₹3.2 Cr',
+      id: 'PRJ-2024-004',
+      name: 'Water Supply Pipeline Installation',
+      zone: 'East Delhi',
+      department: 'PWD Water',
+      division: 'Division 4',
+      subDivision: 'Sub-Division D',
+      projectType: 'Construction',
     },
     {
-      projectName: 'School Building Renovation',
-      projectId: 'PRJ-2024-005',
-      status: 'On Track',
-      progress: 91,
-      budget: '₹1.5 Cr',
+      id: 'PRJ-2024-005',
+      name: 'School Building Renovation',
+      zone: 'West Delhi',
+      department: 'PWD Buildings',
+      division: 'Division 5',
+      subDivision: 'Sub-Division E',
+      projectType: 'Renovation',
+    },
+    {
+      id: 'PRJ-2024-006',
+      name: 'Metro Station Connectivity Road',
+      zone: 'North Delhi',
+      department: 'PWD Roads',
+      division: 'Division 1',
+      subDivision: 'Sub-Division F',
+      projectType: 'Construction',
+    },
+    {
+      id: 'PRJ-2024-007',
+      name: 'Drainage System Repair',
+      zone: 'Central Delhi',
+      department: 'PWD Drainage',
+      division: 'Division 2',
+      subDivision: 'Sub-Division G',
+      projectType: 'Repair',
+    },
+    {
+      id: 'PRJ-2024-008',
+      name: 'Park Development Project',
+      zone: 'South Delhi',
+      department: 'PWD Horticulture',
+      division: 'Division 3',
+      subDivision: 'Sub-Division H',
+      projectType: 'Development',
     },
   ];
+
+  const renderProjectItem = ({ item }: { item: Project }) => (
+    <TouchableOpacity
+      style={styles.listItem}
+      onPress={() => navigateToProjectDetails(item.id)}
+      activeOpacity={0.6}
+    >
+      {/* Project Name - Primary Info */}
+      <Text style={styles.projectName}>{item.name}</Text>
+
+      {/* Secondary Info - Zone • Department • Division • Sub-Division • Project Type */}
+      <Text style={styles.projectDetails}>
+        {item.zone} • {item.department} • {item.division} • {item.subDivision} • {item.projectType}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderSeparator = () => <View style={styles.separator} />;
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Custom Header */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={goBack}
+          onPress={navigateBack}
           activeOpacity={0.6}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Project List</Text>
-          <Text style={styles.headerSubtitle}>Showing: {filter}</Text>
-        </View>
+        <Text style={styles.headerTitle}>{filter}</Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      {/* List */}
+      <FlatList
+        data={projects}
+        renderItem={renderProjectItem}
+        keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={renderSeparator}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.filterBadge}>
-          <Ionicons name="filter" size={16} color={COLORS.primary} />
-          <Text style={styles.filterText}>{filter}</Text>
-        </View>
-
-        {projects.map((project, index) => (
-          <ProjectCard key={index} {...project} />
-        ))}
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }
@@ -159,117 +176,47 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   backButton: {
     padding: 8,
     marginLeft: -8,
-    marginRight: 8,
-  },
-  headerTitleContainer: {
-    flex: 1,
+    marginRight: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: COLORS.text,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+  listContent: {
+    flexGrow: 1,
   },
-  filterBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginLeft: 6,
-  },
-  projectCard: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingBottom: 12,
-    marginBottom: 12,
+  listItem: {
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   projectName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 4,
-  },
-  projectId: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  cardBody: {
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 8,
+    lineHeight: 24,
   },
-  infoLabel: {
+  projectDetails: {
     fontSize: 14,
+    fontWeight: '400',
     color: COLORS.textSecondary,
+    lineHeight: 20,
   },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  progressBarContainer: {
-    marginTop: 8,
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: '#E3F2FD',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-  },
-  bottomSpacer: {
-    height: 24,
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.separator,
+    marginLeft: 20,
   },
 });
