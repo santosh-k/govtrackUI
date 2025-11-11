@@ -92,15 +92,23 @@ export default function ComplaintDashboardScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulated stats - would come from API based on selected filter
-  const stats = {
-    total: 1247,
-    pending: 342,
-    inProgress: 156,
-    completed: 689,
-    assignedByYou: 89,
-    completedByYou: 54,
-    closed: 60,
+  // Map fetched stats or use defaults
+  const stats = compStats ? {
+    total: compStats?.overview?.total_complaints ?? 0,
+    pending: compStats?.overview?.pending ?? 0,
+    inProgress: compStats?.overview?.in_progress ?? 0,
+    completed: compStats?.overview?.completed ?? 0,
+    assignedByYou: compStats?.your_activity?.assigned_by_you ?? 0,
+    completedByYou: compStats?.your_activity?.completed_by_you ?? 0,
+    closed: compStats?.overview?.closed ?? 0,
+  } : {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    assignedByYou: 0,
+    completedByYou: 0,
+    closed: 0,
   };
 
   /** ✅ Fetch stats from API **/
@@ -110,7 +118,14 @@ export default function ComplaintDashboardScreen() {
 
     try {
       const response = await ApiManager.getInstance().getStats(filter);
-      setStats(response.data);
+      console.log('API Response:', response);
+      if (response?.success && response?.data) {
+        setStats(response.data);
+        console.log('Stats set:', response.data);
+      } else {
+        console.error('Invalid response structure:', response);
+        setError('Invalid response structure');
+      }
     } catch (err) {
       console.error('Stats fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load stats');
@@ -349,6 +364,18 @@ export default function ComplaintDashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {loading && (
+          <View style={{ alignItems: 'center', marginVertical: 32 }}>
+            <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+          </View>
+        )}
+        
+        {error && (
+          <View style={{ alignItems: 'center', marginVertical: 16 }}>
+            <Text style={{ color: 'red', fontWeight: '600' }}>{error}</Text>
+          </View>
+        )}
+
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <StatCard
