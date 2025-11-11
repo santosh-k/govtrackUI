@@ -16,6 +16,7 @@ const COLORS = {
   cardBackground: '#FFFFFF',
   text: '#1A1A1A',
   textSecondary: '#666666',
+  textPlaceholder: '#BDBDBD', // Light gray for placeholders
   border: '#E0E0E0',
   primary: '#FF9800', // Saffron/Orange accent
   inputBackground: '#F8F8F8',
@@ -93,99 +94,7 @@ export default function SearchProjectScreen() {
             Choose one or more criteria to search for projects
           </Text>
 
-          {/* Project Type Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Project Type</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => {
-                router.push({
-                  pathname: '/(drawer)/select-project-filter',
-                  params: {
-                    filterType: 'projectType',
-                    currentValue: selectedProjectType,
-                  },
-                });
-              }}
-            >
-              <Ionicons name="construct-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedProjectType && styles.dropdownTextSelected]}>
-                {selectedProjectType || 'Select project type'}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Division Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Division</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => {
-                router.push({
-                  pathname: '/(drawer)/select-project-filter',
-                  params: {
-                    filterType: 'division',
-                    currentValue: selectedDivision,
-                  },
-                });
-              }}
-            >
-              <Ionicons name="business-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedDivision && styles.dropdownTextSelected]}>
-                {selectedDivision || 'Select division'}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Sub-Division Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Sub-Division</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => {
-                router.push({
-                  pathname: '/(drawer)/select-project-filter',
-                  params: {
-                    filterType: 'subDivision',
-                    currentValue: selectedSubDivision,
-                  },
-                });
-              }}
-            >
-              <Ionicons name="git-branch-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedSubDivision && styles.dropdownTextSelected]}>
-                {selectedSubDivision || 'Select sub-division'}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Department Dropdown */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Department</Text>
-            <TouchableOpacity
-              style={styles.dropdownContainer}
-              onPress={() => {
-                router.push({
-                  pathname: '/(drawer)/select-project-filter',
-                  params: {
-                    filterType: 'department',
-                    currentValue: selectedDepartment,
-                  },
-                });
-              }}
-            >
-              <Ionicons name="briefcase-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedDepartment && styles.dropdownTextSelected]}>
-                {selectedDepartment || 'Select department'}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Zone Dropdown */}
+          {/* Zone Dropdown - First in PWD hierarchy */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Zone</Text>
             <TouchableOpacity
@@ -200,11 +109,98 @@ export default function SearchProjectScreen() {
                 });
               }}
             >
-              <Ionicons name="map-outline" size={20} color={COLORS.textSecondary} />
-              <Text style={[styles.dropdownText, selectedZone && styles.dropdownTextSelected]}>
-                {selectedZone || 'Select zone'}
+              <Text style={[styles.dropdownText, !selectedZone && styles.dropdownTextPlaceholder]}>
+                {selectedZone || 'Select a Zone'}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Department Dropdown - Second in PWD hierarchy */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Department</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-project-filter',
+                  params: {
+                    filterType: 'department',
+                    currentValue: selectedDepartment,
+                  },
+                });
+              }}
+            >
+              <Text style={[styles.dropdownText, !selectedDepartment && styles.dropdownTextPlaceholder]}>
+                {selectedDepartment || 'Select a Department'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Division Dropdown - Third in PWD hierarchy */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Division</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-project-filter',
+                  params: {
+                    filterType: 'division',
+                    currentValue: selectedDivision,
+                  },
+                });
+              }}
+            >
+              <Text style={[styles.dropdownText, !selectedDivision && styles.dropdownTextPlaceholder]}>
+                {selectedDivision || 'Select a Division'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Sub-Division Dropdown - Fourth in PWD hierarchy */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Sub-Division</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-project-filter',
+                  params: {
+                    filterType: 'subDivision',
+                    currentValue: selectedSubDivision,
+                  },
+                });
+              }}
+            >
+              <Text style={[styles.dropdownText, !selectedSubDivision && styles.dropdownTextPlaceholder]}>
+                {selectedSubDivision || 'Select a Sub-Division'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Project Type Dropdown - Fifth in PWD hierarchy */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Project Type</Text>
+            <TouchableOpacity
+              style={styles.dropdownContainer}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/select-project-filter',
+                  params: {
+                    filterType: 'projectType',
+                    currentValue: selectedProjectType,
+                  },
+                });
+              }}
+            >
+              <Text style={[styles.dropdownText, !selectedProjectType && styles.dropdownTextPlaceholder]}>
+                {selectedProjectType || 'Select a Project Type'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -280,33 +276,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   dropdownContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBackground,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    borderWidth: 1,
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
+    minHeight: 52,
   },
   dropdownText: {
     flex: 1,
     fontSize: 15,
-    color: COLORS.textSecondary,
-    marginLeft: 12,
-  },
-  dropdownTextSelected: {
     color: COLORS.text,
     fontWeight: '500',
+  },
+  dropdownTextPlaceholder: {
+    color: COLORS.textPlaceholder,
+    fontWeight: '400',
   },
   bottomButtonContainer: {
     position: 'absolute',
