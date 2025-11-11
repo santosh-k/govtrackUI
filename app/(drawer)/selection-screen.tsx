@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,108 +11,67 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import selectionData from '@/data/selectionData.json';
 
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
   text: '#1A1A1A',
   textSecondary: '#666666',
+  textLight: '#9E9E9E',
   border: '#E0E0E0',
   primary: '#FF9800',
   inputBackground: '#F8F8F8',
+  selectedBackground: '#FFF3E0',
 };
 
-// Mock data for each filter type
-const FILTER_DATA: { [key: string]: string[] } = {
-  projectType: [
-    'Construction Work',
-    'Maintenance Work',
-    'Road Development',
-    'Building Construction',
-    'Infrastructure Development',
-    'Renovation Project',
-  ],
-  division: [
-    'North Division',
-    'South Division',
-    'East Division',
-    'West Division',
-    'Central Division',
-  ],
-  subDivision: [
-    'North Sub-Division A',
-    'North Sub-Division B',
-    'South Sub-Division A',
-    'South Sub-Division B',
-    'East Sub-Division A',
-    'East Sub-Division B',
-    'West Sub-Division A',
-    'West Sub-Division B',
-  ],
-  department: [
-    'Public Works Department',
-    'Water Supply Department',
-    'Electrical Department',
-    'Roads & Bridges Department',
-    'Building Department',
-    'Urban Development Department',
-  ],
-  zone: [
-    'Zone 1 - North',
-    'Zone 2 - South',
-    'Zone 3 - East',
-    'Zone 4 - West',
-    'Zone 5 - Central',
-    'Zone 6 - Suburban',
-  ],
-};
+interface SelectionItem {
+  id: string;
+  name: string;
+}
 
-const TITLES: { [key: string]: string } = {
-  projectType: 'Select Project Type',
-  division: 'Select Division',
-  subDivision: 'Select Sub-Division',
-  department: 'Select Department',
-  zone: 'Select Zone',
-};
+type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes';
 
-export default function SelectProjectFilterScreen() {
+export default function SelectionScreen() {
   const params = useLocalSearchParams();
-  const filterType = params.filterType as string;
+  const title = params.title as string;
+  const dataKey = params.dataKey as DataKey;
   const currentValue = params.currentValue as string;
+  const returnField = params.returnField as string;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredData, setFilteredData] = useState<string[]>([]);
 
-  const title = TITLES[filterType] || 'Select Option';
+  // Get data from JSON based on dataKey
+  const allData: SelectionItem[] = useMemo(() => {
+    return (selectionData[dataKey] || []) as SelectionItem[];
+  }, [dataKey]);
 
-  useEffect(() => {
-    const data = FILTER_DATA[filterType] || [];
+  // Filter data based on search query
+  const filteredData = useMemo(() => {
     if (searchQuery.trim() === '') {
-      setFilteredData(data);
-    } else {
-      const filtered = data.filter((item) =>
-        item.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredData(filtered);
+      return allData;
     }
-  }, [searchQuery, filterType]);
+    return allData.filter((item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allData, searchQuery]);
 
-  const goBack = () => {
+  const handleBack = () => {
     router.back();
   };
 
-  const handleSelectItem = (item: string) => {
-    // Navigate back with the selected value
+  const handleSelectItem = (item: SelectionItem) => {
+    // Navigate back to search screen with the selected value
     router.push({
       pathname: '/(drawer)/advanced-project-search',
       params: {
-        [filterType]: item,
+        [returnField]: item.name,
       },
     });
   };
 
-  const renderItem = ({ item }: { item: string }) => {
-    const isSelected = item === currentValue;
+  const renderItem = ({ item }: { item: SelectionItem }) => {
+    const isSelected = item.name === currentValue;
 
     return (
       <TouchableOpacity
@@ -121,7 +80,7 @@ export default function SelectProjectFilterScreen() {
         activeOpacity={0.7}
       >
         <Text style={[styles.listItemText, isSelected && styles.listItemTextSelected]}>
-          {item}
+          {item.name}
         </Text>
         {isSelected && (
           <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
@@ -130,15 +89,17 @@ export default function SelectProjectFilterScreen() {
     );
   };
 
+  const renderSeparator = () => <View style={styles.separator} />;
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={goBack}
+          onPress={handleBack}
           activeOpacity={0.6}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -153,9 +114,11 @@ export default function SelectProjectFilterScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={COLORS.textLight}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
             autoFocus
           />
           {searchQuery !== '' && (
@@ -170,12 +133,13 @@ export default function SelectProjectFilterScreen() {
       <FlatList
         data={filteredData}
         renderItem={renderItem}
-        keyExtractor={(item, index) => `${item}-${index}`}
+        keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={renderSeparator}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color={COLORS.textSecondary} />
+            <Ionicons name="search-outline" size={64} color={COLORS.textLight} />
             <Text style={styles.emptyStateText}>No results found</Text>
             <Text style={styles.emptyStateSubtext}>
               Try searching with different keywords
@@ -222,9 +186,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.inputBackground,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -232,51 +196,55 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: COLORS.text,
-    marginLeft: 8,
+    marginLeft: 10,
     paddingVertical: 0,
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    flexGrow: 1,
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   listItemSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '10',
+    backgroundColor: COLORS.selectedBackground,
   },
   listItemText: {
     fontSize: 15,
     color: COLORS.text,
     flex: 1,
+    fontWeight: '400',
   },
   listItemTextSelected: {
     fontWeight: '600',
     color: COLORS.primary,
   },
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginLeft: 20,
+  },
   emptyState: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 80,
+    paddingHorizontal: 40,
   },
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 16,
+    textAlign: 'center',
   },
   emptyStateSubtext: {
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
   },
 });

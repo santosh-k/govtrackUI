@@ -101,9 +101,11 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-project-filter',
+                  pathname: '/(drawer)/selection-screen',
                   params: {
-                    filterType: 'zone',
+                    title: 'Select a Zone',
+                    dataKey: 'zones',
+                    returnField: 'zone',
                     currentValue: selectedZone,
                   },
                 });
@@ -123,9 +125,11 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-project-filter',
+                  pathname: '/(drawer)/selection-screen',
                   params: {
-                    filterType: 'department',
+                    title: 'Select a Department',
+                    dataKey: 'departments',
+                    returnField: 'department',
                     currentValue: selectedDepartment,
                   },
                 });
@@ -145,9 +149,11 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-project-filter',
+                  pathname: '/(drawer)/selection-screen',
                   params: {
-                    filterType: 'division',
+                    title: 'Select a Division',
+                    dataKey: 'divisions',
+                    returnField: 'division',
                     currentValue: selectedDivision,
                   },
                 });
@@ -167,9 +173,11 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-project-filter',
+                  pathname: '/(drawer)/selection-screen',
                   params: {
-                    filterType: 'subDivision',
+                    title: 'Select a Sub-Division',
+                    dataKey: 'subDivisions',
+                    returnField: 'subDivision',
                     currentValue: selectedSubDivision,
                   },
                 });
@@ -189,9 +197,11 @@ export default function SearchProjectScreen() {
               style={styles.dropdownContainer}
               onPress={() => {
                 router.push({
-                  pathname: '/(drawer)/select-project-filter',
+                  pathname: '/(drawer)/selection-screen',
                   params: {
-                    filterType: 'projectType',
+                    title: 'Select a Project Type',
+                    dataKey: 'projectTypes',
+                    returnField: 'projectType',
                     currentValue: selectedProjectType,
                   },
                 });

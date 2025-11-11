@@ -1,0 +1,54 @@
+{
+  "zones": [
+    { "id": "1", "name": "Zone 1 - North Delhi" },
+    { "id": "2", "name": "Zone 2 - South Delhi" },
+    { "id": "3", "name": "Zone 3 - East Delhi" },
+    { "id": "4", "name": "Zone 4 - West Delhi" },
+    { "id": "5", "name": "Zone 5 - Central Delhi" },
+    { "id": "6", "name": "Zone 6 - Suburban Delhi" },
+    { "id": "7", "name": "Zone 7 - New Delhi" },
+    { "id": "8", "name": "Zone 8 - Outer Delhi" }
+  ],
+  "departments": [
+    { "id": "1", "name": "Public Works Department" },
+    { "id": "2", "name": "Water Supply Department" },
+    { "id": "3", "name": "Electrical Department" },
+    { "id": "4", "name": "Roads & Bridges Department" },
+    { "id": "5", "name": "Building Department" },
+    { "id": "6", "name": "Urban Development Department" },
+    { "id": "7", "name": "Horticulture Department" },
+    { "id": "8", "name": "Drainage Department" }
+  ],
+  "divisions": [
+    { "id": "1", "name": "North Division" },
+    { "id": "2", "name": "South Division" },
+    { "id": "3", "name": "East Division" },
+    { "id": "4", "name": "West Division" },
+    { "id": "5", "name": "Central Division" },
+    { "id": "6", "name": "Special Projects Division" },
+    { "id": "7", "name": "Maintenance Division" },
+    { "id": "8", "name": "Construction Division" }
+  ],
+  "subDivisions": [
+    { "id": "1", "name": "North Sub-Division A" },
+    { "id": "2", "name": "North Sub-Division B" },
+    { "id": "3", "name": "South Sub-Division A" },
+    { "id": "4", "name": "South Sub-Division B" },
+    { "id": "5", "name": "East Sub-Division A" },
+    { "id": "6", "name": "East Sub-Division B" },
+    { "id": "7", "name": "West Sub-Division A" },
+    { "id": "8", "name": "West Sub-Division B" },
+    { "id": "9", "name": "Central Sub-Division A" },
+    { "id": "10", "name": "Central Sub-Division B" }
+  ],
+  "projectTypes": [
+    { "id": "1", "name": "Construction Work" },
+    { "id": "2", "name": "Maintenance Work" },
+    { "id": "3", "name": "Road Development" },
+    { "id": "4", "name": "Building Construction" },
+    { "id": "5", "name": "Infrastructure Development" },
+    { "id": "6", "name": "Renovation Project" },
+    { "id": "7", "name": "Repair Work" },
+    { "id": "8", "name": "Upgrade Project" }
+  ]
+}
