@@ -1,6 +1,6 @@
 import { LoginRequest, LoginResponse } from '../types/auth.types';
 import { store } from '../store';
-import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
+import { loginStart, loginSuccess, loginFailure, refreshTokenStart, refreshTokenSuccess, refreshTokenFailure } from '../store/authSlice';
 
 class ApiManager {
   private static instance: ApiManager;
@@ -67,6 +67,52 @@ class ApiManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       store.dispatch(loginFailure(errorMessage));
+      throw error;
+    }
+  }
+
+  public async refreshToken(): Promise<{ token: string; expiresIn: number }> {
+    store.dispatch(refreshTokenStart());
+
+    try {
+      const state = store.getState();
+      const currentRefreshToken = state.auth.refreshToken;
+
+      if (!currentRefreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refreshToken: currentRefreshToken,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Token refresh failed');
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        store.dispatch(refreshTokenSuccess({
+          token: data.data.token,
+          expiresIn: data.data.expiresIn,
+        }));
+
+        return data.data;
+      } else {
+        store.dispatch(refreshTokenFailure('Token refresh failed'));
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      store.dispatch(refreshTokenFailure(errorMessage));
       throw error;
     }
   }

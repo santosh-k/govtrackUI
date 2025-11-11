@@ -45,8 +45,21 @@ const authSlice = createSlice({
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
+    refreshTokenStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    refreshTokenSuccess: (state, action: PayloadAction<{ token: string; expiresIn: number }>) => {
+      state.isLoading = false;
+      state.token = action.payload.token;
+      state.error = null;
+    },
+    refreshTokenFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout, updateUser } = authSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, logout, updateUser, refreshTokenStart, refreshTokenSuccess, refreshTokenFailure } = authSlice.actions;
 export default authSlice.reducer;

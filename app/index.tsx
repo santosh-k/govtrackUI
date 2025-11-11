@@ -95,7 +95,7 @@ export default function LoginScreen() {
         await login(token, refreshToken, user);
         // Navigation automatically handled in _layout.tsx via AuthHandler
       } else {
-        throw new Error(response.message || 'Login failed');
+        throw new Error('Login failed');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred during login.';
