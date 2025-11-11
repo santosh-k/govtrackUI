@@ -57,6 +57,13 @@ export default function SearchProjectScreen() {
       ? `Search Results - ${filterParts.join(', ')}`
       : 'Search Results';
 
+    // Reset all form fields
+    setSelectedProjectType('');
+    setSelectedDivision('');
+    setSelectedSubDivision('');
+    setSelectedDepartment('');
+    setSelectedZone('');
+
     // Navigate to project list with filters
     router.push({
       pathname: '/(drawer)/project-list',
