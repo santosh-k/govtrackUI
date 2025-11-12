@@ -988,7 +988,12 @@ export default function ProjectDetailsScreen() {
       </View>
 
       {/* Tab Navigator */}
-      <View style={styles.tabBar}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabBarContainer}
+        contentContainerStyle={styles.tabBarContent}
+      >
         {(['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'] as TabName[]).map((tab) => (
           <TouchableOpacity
             key={tab}
@@ -1001,7 +1006,7 @@ export default function ProjectDetailsScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* Tab Content */}
       {activeTab === 'Overview' && renderOverviewTab()}
@@ -1463,18 +1468,24 @@ const styles = StyleSheet.create({
   headerChevronIcon: {
     marginLeft: 2,
   },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarContainer: {
     backgroundColor: COLORS.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    maxHeight: 52,
+  },
+  tabBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   tab: {
-    flex: 1,
     paddingVertical: 14,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     borderBottomColor: 'transparent',
+    marginHorizontal: 4,
   },
   activeTab: {
     borderBottomColor: COLORS.primary,
