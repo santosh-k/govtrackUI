@@ -1594,18 +1594,18 @@ const styles = StyleSheet.create({
   },
   budgetProgressBarContainer: {
     position: 'relative',
-    height: 40,
+    height: 24,
   },
   budgetProgressBarBackground: {
-    height: 40,
+    height: 24,
     backgroundColor: '#E8E8E8',
-    borderRadius: 20,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   budgetProgressBarFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 20,
+    borderRadius: 12,
   },
   budgetPercentageOverlay: {
     position: 'absolute',
@@ -1617,9 +1617,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   budgetPercentageText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORS.text,
+    color: 'white',
   },
   financialDivider: {
     height: 1,
