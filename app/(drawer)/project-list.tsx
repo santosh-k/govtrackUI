@@ -112,11 +112,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
       <View style={styles.financialsSection}>
         {/* Top Row */}
         <View style={styles.financialRow}>
-          <View style={styles.financialStatBlock}>
+          <View style={styles.financialStatBlockLeft}>
             <Text style={styles.financialLabel}>Total Cost</Text>
             <Text style={styles.financialValue}>{project.totalCost}</Text>
           </View>
-          <View style={styles.financialStatBlock}>
+          <View style={styles.financialStatBlockRight}>
             <Text style={styles.financialLabel}>Expenditure</Text>
             <Text style={styles.financialValue}>{project.expenditure}</Text>
           </View>
@@ -124,11 +124,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
 
         {/* Bottom Row */}
         <View style={styles.financialRow}>
-          <View style={styles.financialStatBlock}>
+          <View style={styles.financialStatBlockLeft}>
             <Text style={styles.financialLabel}>Exp. Comp. Date</Text>
             <Text style={styles.financialValue}>{project.expectedCompletionDate}</Text>
           </View>
-          <View style={styles.financialStatBlock}>
+          <View style={styles.financialStatBlockRight}>
             <Text style={styles.financialLabel}>Financial Exp.</Text>
             <Text style={styles.financialValue}>{project.financialExpenditure}</Text>
           </View>
@@ -445,8 +445,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  financialStatBlock: {
-    flex: 1,
+  financialStatBlockLeft: {
+    flex: 0.6,
+    paddingHorizontal: 4,
+  },
+  financialStatBlockRight: {
+    flex: 0.4,
     paddingHorizontal: 4,
   },
   financialLabel: {
