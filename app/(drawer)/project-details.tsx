@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
@@ -51,7 +52,7 @@ const COLORS = {
 };
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
-type TabName = 'Overview' | 'Media' | 'Inspections' | 'Bottlenecks';
+type TabName = 'Overview' | 'Media' | 'Inspections' | 'Bottlenecks' | 'Activity';
 type InspectionStatus = 'Passed' | 'Failed' | 'Pending';
 type Priority = 'High' | 'Medium' | 'Low';
 
@@ -60,6 +61,24 @@ interface MediaItem {
   type: 'image' | 'video';
   uri: string;
   thumbnail?: string;
+}
+
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+}
+
+interface StatusUpdateActivity {
+  id: string;
+  status: ProjectStatus;
+  previousStatus?: ProjectStatus;
+  remarks: string;
+  updatedBy: string;
+  designation: string;
+  timestamp: string;
+  location?: LocationData;
+  attachments: MediaItem[];
 }
 
 interface Inspection {
@@ -185,6 +204,13 @@ export default function ProjectDetailsScreen() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
+  // Status update enhancement states
+  const [capturedLocation, setCapturedLocation] = useState<LocationData | null>(null);
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+  const [statusAttachments, setStatusAttachments] = useState<MediaItem[]>([]);
+  const [activityHistory, setActivityHistory] = useState<StatusUpdateActivity[]>([]);
+  const [viewerMediaItems, setViewerMediaItems] = useState<MediaItem[]>([]);
+
   // Sample data
   const projectName = 'National Highway 44 Widening and Resurfacing Project';
   const [progress, setProgress] = useState(75);
@@ -218,6 +244,62 @@ export default function ProjectDetailsScreen() {
     { id: '3', title: 'Equipment Maintenance', reportedBy: 'Engineer', date: '01-Dec-24', priority: 'Low' },
   ];
 
+  // Initialize activity history with placeholder data
+  useEffect(() => {
+    const initialHistory: StatusUpdateActivity[] = [
+      {
+        id: '1',
+        status: 'On Track',
+        previousStatus: 'At Risk',
+        remarks: 'All critical issues have been resolved. Material delivery is now on schedule and weather conditions have improved significantly.',
+        updatedBy: 'Er Sabir Ali',
+        designation: 'Assistant Engineer',
+        timestamp: '15-Dec-24 at 2:30 PM',
+        location: {
+          latitude: 28.6139,
+          longitude: 77.2090,
+          timestamp: Date.now(),
+        },
+        attachments: [
+          { id: 'a1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Update+1' },
+          { id: 'a2', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Site+Update+2' },
+        ],
+      },
+      {
+        id: '2',
+        status: 'At Risk',
+        previousStatus: 'On Track',
+        remarks: 'Material delivery has been delayed by 3 days due to supply chain issues. Monitoring situation closely.',
+        updatedBy: 'Rajesh Kumar',
+        designation: 'Project Manager',
+        timestamp: '10-Dec-24 at 10:15 AM',
+        location: {
+          latitude: 28.6129,
+          longitude: 77.2095,
+          timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
+        },
+        attachments: [
+          { id: 'a3', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Delayed+Materials' },
+        ],
+      },
+      {
+        id: '3',
+        status: 'On Track',
+        previousStatus: undefined,
+        remarks: 'Project commenced successfully. All equipment and materials are in place. Team is fully mobilized.',
+        updatedBy: 'Priya Sharma',
+        designation: 'Senior Engineer',
+        timestamp: '01-Dec-24 at 9:00 AM',
+        attachments: [
+          { id: 'a4', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Project+Start+1' },
+          { id: 'a5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Project+Start+2' },
+          { id: 'a6', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video' },
+        ],
+      },
+    ];
+    setActivityHistory(initialHistory);
+  }, []);
+
   const goBack = () => {
     router.push('/(drawer)/project-list');
   };
@@ -225,13 +307,139 @@ export default function ProjectDetailsScreen() {
   const handleStatusPress = () => {
     setNewStatus(projectStatus);
     setStatusComment('');
+    setCapturedLocation(null);
+    setStatusAttachments([]);
     setShowStatusModal(true);
   };
 
+  const handleCaptureLocation = async () => {
+    setIsCapturingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to capture your current location.');
+        setIsCapturingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setCapturedLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        timestamp: Date.now(),
+      });
+    } catch {
+      Alert.alert('Error', 'Failed to capture location. Please try again.');
+    } finally {
+      setIsCapturingLocation(false);
+    }
+  };
+
+  const handleAddStatusAttachment = async () => {
+    Alert.alert(
+      'Add Media',
+      'Choose an option',
+      [
+        { text: 'Take Photo or Video', onPress: () => takeStatusPhoto() },
+        { text: 'Choose from Gallery', onPress: () => pickStatusFromGallery() },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const takeStatusPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Camera permission is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newAttachment: MediaItem = {
+        id: `status-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setStatusAttachments([...statusAttachments, newAttachment]);
+    }
+  };
+
+  const pickStatusFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Gallery permission is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newAttachment: MediaItem = {
+        id: `status-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setStatusAttachments([...statusAttachments, newAttachment]);
+    }
+  };
+
+  const handleRemoveStatusAttachment = (id: string) => {
+    setStatusAttachments(statusAttachments.filter(att => att.id !== id));
+  };
+
   const handleSaveStatus = () => {
+    const newActivity: StatusUpdateActivity = {
+      id: `activity-${Date.now()}`,
+      status: newStatus,
+      previousStatus: projectStatus !== newStatus ? projectStatus : undefined,
+      remarks: statusComment,
+      updatedBy: 'Current User',
+      designation: 'Engineer',
+      timestamp: new Date().toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).replace(',', ' at'),
+      location: capturedLocation || undefined,
+      attachments: statusAttachments,
+    };
+
+    setActivityHistory([newActivity, ...activityHistory]);
     setProjectStatus(newStatus);
     setShowStatusModal(false);
-    Alert.alert('Success', 'Project status updated successfully');
+
+    // Show success toast
+    setShowSuccessToast(true);
+    Animated.sequence([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(toastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowSuccessToast(false);
+    });
   };
 
   const handleUpdateProgressPress = () => {
@@ -488,6 +696,98 @@ export default function ProjectDetailsScreen() {
     </View>
   );
 
+  const handleActivityMediaPress = (attachments: MediaItem[], index: number) => {
+    setViewerMediaItems(attachments);
+    setSelectedMediaIndex(index);
+    setShowMediaViewer(true);
+  };
+
+  const renderActivityTab = () => (
+    <View style={styles.tabContent}>
+      {activityHistory.length === 0 ? (
+        <View style={styles.emptyActivityState}>
+          <Ionicons name="time-outline" size={64} color={COLORS.textLight} />
+          <Text style={styles.emptyActivityTitle}>No Activity Yet</Text>
+          <Text style={styles.emptyActivityText}>Status updates will appear here</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={activityHistory}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => {
+            const statusColors = getStatusColors(item.status);
+            const isLast = index === activityHistory.length - 1;
+
+            return (
+              <View style={styles.timelineItem}>
+                {/* Timeline Line and Node */}
+                <View style={styles.timelineLineContainer}>
+                  <View style={[styles.timelineNode, { backgroundColor: statusColors.text }]} />
+                  {!isLast && <View style={styles.timelineLine} />}
+                </View>
+
+                {/* Activity Card */}
+                <View style={styles.activityCard}>
+                  {/* Header */}
+                  <View style={styles.activityHeader}>
+                    <Text style={[styles.activityStatusText, { color: statusColors.text }]}>
+                      Status changed to {item.status}
+                    </Text>
+                  </View>
+
+                  {/* Author and Date */}
+                  <Text style={styles.activityMeta}>
+                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
+                  </Text>
+
+                  {/* Remarks */}
+                  {item.remarks && (
+                    <Text style={styles.activityRemarks}>{item.remarks}</Text>
+                  )}
+
+                  {/* Location */}
+                  {item.location && (
+                    <View style={styles.activityLocationContainer}>
+                      <Ionicons name="location" size={16} color={COLORS.primary} />
+                      <Text style={styles.activityLocationText}>
+                        {item.location.latitude.toFixed(4)}, {item.location.longitude.toFixed(4)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Attachments */}
+                  {item.attachments.length > 0 && (
+                    <View style={styles.activityAttachmentsContainer}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {item.attachments.map((attachment, idx) => (
+                          <TouchableOpacity
+                            key={attachment.id}
+                            style={styles.activityAttachmentThumb}
+                            onPress={() => handleActivityMediaPress(item.attachments, idx)}
+                            activeOpacity={0.8}
+                          >
+                            <Image source={{ uri: attachment.uri }} style={styles.activityThumbImage} />
+                            {attachment.type === 'video' && (
+                              <View style={styles.activityVideoOverlay}>
+                                <Ionicons name="play-circle" size={24} color="white" />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
+          }}
+          contentContainerStyle={styles.activityListContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
@@ -524,7 +824,7 @@ export default function ProjectDetailsScreen() {
 
       {/* Tab Navigator */}
       <View style={styles.tabBar}>
-        {(['Overview', 'Media', 'Inspections', 'Bottlenecks'] as TabName[]).map((tab) => (
+        {(['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'] as TabName[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
@@ -543,6 +843,7 @@ export default function ProjectDetailsScreen() {
       {activeTab === 'Media' && renderMediaTab()}
       {activeTab === 'Inspections' && renderInspectionsTab()}
       {activeTab === 'Bottlenecks' && renderBottlenecksTab()}
+      {activeTab === 'Activity' && renderActivityTab()}
 
       {/* Status Update Modal */}
       <Modal
@@ -552,7 +853,7 @@ export default function ProjectDetailsScreen() {
         onRequestClose={() => setShowStatusModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheet}>
+          <View style={styles.statusUpdateBottomSheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Update Project Status</Text>
               <TouchableOpacity onPress={() => setShowStatusModal(false)}>
@@ -560,41 +861,111 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>Select Status</Text>
-            <View style={styles.statusOptions}>
-              {(['On Track', 'At Risk', 'Delayed', 'Completed'] as ProjectStatus[]).map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  style={[
-                    styles.statusOption,
-                    newStatus === status && styles.selectedStatusOption,
-                    { borderColor: getStatusColors(status).text }
-                  ]}
-                  onPress={() => setNewStatus(status)}
-                >
-                  <Text style={[
-                    styles.statusOptionText,
-                    newStatus === status && { color: getStatusColors(status).text }
-                  ]}>
-                    {status}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>Select Status</Text>
+              <View style={styles.statusOptions}>
+                {(['On Track', 'At Risk', 'Delayed', 'Completed'] as ProjectStatus[]).map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={[
+                      styles.statusOption,
+                      newStatus === status && styles.selectedStatusOption,
+                      { borderColor: getStatusColors(status).text }
+                    ]}
+                    onPress={() => setNewStatus(status)}
+                  >
+                    <Text style={[
+                      styles.statusOptionText,
+                      newStatus === status && { color: getStatusColors(status).text }
+                    ]}>
+                      {status}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            <Text style={styles.inputLabel}>Comment (Optional)</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="Add a comment about the status change..."
-              placeholderTextColor={COLORS.textSecondary}
-              value={statusComment}
-              onChangeText={setStatusComment}
-              multiline
-              numberOfLines={4}
-            />
+              <Text style={styles.inputLabel}>Remarks (Optional)</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Add a comment about the status change..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={statusComment}
+                onChangeText={setStatusComment}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+
+              {/* Capture Location Button */}
+              <TouchableOpacity
+                style={[
+                  styles.locationButton,
+                  capturedLocation && styles.locationButtonSuccess
+                ]}
+                onPress={handleCaptureLocation}
+                disabled={isCapturingLocation}
+                activeOpacity={0.7}
+              >
+                {isCapturingLocation ? (
+                  <ActivityIndicator color={COLORS.primary} size="small" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={capturedLocation ? 'checkmark-circle' : 'location'}
+                      size={20}
+                      color={capturedLocation ? COLORS.success : COLORS.primary}
+                    />
+                    <Text style={[
+                      styles.locationButtonText,
+                      capturedLocation && styles.locationButtonTextSuccess
+                    ]}>
+                      {capturedLocation ? 'Location Captured' : 'Capture Current Location'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Add Attachments Section */}
+              <Text style={styles.inputLabel}>Attachments (Optional)</Text>
+              <TouchableOpacity
+                style={styles.addAttachmentButton}
+                onPress={handleAddStatusAttachment}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="camera-outline" size={24} color={COLORS.textSecondary} />
+                <Text style={styles.addAttachmentText}>Add Photo or Video</Text>
+              </TouchableOpacity>
+
+              {/* Attachment Thumbnails */}
+              {statusAttachments.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.attachmentScrollView}
+                >
+                  {statusAttachments.map((attachment) => (
+                    <View key={attachment.id} style={styles.attachmentThumbContainer}>
+                      <Image source={{ uri: attachment.uri }} style={styles.attachmentThumb} />
+                      <TouchableOpacity
+                        style={styles.removeAttachmentButton}
+                        onPress={() => handleRemoveStatusAttachment(attachment.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close-circle" size={24} color={COLORS.statusDelayed} />
+                      </TouchableOpacity>
+                      {attachment.type === 'video' && (
+                        <View style={styles.attachmentVideoIndicator}>
+                          <Ionicons name="play-circle" size={20} color="white" />
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </ScrollView>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSaveStatus}>
-              <Text style={styles.saveButtonText}>Save</Text>
+              <Text style={styles.saveButtonText}>Update</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -616,7 +987,7 @@ export default function ProjectDetailsScreen() {
           </TouchableOpacity>
 
           <FlatList
-            data={mediaItems}
+            data={viewerMediaItems.length > 0 ? viewerMediaItems : mediaItems}
             horizontal
             pagingEnabled
             initialScrollIndex={selectedMediaIndex}
@@ -1337,5 +1708,200 @@ const styles = StyleSheet.create({
     color: 'white',
     marginLeft: 12,
     flex: 1,
+  },
+  // Status Update Bottom Sheet Styles
+  statusUpdateBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    maxHeight: '90%',
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 20,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+  },
+  locationButtonSuccess: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: COLORS.success,
+  },
+  locationButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginLeft: 10,
+  },
+  locationButtonTextSuccess: {
+    color: COLORS.success,
+  },
+  addAttachmentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    paddingVertical: 40,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  addAttachmentText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginLeft: 10,
+  },
+  attachmentScrollView: {
+    marginBottom: 20,
+  },
+  attachmentThumbContainer: {
+    width: 100,
+    height: 100,
+    marginRight: 12,
+    position: 'relative',
+  },
+  attachmentThumb: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  removeAttachmentButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+  },
+  attachmentVideoIndicator: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+  },
+  // Activity Tab Styles
+  emptyActivityState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyActivityTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyActivityText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  activityListContent: {
+    padding: 16,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 24,
+  },
+  timelineLineContainer: {
+    width: 40,
+    alignItems: 'center',
+  },
+  timelineNode: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: COLORS.border,
+    marginTop: 8,
+  },
+  activityCard: {
+    flex: 1,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    marginLeft: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  activityHeader: {
+    marginBottom: 8,
+  },
+  activityStatusText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  activityMeta: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  activityAuthor: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  activityRemarks: {
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  activityLocationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  activityLocationText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  activityAttachmentsContainer: {
+    marginTop: 12,
+  },
+  activityAttachmentThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+    position: 'relative',
+  },
+  activityThumbImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  activityVideoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
   },
 });
