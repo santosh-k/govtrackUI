@@ -146,6 +146,11 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
 
   const currentMedia = media[currentIndex];
 
+  // Guard against undefined media
+  if (!visible || !currentMedia) {
+    return null;
+  }
+
   return (
     <Modal
       visible={visible}
