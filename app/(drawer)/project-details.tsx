@@ -1759,6 +1759,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   inspectionButton: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
@@ -1772,6 +1773,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bottleneckButton: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#424242',
