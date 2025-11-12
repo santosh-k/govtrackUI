@@ -1219,9 +1219,9 @@ export default function ProjectDetailsScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.progressScrollContent}>
-              {/* 1. Progress Slider Section */}
+              {/* 1. Refined Progress Slider Section */}
               <View style={styles.progressSliderSection}>
-                <Text style={styles.largePercentageText}>{newProgress}%</Text>
+                <Text style={styles.compactPercentageText}>{newProgress}%</Text>
 
                 <View style={styles.sliderContainer}>
                   <Slider
@@ -1243,17 +1243,15 @@ export default function ProjectDetailsScreen() {
                 </View>
               </View>
 
-              {/* 2. New Attachments Section */}
-              <View style={styles.attachmentsRow}>
-                <Text style={styles.attachmentsLabel}>Attachments</Text>
-                <TouchableOpacity
-                  style={styles.addButtonCircle}
-                  onPress={handleAddProgressAttachment}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="add" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
-              </View>
+              {/* 2. New Attachment Tile */}
+              <TouchableOpacity
+                style={styles.attachmentTile}
+                onPress={handleAddProgressAttachment}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="attach-outline" size={20} color={COLORS.textSecondary} />
+                <Text style={styles.attachmentTileText}>Add Photo, Video, or File</Text>
+              </TouchableOpacity>
 
               {/* 3. Thumbnail Gallery (Dynamic - Only shows when files are attached) */}
               {progressAttachments.length > 0 && (
@@ -1805,13 +1803,14 @@ const styles = StyleSheet.create({
   },
   progressSliderSection: {
     alignItems: 'center',
-    marginVertical: 24,
+    marginTop: 12,
+    marginBottom: 20,
   },
-  largePercentageText: {
-    fontSize: 64,
+  compactPercentageText: {
+    fontSize: 42,
     fontWeight: '700',
     color: COLORS.saffron,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   sliderContainer: {
     width: '100%',
@@ -1831,37 +1830,23 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
-  // New Attachments Row Styles
-  attachmentsRow: {
+  // New Attachment Tile Styles
+  attachmentTile: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8F8F8',
     paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.background,
+    paddingHorizontal: 20,
     borderRadius: 12,
-    marginTop: 24,
+    marginTop: 4,
     marginBottom: 8,
   },
-  attachmentsLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  addButtonCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+  attachmentTileText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginLeft: 10,
   },
   // Thumbnail Gallery Styles
   thumbnailGallery: {
