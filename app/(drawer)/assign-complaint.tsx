@@ -531,11 +531,6 @@ export default function AssignComplaintScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Section 1: Assign to a Group */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Assign to a Group</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select organizational hierarchy (cascading selection)
-          </Text>
-
           <DropdownField
             label="Division"
             value={division?.name}
@@ -566,17 +561,6 @@ export default function AssignComplaintScreen() {
             onPress={handleDesignationSelect}
             disabled={!department}
           />
-        </View>
-
-        {/* OR Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Section 2: Assign to a Specific User */}
-        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Assign to a Specific User</Text>
           <Text style={styles.sectionSubtitle}>
             Search and select any user directly
@@ -589,6 +573,10 @@ export default function AssignComplaintScreen() {
             onPress={handleUserSelect}
           />
         </View>
+
+        
+
+        
 
         {/* Comment Card */}
         <View style={styles.card}>
@@ -603,11 +591,7 @@ export default function AssignComplaintScreen() {
             value={comment}
             onChangeText={setComment}
           />
-        </View>
-
-        {/* Attachments Card */}
-        <View style={styles.card}>
-          <Text style={styles.commentLabel}>Add Attachments (Optional)</Text>
+           <Text style={styles.commentLabel}>Add Attachments (Optional)</Text>
           <TouchableOpacity
             style={styles.attachButton}
             onPress={showAttachmentOptions}
@@ -659,7 +643,6 @@ export default function AssignComplaintScreen() {
             </ScrollView>
           )}
         </View>
-
         {/* Spacer for button */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -833,6 +816,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 10,
+    marginTop: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
