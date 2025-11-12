@@ -13,12 +13,21 @@ import {
   Image,
   Linking,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+import { useDispatch, useSelector } from 'react-redux';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import Toast from '@/components/Toast';
+import {
+  fetchComplaintDetails,
+  selectComplaintDetails,
+  selectComplaintDetailsLoading,
+  selectComplaintDetailsError,
+} from '@/src/store/complaintDetailsSlice';
+import { AppDispatch } from '@/src/store/index';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -69,7 +78,7 @@ interface ComplaintDetails {
 }
 
 // Sample complaint data based on the screenshot
-const MOCK_COMPLAINT: ComplaintDetails = {
+/*const MOCK_COMPLAINT: ComplaintDetails = {
   id: 'PWD202511070002',
   subject: 'Complaint from neil sparx',
   status: 'SUBMITTED',
@@ -101,7 +110,7 @@ const MOCK_COMPLAINT: ComplaintDetails = {
       thumbnail: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80',
     },
   ],
-};
+}; */
 
 interface GridItemProps {
   label: string;
@@ -210,24 +219,30 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
 export default function ComplaintDetailsScreen() {
   // In a real app, fetch complaint details based on ID using useLocalSearchParams()
   const params = useLocalSearchParams();
-  const [complaintData, setComplaintData] = useState(MOCK_COMPLAINT);
+  const dispatch = useDispatch<AppDispatch>();
 
+  // Redux selectors
+  const complaintData = useSelector(selectComplaintDetails);
+  const loading = useSelector(selectComplaintDetailsLoading);
+  const error = useSelector(selectComplaintDetailsError);
+
+  // Local state
   const [mediaViewerVisible, setMediaViewerVisible] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Fetch complaint details on mount
+  useEffect(() => {
+    if (params.id) {
+      dispatch(fetchComplaintDetails(params.id as string));
+    }
+  }, [params.id, dispatch]);
+
   // Handle assignment return
   useEffect(() => {
     if (params.assignedUser && params.showAssignmentToast === 'true') {
-      // Update complaint data with assigned user
-      setComplaintData((prev) => ({
-        ...prev,
-        assignedTo: params.assignedUser as string,
-        assignedToDesignation: params.assignedDesignation as string,
-      }));
-
       // Show success toast
       setToastMessage('Complaint assigned successfully!');
       setToastVisible(true);
@@ -255,6 +270,7 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleLocationPress = async () => {
+    if (!complaintData) return;
     const address = encodeURIComponent(complaintData.location);
     const url = Platform.select({
       ios: `maps:0,0?q=${address}`,
@@ -280,6 +296,7 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleNavigateToLocation = async () => {
+    if (!complaintData) return;
     const address = encodeURIComponent(complaintData.location);
     const url = Platform.select({
       ios: `maps://?daddr=${address}&dirflg=d`,
@@ -310,10 +327,11 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleAssignTask = () => {
+    if (!complaintData) return;
     router.push({
       pathname: '/assign-complaint',
       params: {
-        complaintId: complaintData.id,
+        complaintId: complaintData.complaintNumber,
       },
     });
   };
@@ -323,12 +341,6 @@ export default function ComplaintDetailsScreen() {
   };
 
   const handleUpdateSubmit = (status: string, description: string, attachments: any[]) => {
-    // Update complaint data with new status
-    setComplaintData((prev) => ({
-      ...prev,
-      status: status.toUpperCase(),
-    }));
-
     // Close bottom sheet
     setUpdateSheetVisible(false);
 
@@ -341,98 +353,122 @@ export default function ComplaintDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Left: Back Arrow + Complaint ID */}
-        <View style={styles.headerLeftSection}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.6}
-          >
-            <Ionicons name="arrow-back" size={28} color={COLORS.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerComplaintId} numberOfLines={1}>
-            {complaintData.id}
-          </Text>
+      {/* Loading State */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading complaint details...</Text>
         </View>
+      )}
 
-        {/* Center: Empty */}
-        <View style={styles.headerCenter} />
-
-        {/* Right: Status Badge */}
-        <View
-          style={[
-            styles.headerStatusBadge,
-            { backgroundColor: getStatusColor(complaintData.status) },
-          ]}
-        >
-          <Text style={styles.headerStatusText}>{complaintData.status}</Text>
-        </View>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Card 1: Complaint Details (Primary Card - Comprehensive Summary) */}
-        <View style={[styles.card, styles.primaryCard]}>
-          {/* Subject - Main Title */}
-          <Text style={styles.subjectTitle}>{complaintData.subject}</Text>
-
-          {/* Location with Map Pin Icon */}
+      {/* Error State */}
+      {error && !loading && (
+        <View style={styles.errorOverlay}>
+          <Ionicons name="alert-circle-outline" size={48} color="#D32F2F" />
+          <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-            style={styles.locationContainer}
-            onPress={handleLocationPress}
-            activeOpacity={0.7}
+            style={styles.retryButton}
+            onPress={() => {
+              if (params.id) {
+                dispatch(fetchComplaintDetails(params.id as string));
+              }
+            }}
           >
-            <Ionicons name="location" size={20} color={COLORS.linkBlue} />
-            <Text style={styles.locationLink}>{complaintData.location}</Text>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
+        </View>
+      )}
 
-          {/* Key Details Grid */}
-          <View style={styles.detailsGrid}>
-            {/* Two-Column Row: Complaint Type and Poll Number */}
-            <View style={styles.gridRow}>
-              <GridItem label="Complaint Type" value={complaintData.complaintType} />
-              <GridItem label="Poll Number" value={complaintData.pollNumber} />
+      {/* Content - Only show when data is available */}
+      {!loading && !error && complaintData && (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            {/* Left: Back Arrow + Complaint ID */}
+            <View style={styles.headerLeftSection}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.replace('/(drawer)/complaints-list')}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="arrow-back" size={28} color={COLORS.text} />
+              </TouchableOpacity>
+              <Text style={styles.headerComplaintId} numberOfLines={1}>
+                {complaintData.complaintNumber}
+              </Text>
             </View>
 
-            {/* Full-Width Row: Category */}
-            <View style={styles.fullWidthRow}>
-              <Text style={styles.gridLabel}>Category</Text>
-              <Text style={styles.gridValue}>{complaintData.category}</Text>
+            {/* Center: Empty */}
+            <View style={styles.headerCenter} />
+
+            {/* Right: Status Badge */}
+            <View
+              style={[
+                styles.headerStatusBadge,
+                { backgroundColor: getStatusColor(complaintData.status) },
+              ]}
+            >
+              <Text style={styles.headerStatusText}>{complaintData.statusDisplay}</Text>
             </View>
           </View>
 
-          {/* Separator Line */}
-          <View style={styles.primaryCardDivider} />
+          {/* Scrollable Content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Card 1: Complaint Details (Primary Card - Comprehensive Summary) */}
+            <View style={[styles.card, styles.primaryCard]}>
+              {/* Subject - Main Title */}
+              <Text style={styles.subjectTitle}>{complaintData.title}</Text>
 
-          {/* Assignment Footer Section */}
-          <View style={styles.assignmentFooter}>
-            <Text style={styles.assignmentLabel}>Assigned To:</Text>
-            {complaintData.assignedTo ? (
-              <View style={styles.assignedPersonContainer}>
-                <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
-                <View style={styles.assignedPersonDetails}>
-                  <Text style={styles.assignedPersonName}>{complaintData.assignedTo}</Text>
-                  {complaintData.assignedToDesignation && (
-                    <Text style={styles.assignedPersonDesignation}>
-                      {complaintData.assignedToDesignation}
-                    </Text>
-                  )}
+              {/* Location with Map Pin Icon */}
+              <TouchableOpacity
+                style={styles.locationContainer}
+                onPress={handleLocationPress}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="location" size={20} color={COLORS.linkBlue} />
+                <Text style={styles.locationLink}>{complaintData.location}</Text>
+              </TouchableOpacity>
+
+              {/* Key Details Grid */}
+              <View style={styles.detailsGrid}>
+                {/* Two-Column Row: Complaint Type and Poll Number */}
+                <View style={styles.gridRow}>
+                  <GridItem label="Complaint Type" value={complaintData.complaintType} />
+                  <GridItem label="Poll Number" value={complaintData.pollNumber} />
+                </View>
+
+                {/* Full-Width Row: Category */}
+                <View style={styles.fullWidthRow}>
+                  <Text style={styles.gridLabel}>Category</Text>
+                  <Text style={styles.gridValue}>{complaintData.category}</Text>
                 </View>
               </View>
-            ) : (
-              <View style={styles.notAssignedFooter}>
-                <Ionicons name="person-add-outline" size={18} color={COLORS.textLight} />
-                <Text style={styles.notAssignedFooterText}>Not Yet Assigned</Text>
+
+              {/* Separator Line */}
+              <View style={styles.primaryCardDivider} />
+
+              {/* Assignment Footer Section */}
+              <View style={styles.assignmentFooter}>
+                <Text style={styles.assignmentLabel}>Assigned To:</Text>
+                {complaintData.assignedTo ? (
+                  <View style={styles.assignedPersonContainer}>
+                    <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
+                    <View style={styles.assignedPersonDetails}>
+                      <Text style={styles.assignedPersonName}>{complaintData.assignedTo}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.notAssignedFooter}>
+                    <Ionicons name="person-add-outline" size={18} color={COLORS.textLight} />
+                    <Text style={styles.notAssignedFooterText}>Not Yet Assigned</Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
-        </View>
+            </View>
 
         {/* Card 2: Interactive Map Card */}
         <TouchableOpacity
@@ -469,18 +505,18 @@ export default function ComplaintDetailsScreen() {
 
           <View style={styles.detailsGrid}>
             <View style={styles.gridRow}>
-              <GridItem label="Priority" value={complaintData.priority} />
+              <GridItem label="Priority" value={complaintData.priorityDisplay} />
               <GridItem label="Source" value={complaintData.source} />
             </View>
             <View style={styles.gridRow}>
-              <GridItem label="Created At" value={complaintData.createdAt} />
-              <GridItem label="Last Updated" value={complaintData.lastUpdated} />
+              <GridItem label="Created At" value={complaintData.createdAtFormatted} />
+              <GridItem label="Last Updated" value={complaintData.lastUpdatedFormatted} />
             </View>
           </View>
         </View>
 
         {/* Card 4: Media Attachments */}
-        {complaintData.media.length > 0 && (
+        {complaintData.images && complaintData.images.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Media Attachments</Text>
 
@@ -489,7 +525,7 @@ export default function ComplaintDetailsScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.mediaScrollContent}
             >
-              {complaintData.media.map((item, index) => (
+              {complaintData.images.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.mediaThumbnail}
@@ -497,14 +533,9 @@ export default function ComplaintDetailsScreen() {
                   activeOpacity={0.7}
                 >
                   <Image
-                    source={{ uri: item.type === 'video' ? item.thumbnail : item.uri }}
+                    source={{ uri: item.imagePath }}
                     style={styles.thumbnailImage}
                   />
-                  {item.type === 'video' && (
-                    <View style={styles.playIconContainer}>
-                      <Ionicons name="play-circle" size={40} color="#FFFFFF" />
-                    </View>
-                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -519,16 +550,22 @@ export default function ComplaintDetailsScreen() {
           <View style={styles.reportedByContainer}>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Name</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedByName}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.name}</Text>
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Contact Number</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedByContact}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.contactNumber}</Text>
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Address</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedByAddress}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.address}</Text>
             </View>
+            {complaintData.reportedBy?.email && (
+              <View style={styles.reportedByField}>
+                <Text style={styles.reportedByLabel}>Email</Text>
+                <Text style={styles.reportedByValue}>{complaintData.reportedBy.email}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -558,17 +595,22 @@ export default function ComplaintDetailsScreen() {
       </View>
 
       {/* Media Viewer Modal */}
-      <MediaViewer
-        visible={mediaViewerVisible}
-        media={complaintData.media}
-        initialIndex={selectedMediaIndex}
-        onClose={() => setMediaViewerVisible(false)}
-      />
+      {complaintData && (
+        <MediaViewer
+          visible={mediaViewerVisible}
+          media={complaintData.images.map((img) => ({
+            type: 'image' as const,
+            uri: img.imagePath,
+          }))}
+          initialIndex={selectedMediaIndex}
+          onClose={() => setMediaViewerVisible(false)}
+        />
+      )}
 
       {/* Update Activity Bottom Sheet */}
       <UpdateActivityBottomSheet
         visible={updateSheetVisible}
-        currentStatus={complaintData.status}
+        currentStatus={complaintData.statusDisplay}
         onClose={() => setUpdateSheetVisible(false)}
         onSubmit={handleUpdateSubmit}
       />
@@ -580,6 +622,8 @@ export default function ComplaintDetailsScreen() {
         type="success"
         onHide={() => setToastVisible(false)}
       />
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -1063,5 +1107,48 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
+  },
+  // Loading and Error Overlay Styles
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginTop: 12,
+  },
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+    paddingHorizontal: 32,
+    gap: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#D32F2F',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.cardBackground,
   },
 });

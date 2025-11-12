@@ -2,7 +2,7 @@
  * Complaint Dashboard - Pastel Grid Design v3.0
  * Two-column grid with vertically centered, pastel-colored cards
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import ApiManager from '@/src/services/ApiManager';
 
 const COLORS = {
   background: '#F8F9FA',
@@ -87,16 +88,63 @@ export default function ComplaintDashboardScreen() {
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Simulated stats - would come from API based on selected filter
-  const stats = {
-    total: 1247,
-    pending: 342,
-    inProgress: 156,
-    completed: 689,
-    assignedByYou: 89,
-    completedByYou: 54,
-    closed: 60,
+  const [compStats, setStats] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Map fetched stats or use defaults
+  const stats = compStats ? {
+    total: compStats?.overview?.total_complaints ?? 0,
+    pending: compStats?.overview?.pending ?? 0,
+    inProgress: compStats?.overview?.in_progress ?? 0,
+    completed: compStats?.overview?.completed ?? 0,
+    assignedByYou: compStats?.your_activity?.assigned_by_you ?? 0,
+    completedByYou: compStats?.your_activity?.completed_by_you ?? 0,
+    closed: compStats?.overview?.closed ?? 0,
+  } : {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    assignedByYou: 0,
+    completedByYou: 0,
+    closed: 0,
   };
+
+  /** ✅ Fetch stats from API **/
+  const fetchStats = async (filter: string,startDate?: string,
+  endDate?: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let response;
+      if (filter === 'custom'){
+         response = await ApiManager.getInstance().getStats(filter,startDate,endDate);
+         console.log('API Response:', response);
+      }else{
+        response = await ApiManager.getInstance().getStats(filter);
+        console.log('API Response:', response);
+      }
+      
+      if (response?.success && response?.data) {
+        setStats(response.data);
+        console.log('Stats set:', response.data);
+      } else {
+        console.error('Invalid response structure:', response);
+        setError('Invalid response structure');
+      }
+    } catch (err) {
+      console.error('Stats fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats('this_month');
+  }, []);
 
   const handleFilterChange = (filter: QuickFilter) => {
     if (filter === 'custom') {
@@ -105,6 +153,13 @@ export default function ComplaintDashboardScreen() {
     }
 
     setSelectedFilter(filter);
+    if (filter == 'month'){
+      fetchStats('this_month');
+    }else if(filter == 'week'){
+      fetchStats('this_week');
+    }else if (filter == 'today'){
+      fetchStats('today');
+    }
     // Update date range display based on filter
     const today = new Date();
     switch (filter) {
@@ -157,14 +212,25 @@ export default function ComplaintDashboardScreen() {
       }
     }
   };
-
+  const formatDateForApi = (date: Date): string => {
+     const year = date.getFullYear();
+     const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
+     const day = String(date.getDate()).padStart(2, '0');
+     return `${year}-${month}-${day}`;
+  };
   const handleApplyDateRange = () => {
     if (selectedStartDate && selectedEndDate) {
       const startStr = selectedStartDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
       const endStr = selectedEndDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      const startStrApi = formatDateForApi(selectedStartDate);
+      const endStrApi = formatDateForApi(selectedEndDate);
       setDateRange(`${startStr} - ${endStr}`);
       setSelectedFilter('custom');
       setShowCalendarModal(false);
+      console.log(startStrApi)
+      console.log(endStrApi)
+      fetchStats('custom', startStrApi, endStrApi);
+    
     }
   };
 
@@ -317,6 +383,18 @@ export default function ComplaintDashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {loading && (
+          <View style={{ alignItems: 'center', marginVertical: 32 }}>
+            <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+          </View>
+        )}
+        
+        {error && (
+          <View style={{ alignItems: 'center', marginVertical: 16 }}>
+            <Text style={{ color: 'red', fontWeight: '600' }}>{error}</Text>
+          </View>
+        )}
+
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <StatCard

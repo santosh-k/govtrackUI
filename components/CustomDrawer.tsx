@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '../src/store';
 import {
   DrawerContentScrollView,
   DrawerContentComponentProps,
@@ -40,6 +42,12 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Guest User';
+  const displayDesignation = user?.designations?.[0]?.displayName || '';
+  // Prefer division name, then zone, then department
+  const displayDivision = user?.division?.name || user?.zone?.name || user?.departments?.[0]?.name || '';
   const handleMenuItemPress = (route: string) => {
     // Close drawer first
     props.navigation.closeDrawer();
@@ -59,9 +67,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <View style={styles.profilePicture}>
             <Ionicons name="person" size={48} color={COLORS.primary} />
           </View>
-          <Text style={styles.userName}>Er Sabir Ali , Assistant Engineer</Text>
-          <Text style={styles.userDivision}>HC&ND Elect Sub Division (M 4513)</Text>
-          <Text style={styles.userDepartment}>Public Works Department</Text>
+          <Text style={styles.userName}>{displayName}{displayDesignation ? `, ${displayDesignation}` : ''}</Text>
+          {displayDivision ? <Text style={styles.userDivision}>{displayDivision}</Text> : null}
+          {user?.departments?.[0]?.name ? (
+            <Text style={styles.userDepartment}>{user.departments[0].name}</Text>
+          ) : null}
         </View>
 
         {/* Menu Items */}

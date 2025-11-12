@@ -49,7 +49,8 @@
           "photosPermission": "This app needs access to your photo library to select profile pictures.",
           "cameraPermission": "This app needs access to your camera to take profile pictures."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

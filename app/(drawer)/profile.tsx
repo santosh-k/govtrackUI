@@ -8,10 +8,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 import ProfileHeader from '@/components/ProfileHeader';
+import { RootState } from '../../src/store';
 
 const COLORS = {
-  primary: '#FF851B', // Saffron/Orange
+  primary: '#FF851B',
   background: '#FDFDFD',
   text: '#1A1A1A',
   textSecondary: '#666666',
@@ -41,12 +43,21 @@ function ProfileItem({ label, value, icon, reducedMargin }: ProfileItemProps) {
 }
 
 export default function ProfileScreen() {
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // ✅ Safe data extraction (no more crashes)
   const userData = {
-    fullName: 'Er Sabir Ali',
-    email: 'sabir.ali@pwd.gov.in',
-    designation: 'Assistant Engineer',
-    department: 'Public Works Department',
-    address: '123, PWD Staff Quarters, New Delhi',
+    fullName: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
+    email: user?.email ?? '',
+    designation:
+      Array.isArray(user?.designations) && user.designations.length > 0
+        ? user.designations[0]?.displayName ?? ''
+        : '',
+    department:
+      Array.isArray(user?.departments) && user.departments.length > 0
+        ? user.departments[0]?.name ?? ''
+        : '',
+    address: user?.address ?? '',
   };
 
   return (
@@ -64,36 +75,40 @@ export default function ProfileScreen() {
           <View style={styles.profilePicture}>
             <Ionicons name="person" size={48} color={COLORS.profileBorder} />
           </View>
-          <Text style={styles.profileName}>Er Sabir Ali</Text>
-          <Text style={styles.profileDesignation}>Assistant Engineer</Text>
+          <Text style={styles.profileName}>
+            {userData.fullName || 'No Name Available'}
+          </Text>
+          <Text style={styles.profileDesignation}>
+            {userData.designation || 'No Designation'}
+          </Text>
         </View>
 
         {/* Profile Information */}
         <View style={styles.profileInfoSection}>
           <ProfileItem
             label="Full Name"
-            value="Er Sabir Ali"
+            value={userData.fullName || 'Not provided'}
             icon="person-outline"
           />
           <ProfileItem
             label="Email Address"
-            value="sabir.ali@pwd.gov.in"
+            value={userData.email || 'Not provided'}
             icon="mail-outline"
           />
           <ProfileItem
             label="Designation"
-            value="Assistant Engineer"
+            value={userData.designation || 'Not provided'}
             icon="briefcase-outline"
-            reducedMargin={true}
+            reducedMargin
           />
           <ProfileItem
             label="Department"
-            value="Public Works Department"
+            value={userData.department || 'Not provided'}
             icon="business-outline"
           />
           <ProfileItem
             label="Residential Address"
-            value="123, PWD Staff Quarters, New Delhi"
+            value={userData.address || 'Not provided'}
             icon="location-outline"
           />
         </View>

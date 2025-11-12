@@ -16,16 +16,18 @@ import {
   ActionSheetIOS,
   Alert,
   Image,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import ApiManager from '@/src/services/ApiManager';
 
 const COLORS = {
-  primary: '#2196F3', // Blue
-  saffron: '#FF9800', // Saffron accent
-  background: '#F5F5F5', // Light gray background
-  cardBackground: '#FFFFFF', // White card
+  primary: '#2196F3',
+  saffron: '#FF9800',
+  background: '#F5F5F5',
+  cardBackground: '#FFFFFF',
   text: '#1A1A1A',
   textSecondary: '#666666',
   textLight: '#9E9E9E',
@@ -54,7 +56,7 @@ function ModernInputField({
   placeholder,
   multiline,
   error,
-  keyboardType = 'default'
+  keyboardType = 'default',
 }: ModernInputFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -66,7 +68,7 @@ function ModernInputField({
           styles.input,
           multiline && styles.inputMultiline,
           isFocused && styles.inputFocused,
-          error && styles.inputError
+          error && styles.inputError,
         ]}
         value={value}
         onChangeText={onChangeText}
@@ -91,11 +93,11 @@ function ModernInputField({
 export default function EditProfileScreen() {
   const params = useLocalSearchParams();
 
-  const [fullName, setFullName] = useState(params.fullName as string || '');
-  const [email, setEmail] = useState(params.email as string || '');
-  const [designation, setDesignation] = useState(params.designation as string || '');
-  const [department, setDepartment] = useState(params.department as string || '');
-  const [address, setAddress] = useState(params.address as string || '');
+  const [fullName, setFullName] = useState((params.fullName as string) || '');
+  const [email, setEmail] = useState((params.email as string) || '');
+  const [designation, setDesignation] = useState((params.designation as string) || '');
+  const [department, setDepartment] = useState((params.department as string) || '');
+  const [address, setAddress] = useState((params.address as string) || '');
 
   const [errors, setErrors] = useState({
     fullName: '',
@@ -105,169 +107,108 @@ export default function EditProfileScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isSuccessToast, setIsSuccessToast] = useState(false);
 
-  // Profile picture state
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [originalProfileImage] = useState<string | null>(null);
 
   const slideAnim = React.useRef(new Animated.Value(100)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const requestCameraPermission = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Camera Permission Required',
-          'Please allow camera access to take photos.',
-          [{ text: 'OK' }]
-        );
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Error requesting camera permission:', error);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Camera Permission Required', 'Please allow camera access to take photos.');
       return false;
     }
+    return true;
   };
 
   const requestGalleryPermission = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Gallery Permission Required',
-          'Please allow photo library access to choose images.',
-          [{ text: 'OK' }]
-        );
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.error('Error requesting gallery permission:', error);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Gallery Permission Required', 'Please allow photo library access.');
       return false;
     }
+    return true;
   };
 
   const openCamera = async () => {
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) return;
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error opening camera:', error);
-      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    if (!(await requestCameraPermission())) return;
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.length) {
+      setProfileImage(result.assets[0].uri);
     }
   };
 
   const openGallery = async () => {
-    const hasPermission = await requestGalleryPermission();
-    if (!hasPermission) return;
-
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error opening gallery:', error);
-      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    if (!(await requestGalleryPermission())) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.length) {
+      setProfileImage(result.assets[0].uri);
     }
   };
 
   const showImagePickerOptions = () => {
     if (Platform.OS === 'ios') {
-      // iOS Action Sheet
       ActionSheetIOS.showActionSheetWithOptions(
         {
           options: ['Cancel', 'Take Photo...', 'Choose from Gallery...'],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
-          if (buttonIndex === 1) {
-            openCamera();
-          } else if (buttonIndex === 2) {
-            openGallery();
-          }
+          if (buttonIndex === 1) openCamera();
+          if (buttonIndex === 2) openGallery();
         }
       );
     } else {
-      // Android Alert (Action Sheet style)
-      Alert.alert(
-        'Update Profile Picture',
-        'Choose an option',
-        [
-          {
-            text: 'Take Photo...',
-            onPress: openCamera,
-          },
-          {
-            text: 'Choose from Gallery...',
-            onPress: openGallery,
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ],
-        { cancelable: true }
-      );
+      Alert.alert('Update Profile Picture', 'Choose an option', [
+        { text: 'Take Photo...', onPress: openCamera },
+        { text: 'Choose from Gallery...', onPress: openGallery },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
     }
   };
 
   const validateForm = () => {
-    const newErrors = {
-      fullName: '',
-      email: '',
-    };
-
-    let isValid = true;
+    const newErrors = { fullName: '', email: '' };
+    let valid = true;
 
     if (!fullName.trim()) {
       newErrors.fullName = 'Full name is required';
-      isValid = false;
+      valid = false;
     }
-
     if (!email.trim()) {
       newErrors.email = 'Email address is required';
-      isValid = false;
+      valid = false;
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email address';
-      isValid = false;
+      newErrors.email = 'Please enter a valid email';
+      valid = false;
     }
 
     setErrors(newErrors);
-    return isValid;
+    return valid;
   };
 
-  const showSuccessToast = (message: string) => {
+  const showToastMessage = (message: string, success = true) => {
     setToastMessage(message);
+    setIsSuccessToast(success);
     setShowToast(true);
     slideAnim.setValue(100);
     opacityAnim.setValue(0);
 
-    // Slide up and fade in
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -281,7 +222,7 @@ export default function EditProfileScreen() {
       }),
     ]).start();
 
-    // Auto-dismiss after 3 seconds and navigate back
+    // Auto-hide after 3 seconds
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -297,66 +238,67 @@ export default function EditProfileScreen() {
       ]).start(() => {
         setShowToast(false);
         setToastMessage('');
-        router.push('/(drawer)/profile');
       });
     }, 3000);
   };
 
   const handleSave = async () => {
-    // Dismiss keyboard
     Keyboard.dismiss();
+    if (!validateForm()) return;
 
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-
-    // Show loading state
     setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('firstName', fullName.split(' ')[0] || '');
+      formData.append('lastName', fullName.split(' ').slice(1).join(' ') || '');
+      formData.append('email', email);
+      formData.append('phone', (params.phone as string) || '');
+      formData.append('address', address);
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Saving profile data:', {
-        fullName, email, designation, department, address, profileImage
-      });
+      if (profileImage && profileImage !== originalProfileImage) {
+        const imageUri = Platform.OS === 'ios'
+          ? profileImage.replace('file://', '')
+          : profileImage;
+        const fileName = profileImage.split('/').pop() || 'profile.jpg';
 
-      // Here you would upload the profile image to your server
-      // and save all the profile data
+        (formData as any).append('profile_img', {
+          uri: Platform.OS === 'ios' ? `file://${imageUri}` : imageUri,
+          name: fileName,
+          type: 'image/jpeg',
+        });
+      }
 
+      const response = await ApiManager.getInstance().updateProfile(formData);
       setIsLoading(false);
-      showSuccessToast('Profile updated successfully');
-    }, 1500);
+
+      if (response.success) {
+         showToastMessage(response.message || 'Profile updated successfully', true);
+        router.replace('/(drawer)/profile'); // go back safely to Profile screen
+      } else {
+       showToastMessage(response.message || 'Failed to update profile', false);
+     }
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Profile update error:', error);
+      showToastMessage('Something went wrong. Please try again.', false);
+    }
   };
 
   const handleBack = () => {
-    // Revert profile image if not saved
-    if (profileImage !== originalProfileImage) {
-      setProfileImage(originalProfileImage);
-    }
+    if (profileImage !== originalProfileImage) setProfileImage(originalProfileImage);
     router.back();
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
-
-      {/* Header */}
       <View style={styles.header}>
-        {/* Left: Back Arrow */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-          activeOpacity={0.6}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={28} color={COLORS.text} />
         </TouchableOpacity>
-
-        {/* Center: Title */}
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Edit Profile</Text>
         </View>
-
-        {/* Right: Empty space for balance */}
         <View style={styles.headerSpacer} />
       </View>
 
@@ -367,22 +309,15 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Profile Picture Section */}
           <View style={styles.profileSection}>
-            {/* Profile Picture on Left */}
             <View style={styles.profilePictureWrapper}>
               <View style={styles.profilePicture}>
                 {profileImage ? (
-                  <Image
-                    source={{ uri: profileImage }}
-                    style={styles.profileImage}
-                    resizeMode="cover"
-                  />
+                  <Image source={{ uri: profileImage }} style={styles.profileImage} resizeMode="cover" />
                 ) : (
                   <Ionicons name="person" size={60} color={COLORS.primary} />
                 )}
               </View>
-              {/* Edit Icon Button Overlay */}
               <TouchableOpacity
                 style={styles.editIconButton}
                 activeOpacity={0.8}
@@ -391,74 +326,31 @@ export default function EditProfileScreen() {
                 <Ionicons name="pencil" size={16} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-
-            {/* User Information on Right */}
             <View style={styles.userInfoContainer}>
-              <Text style={styles.userName}>Er Sabir Ali</Text>
-              <Text style={styles.userDesignation}>Assistant Engineer</Text>
-              <Text style={styles.userDepartment}>Public Works Department</Text>
+              <Text style={styles.userName}>{fullName}</Text>
+              <Text style={styles.userDesignation}>{designation}</Text>
+              <Text style={styles.userDepartment}>{department}</Text>
             </View>
           </View>
 
-          {/* White Form Card */}
           <View style={styles.formCard}>
-            <ModernInputField
-              label="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Enter your full name"
-              error={errors.fullName}
-            />
-
-            <ModernInputField
-              label="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              error={errors.email}
-            />
-
-            <ModernInputField
-              label="Designation"
-              value={designation}
-              onChangeText={setDesignation}
-              placeholder="Enter your designation"
-            />
-
-            <ModernInputField
-              label="Department"
-              value={department}
-              onChangeText={setDepartment}
-              placeholder="Enter your department"
-            />
-
-            <ModernInputField
-              label="Residential Address"
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Enter your residential address"
-              multiline={true}
-            />
-
-            {/* Save Button - Inside Card */}
+            <ModernInputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" error={errors.fullName} />
+            <ModernInputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" keyboardType="email-address" error={errors.email} />
+            <ModernInputField label="Designation" value={designation} onChangeText={setDesignation} placeholder="Enter your designation" />
+            <ModernInputField label="Department" value={department} onChangeText={setDepartment} placeholder="Enter your department" />
+            <ModernInputField label="Residential Address" value={address} onChangeText={setAddress} placeholder="Enter your residential address" multiline />
             <TouchableOpacity
               style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={isLoading}
               activeOpacity={0.8}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              )}
+              {isLoading ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.saveButtonText}>Save Changes</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
 
-      {/* Success Toast */}
       {showToast && (
         <Animated.View
           style={[
@@ -469,8 +361,13 @@ export default function EditProfileScreen() {
             },
           ]}
         >
-          <View style={styles.toastContent}>
-            <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+          <View
+            style={[
+              styles.toastContent,
+              { backgroundColor: isSuccessToast ? COLORS.success : COLORS.error },
+            ]}
+          >
+            <Ionicons name={isSuccessToast ? 'checkmark-circle' : 'alert-circle'} size={20} color="#FFFFFF" />
             <Text style={styles.toastText}>{toastMessage}</Text>
           </View>
         </Animated.View>
@@ -480,10 +377,7 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -493,40 +387,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
+  backButton: { padding: 8, marginLeft: -8 },
+  headerTitleContainer: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: COLORS.text },
+  headerSpacer: { width: 44 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: 32 },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -535,10 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     marginBottom: 16,
   },
-  profilePictureWrapper: {
-    position: 'relative',
-    marginRight: 20,
-  },
+  profilePictureWrapper: { position: 'relative', marginRight: 20 },
   profilePicture: {
     width: 100,
     height: 100,
@@ -549,22 +413,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: COLORS.cardBackground,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
+  profileImage: { width: '100%', height: '100%' },
   editIconButton: {
     position: 'absolute',
     bottom: 0,
@@ -577,153 +427,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: COLORS.cardBackground,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.saffron,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
-  userInfoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  userDesignation: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  userDepartment: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: COLORS.textLight,
-    lineHeight: 18,
-  },
+  userInfoContainer: { flex: 1, justifyContent: 'center' },
+  userName: { fontSize: 20, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
+  userDesignation: { fontSize: 15, color: COLORS.textSecondary, marginBottom: 2 },
+  userDepartment: { fontSize: 13, color: COLORS.textLight },
   formCard: {
     backgroundColor: COLORS.cardBackground,
     marginHorizontal: 16,
     borderRadius: 16,
     padding: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-  },
+  inputContainer: { marginBottom: 24 },
+  inputLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary, marginBottom: 8 },
   input: {
     fontSize: 16,
     fontWeight: '400',
     color: COLORS.text,
     paddingVertical: 12,
-    paddingHorizontal: 0,
     borderBottomWidth: 1.5,
     borderBottomColor: COLORS.inputBorder,
   },
-  inputFocused: {
-    borderBottomColor: COLORS.inputBorderActive,
-  },
-  inputMultiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-    paddingTop: 8,
-  },
-  inputError: {
-    borderBottomColor: COLORS.error,
-    borderBottomWidth: 2,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  errorText: {
-    fontSize: 12,
-    color: COLORS.error,
-    marginLeft: 4,
-    fontWeight: '500',
-  },
+  inputFocused: { borderBottomColor: COLORS.inputBorderActive },
+  inputMultiline: { minHeight: 80, textAlignVertical: 'top', paddingTop: 8 },
+  inputError: { borderBottomColor: COLORS.error, borderBottomWidth: 2 },
+  errorContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  errorText: { fontSize: 12, color: COLORS.error, marginLeft: 4 },
   saveButton: {
     backgroundColor: COLORS.saffron,
     height: 52,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.saffron,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  toastContainer: {
-    position: 'absolute',
-    bottom: 40,
-    left: 24,
-    right: 24,
-    zIndex: 1000,
-  },
+  saveButtonDisabled: { opacity: 0.6 },
+  saveButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  toastContainer: { position: 'absolute', bottom: 40, left: 24, right: 24, zIndex: 1000 },
   toastContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success,
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
-  toastText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginLeft: 12,
-    flex: 1,
-    fontWeight: '500',
-    lineHeight: 20,
-  },
+  toastText: { fontSize: 14, color: '#FFFFFF', marginLeft: 12, flex: 1, fontWeight: '500' },
 });

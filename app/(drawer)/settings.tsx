@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { AuthContext } from '@/src/contexts/AuthContext';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -51,8 +53,13 @@ export default function SettingsScreen() {
     router.back();
   };
 
+  const { logout } = useContext(AuthContext);
+
   const handleLogout = () => {
-    router.replace('/');
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: logout },
+    ]);
   };
 
   const handlePlaceholder = (title: string) => {
