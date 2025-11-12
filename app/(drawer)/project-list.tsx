@@ -12,30 +12,115 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 const COLORS = {
-  background: '#FFFFFF',
+  background: '#F5F5F5',
+  cardBackground: '#FFFFFF',
   text: '#1A1A1A',
-  textSecondary: '#9E9E9E',
-  separator: '#E8E8E8',
+  textSecondary: '#666666',
+  textLight: '#999999',
   border: '#E0E0E0',
+  progressBackground: '#E8E8E8',
+  // Status colors
+  statusOnTrack: '#4CAF50',
+  statusOnTrackBg: '#E8F5E9',
+  statusAtRisk: '#FF9800',
+  statusAtRiskBg: '#FFF3E0',
+  statusDelayed: '#F44336',
+  statusDelayedBg: '#FFEBEE',
+  statusCompleted: '#2196F3',
+  statusCompletedBg: '#E3F2FD',
 };
+
+type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
 
 interface Project {
   id: string;
   name: string;
-  zone: string;
-  department: string;
-  division: string;
-  subDivision: string;
   projectType: string;
+  status: ProjectStatus;
+  progress: number;
+  startDate: string;
+  endDate: string;
 }
+
+// Helper function to get status colors
+const getStatusColors = (status: ProjectStatus) => {
+  switch (status) {
+    case 'On Track':
+      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
+    case 'At Risk':
+      return { bg: COLORS.statusAtRiskBg, text: COLORS.statusAtRisk };
+    case 'Delayed':
+      return { bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed };
+    case 'Completed':
+      return { bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted };
+    default:
+      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
+  }
+};
+
+interface ProjectCardProps {
+  project: Project;
+  onPress: () => void;
+}
+
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
+  const statusColors = getStatusColors(project.status);
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Top Row: Project ID and Status Badge */}
+      <View style={styles.cardTopRow}>
+        <Text style={styles.projectId}>{project.id}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+          <Text style={[styles.statusText, { color: statusColors.text }]}>
+            {project.status}
+          </Text>
+        </View>
+      </View>
+
+      {/* Main Body: Project Name and Type */}
+      <Text style={styles.projectName} numberOfLines={3}>
+        {project.name}
+      </Text>
+      <Text style={styles.projectType}>{project.projectType}</Text>
+
+      {/* Progress Section */}
+      <View style={styles.progressSection}>
+        <View style={styles.progressBarContainer}>
+          <View
+            style={[
+              styles.progressBarFill,
+              { width: `${project.progress}%`, backgroundColor: statusColors.text },
+            ]}
+          />
+        </View>
+        <Text style={styles.progressText}>{project.progress}%</Text>
+      </View>
+
+      {/* Footer Row: Dates and Action */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.datesText}>
+          Start: {project.startDate} | End: {project.endDate}
+        </Text>
+        <View style={styles.viewDetailsContainer}>
+          <Text style={styles.viewDetailsText}>View Details</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.text} />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export default function ProjectListScreen() {
   const params = useLocalSearchParams();
   const filter = params.filter as string || 'All Projects';
 
   const navigateBack = () => {
-    // Always navigate back to Projects Dashboard
-    router.push('/(drawer)/(tabs)/projects');
+    router.back();
   };
 
   const navigateToProjectDetails = (projectId: string) => {
@@ -45,103 +130,110 @@ export default function ProjectListScreen() {
     });
   };
 
-  // Placeholder project data with PWD hierarchy
+  // Sample project data with realistic information
   const projects: Project[] = [
     {
       id: 'PRJ-2024-001',
-      name: 'Road Construction - NH 44',
-      zone: 'North Delhi',
-      department: 'PWD Roads',
-      division: 'Division 1',
-      subDivision: 'Sub-Division A',
-      projectType: 'Construction',
+      name: 'National Highway 44 Widening and Resurfacing Project',
+      projectType: 'Road Construction',
+      status: 'On Track',
+      progress: 75,
+      startDate: '01-Jan-24',
+      endDate: '31-Dec-24',
     },
     {
       id: 'PRJ-2024-002',
-      name: 'Bridge Maintenance - City Center',
-      zone: 'Central Delhi',
-      department: 'PWD Bridges',
-      division: 'Division 2',
-      subDivision: 'Sub-Division B',
-      projectType: 'Maintenance',
+      name: 'City Center Bridge Maintenance and Structural Repair',
+      projectType: 'Bridge Maintenance',
+      status: 'At Risk',
+      progress: 45,
+      startDate: '15-Feb-24',
+      endDate: '30-Nov-24',
     },
     {
       id: 'PRJ-2024-003',
-      name: 'Street Lighting Upgrade',
-      zone: 'South Delhi',
-      department: 'PWD Electrical',
-      division: 'Division 3',
-      subDivision: 'Sub-Division C',
-      projectType: 'Upgrade',
+      name: 'LED Street Lighting Upgrade',
+      projectType: 'Electrical Work',
+      status: 'Completed',
+      progress: 100,
+      startDate: '10-Jan-24',
+      endDate: '30-Jun-24',
     },
     {
       id: 'PRJ-2024-004',
-      name: 'Water Supply Pipeline Installation',
-      zone: 'East Delhi',
-      department: 'PWD Water',
-      division: 'Division 4',
-      subDivision: 'Sub-Division D',
-      projectType: 'Construction',
+      name: 'Water Supply Pipeline Installation and Distribution Network Expansion for Eastern District',
+      projectType: 'Water Infrastructure',
+      status: 'Delayed',
+      progress: 30,
+      startDate: '01-Mar-24',
+      endDate: '31-Aug-24',
     },
     {
       id: 'PRJ-2024-005',
-      name: 'School Building Renovation',
-      zone: 'West Delhi',
-      department: 'PWD Buildings',
-      division: 'Division 5',
-      subDivision: 'Sub-Division E',
-      projectType: 'Renovation',
+      name: 'Government School Building Renovation',
+      projectType: 'Building Renovation',
+      status: 'On Track',
+      progress: 62,
+      startDate: '20-Feb-24',
+      endDate: '15-Oct-24',
     },
     {
       id: 'PRJ-2024-006',
       name: 'Metro Station Connectivity Road',
-      zone: 'North Delhi',
-      department: 'PWD Roads',
-      division: 'Division 1',
-      subDivision: 'Sub-Division F',
-      projectType: 'Construction',
+      projectType: 'Road Construction',
+      status: 'On Track',
+      progress: 88,
+      startDate: '05-Jan-24',
+      endDate: '20-Sep-24',
     },
     {
       id: 'PRJ-2024-007',
-      name: 'Drainage System Repair',
-      zone: 'Central Delhi',
-      department: 'PWD Drainage',
-      division: 'Division 2',
-      subDivision: 'Sub-Division G',
-      projectType: 'Repair',
+      name: 'Urban Drainage System Repair and Cleaning',
+      projectType: 'Drainage Work',
+      status: 'At Risk',
+      progress: 55,
+      startDate: '10-Apr-24',
+      endDate: '30-Oct-24',
     },
     {
       id: 'PRJ-2024-008',
-      name: 'Park Development Project',
-      zone: 'South Delhi',
-      department: 'PWD Horticulture',
-      division: 'Division 3',
-      subDivision: 'Sub-Division H',
-      projectType: 'Development',
+      name: 'Central Park Development Project with Green Spaces and Recreation Facilities',
+      projectType: 'Park Development',
+      status: 'Delayed',
+      progress: 25,
+      startDate: '01-Feb-24',
+      endDate: '31-Jul-24',
+    },
+    {
+      id: 'PRJ-2024-009',
+      name: 'Flyover Construction - East-West Corridor',
+      projectType: 'Flyover Construction',
+      status: 'On Track',
+      progress: 42,
+      startDate: '01-Jan-24',
+      endDate: '31-Dec-25',
+    },
+    {
+      id: 'PRJ-2024-010',
+      name: 'Historical Monument Restoration',
+      projectType: 'Heritage Conservation',
+      status: 'Completed',
+      progress: 100,
+      startDate: '01-Nov-23',
+      endDate: '30-May-24',
     },
   ];
 
   const renderProjectItem = ({ item }: { item: Project }) => (
-    <TouchableOpacity
-      style={styles.listItem}
+    <ProjectCard
+      project={item}
       onPress={() => navigateToProjectDetails(item.id)}
-      activeOpacity={0.6}
-    >
-      {/* Project Name - Primary Info */}
-      <Text style={styles.projectName}>{item.name}</Text>
-
-      {/* Secondary Info - Zone • Department • Division • Sub-Division • Project Type */}
-      <Text style={styles.projectDetails}>
-        {item.zone} • {item.department} • {item.division} • {item.subDivision} • {item.projectType}
-      </Text>
-    </TouchableOpacity>
+    />
   );
-
-  const renderSeparator = () => <View style={styles.separator} />;
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -160,7 +252,6 @@ export default function ProjectListScreen() {
         data={projects}
         renderItem={renderProjectItem}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={renderSeparator}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -176,7 +267,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.cardBackground,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
@@ -194,29 +285,97 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    flexGrow: 1,
+    padding: 16,
   },
-  listItem: {
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+  // Project Card Styles
+  card: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  projectId: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   projectName: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 8,
+    marginBottom: 6,
     lineHeight: 24,
   },
-  projectDetails: {
+  projectType: {
     fontSize: 14,
     fontWeight: '400',
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+    color: COLORS.textLight,
+    marginBottom: 16,
   },
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.separator,
-    marginLeft: 20,
+  progressSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: COLORS.progressBackground,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    minWidth: 42,
+    textAlign: 'right',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  datesText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  viewDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  viewDetailsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginRight: 4,
   },
 });
