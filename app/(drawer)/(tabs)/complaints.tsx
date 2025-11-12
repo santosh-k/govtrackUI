@@ -17,7 +17,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import ApiManager from '@/src/services/ApiManager';
 
 const COLORS = {
   background: '#F8F9FA',

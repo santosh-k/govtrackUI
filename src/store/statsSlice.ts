@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import ApiManager from '@/src/services/ApiManager';
 import { StatsData } from '@/src/types/stats.types';
 
 interface StatsState {
@@ -18,6 +17,8 @@ const initialState: StatsState = {
 
 export const fetchStats = createAsyncThunk('stats/fetch', async (filter: string, { rejectWithValue }) => {
   try {
+    // Dynamic import to avoid circular dependency
+    const { default: ApiManager } = await import('@/src/services/ApiManager');
     const response = await ApiManager.getInstance().getStats(filter);
     // Expecting shape { success: true, data: { ... } }
     return response.data;
