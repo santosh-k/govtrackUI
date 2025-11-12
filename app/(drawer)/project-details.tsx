@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,14 @@ import {
   FlatList,
   Image,
   Alert,
+  Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +46,8 @@ const COLORS = {
   priorityMedium: '#FF9800',
   priorityLow: '#4CAF50',
   fabBackground: '#2196F3',
+  saffron: '#FF9933',
+  success: '#4CAF50',
 };
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
@@ -88,7 +93,7 @@ const getStatusColors = (status: ProjectStatus) => {
   }
 };
 
-// Donut Chart Component
+// Animated Donut Chart Component
 const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
   percentage,
   size = 180
@@ -96,7 +101,34 @@ const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
   const strokeWidth = 16;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = (percentage / 100) * circumference;
+
+  const animatedValue = useRef(new Animated.Value(percentage)).current;
+  const [displayPercentage, setDisplayPercentage] = useState(percentage);
+
+  useEffect(() => {
+    // Animate to new percentage value
+    Animated.timing(animatedValue, {
+      toValue: percentage,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start();
+
+    // Animate the text display
+    const listener = animatedValue.addListener(({ value }) => {
+      setDisplayPercentage(Math.round(value));
+    });
+
+    return () => {
+      animatedValue.removeListener(listener);
+    };
+  }, [percentage, animatedValue]);
+
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+  const strokeDashoffset = animatedValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
 
   return (
     <View style={styles.donutContainer}>
@@ -111,7 +143,7 @@ const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
           fill="transparent"
         />
         {/* Progress circle */}
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -119,14 +151,14 @@ const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeDasharray={circumference}
-          strokeDashoffset={circumference - progress}
+          strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           rotation="-90"
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
       <View style={styles.donutCenterText}>
-        <Text style={styles.donutPercentage}>{percentage}%</Text>
+        <Text style={styles.donutPercentage}>{displayPercentage}%</Text>
         <Text style={styles.donutLabel}>Complete</Text>
       </View>
     </View>
@@ -146,10 +178,16 @@ export default function ProjectDetailsScreen() {
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showAddInspectionModal, setShowAddInspectionModal] = useState(false);
   const [showAddBottleneckModal, setShowAddBottleneckModal] = useState(false);
+  const [showAddProgressModal, setShowAddProgressModal] = useState(false);
+  const [newProgress, setNewProgress] = useState(75);
+  const [progressRemarks, setProgressRemarks] = useState('');
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Sample data
   const projectName = 'National Highway 44 Widening and Resurfacing Project';
-  const progress = 75;
+  const [progress, setProgress] = useState(75);
   const startDate = '01-Jan-24';
   const endDate = '31-Dec-24';
   const totalCost = '₹5.0 Cr';
@@ -194,6 +232,43 @@ export default function ProjectDetailsScreen() {
     setProjectStatus(newStatus);
     setShowStatusModal(false);
     Alert.alert('Success', 'Project status updated successfully');
+  };
+
+  const handleUpdateProgressPress = () => {
+    setNewProgress(progress);
+    setProgressRemarks('');
+    setShowAddProgressModal(true);
+  };
+
+  const handleSaveProgress = async () => {
+    setIsSavingProgress(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setIsSavingProgress(false);
+    setShowAddProgressModal(false);
+
+    // Update the progress
+    setProgress(newProgress);
+
+    // Show success toast
+    setShowSuccessToast(true);
+    Animated.sequence([
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(toastOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowSuccessToast(false);
+    });
   };
 
   const handleMediaPress = (index: number) => {
@@ -243,7 +318,17 @@ export default function ProjectDetailsScreen() {
     >
       {/* Progress Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Project Progress</Text>
+        <View style={styles.cardTitleRow}>
+          <Text style={styles.cardTitle}>Project Progress</Text>
+          <TouchableOpacity
+            style={styles.updateButton}
+            onPress={handleUpdateProgressPress}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={18} color={COLORS.saffron} />
+            <Text style={styles.updateButtonText}>Update</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.progressCardContent}>
           <DonutChart percentage={progress} />
           <View style={styles.datesContainer}>
@@ -621,6 +706,106 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Progress Modal */}
+      <Modal
+        visible={showAddProgressModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddProgressModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.progressBottomSheet}>
+            {/* Grabber Handle */}
+            <View style={styles.grabberHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Update Project Progress</Text>
+              <TouchableOpacity onPress={() => setShowAddProgressModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Progress Slider Section */}
+              <View style={styles.progressSliderSection}>
+                <Text style={styles.largePercentageText}>{newProgress}%</Text>
+
+                <View style={styles.sliderContainer}>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={0}
+                    maximumValue={100}
+                    step={1}
+                    value={newProgress}
+                    onValueChange={setNewProgress}
+                    minimumTrackTintColor={COLORS.saffron}
+                    maximumTrackTintColor={COLORS.border}
+                    thumbTintColor={COLORS.saffron}
+                  />
+                  <View style={styles.sliderLabels}>
+                    <Text style={styles.sliderLabel}>0%</Text>
+                    <Text style={styles.sliderLabel}>50%</Text>
+                    <Text style={styles.sliderLabel}>100%</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Remarks Field */}
+              <View style={styles.remarksSection}>
+                <Text style={styles.inputLabel}>Remarks (Optional)</Text>
+                <TextInput
+                  style={styles.remarksTextArea}
+                  placeholder="Add a comment about this progress update..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={progressRemarks}
+                  onChangeText={setProgressRemarks}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+            </ScrollView>
+
+            {/* Save Button */}
+            <TouchableOpacity
+              style={[styles.progressSaveButton, isSavingProgress && styles.disabledButton]}
+              onPress={handleSaveProgress}
+              disabled={isSavingProgress}
+              activeOpacity={0.8}
+            >
+              {isSavingProgress ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.progressSaveButtonText}>Save Progress</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <Animated.View
+          style={[
+            styles.successToast,
+            {
+              opacity: toastOpacity,
+              transform: [
+                {
+                  translateY: toastOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Ionicons name="checkmark-circle" size={24} color="white" />
+          <Text style={styles.successToastText}>Progress updated successfully!</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -726,11 +911,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 16,
+  },
+  updateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 153, 51, 0.1)',
+    borderRadius: 20,
+  },
+  updateButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.saffron,
+    marginLeft: 4,
   },
   progressCardContent: {
     alignItems: 'center',
@@ -1025,5 +1229,113 @@ const styles = StyleSheet.create({
   },
   playButton: {
     position: 'absolute',
+  },
+  // Progress Bottom Sheet Styles
+  progressBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    maxHeight: '85%',
+  },
+  grabberHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  progressSliderSection: {
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  largePercentageText: {
+    fontSize: 64,
+    fontWeight: '700',
+    color: COLORS.saffron,
+    marginBottom: 32,
+  },
+  sliderContainer: {
+    width: '100%',
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginTop: 8,
+  },
+  sliderLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  remarksSection: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  remarksTextArea: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: COLORS.text,
+    minHeight: 120,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  progressSaveButton: {
+    backgroundColor: COLORS.saffron,
+    paddingVertical: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    shadowColor: COLORS.saffron,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  progressSaveButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: 'white',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  // Success Toast Styles
+  successToast: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    backgroundColor: COLORS.success,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  successToastText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'white',
+    marginLeft: 12,
+    flex: 1,
   },
 });
