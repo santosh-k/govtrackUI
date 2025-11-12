@@ -426,13 +426,14 @@ export default function ProjectDetailsScreen() {
           <Text style={styles.projectId}>{projectId}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}
+          style={[styles.statusButton, { backgroundColor: statusColors.bg }]}
           onPress={handleStatusPress}
           activeOpacity={0.7}
         >
-          <Text style={[styles.statusText, { color: statusColors.text }]}>
+          <Text style={[styles.statusButtonText, { color: statusColors.text }]}>
             {projectStatus}
           </Text>
+          <Ionicons name="chevron-down" size={16} color={statusColors.text} style={styles.chevronIcon} />
         </TouchableOpacity>
       </View>
 
@@ -673,14 +674,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
-  statusBadge: {
+  statusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  statusText: {
+  statusButtonText: {
     fontSize: 13,
     fontWeight: '700',
+    marginRight: 4,
+  },
+  chevronIcon: {
+    marginLeft: 2,
   },
   tabBar: {
     flexDirection: 'row',
