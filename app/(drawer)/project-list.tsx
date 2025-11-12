@@ -288,7 +288,7 @@ export default function ProjectListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigateBack = () => {
-    router.back();
+    router.push('/(drawer)/(tabs)/projects');
   };
 
   const navigateToProjectDetails = (projectId: string) => {
