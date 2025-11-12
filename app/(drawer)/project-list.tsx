@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -106,9 +108,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
         </View>
         <Text style={styles.progressText}>{project.progress}%</Text>
       </View>
-
-      {/* Separator Line */}
-      <View style={styles.separator} />
 
       {/* Financials Section - 2x2 Grid */}
       <View style={styles.financialsSection}>
@@ -336,61 +335,66 @@ export default function ProjectListScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={navigateBack}
-          activeOpacity={0.6}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Projects List</Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons
-            name="search"
-            size={20}
-            color={COLORS.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by project name or ID..."
-            placeholderTextColor={COLORS.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
+        {/* Header */}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.header}>
             <TouchableOpacity
-              onPress={clearSearch}
-              style={styles.clearButton}
+              style={styles.backButton}
+              onPress={navigateBack}
               activeOpacity={0.6}
             >
-              <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
+            <Text style={styles.headerTitle}>Projects List</Text>
+          </View>
+        </TouchableWithoutFeedback>
 
-      {/* List */}
-      <FlatList
-        data={filteredProjects}
-        renderItem={renderProjectItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={searchQuery.length > 0 ? renderEmptyState : null}
-      />
-    </SafeAreaView>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Ionicons
+              name="search"
+              size={20}
+              color={COLORS.textSecondary}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by project name or ID..."
+              placeholderTextColor={COLORS.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={clearSearch}
+                style={styles.clearButton}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* List */}
+        <FlatList
+          data={filteredProjects}
+          renderItem={renderProjectItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={searchQuery.length > 0 ? renderEmptyState : null}
+          keyboardShouldPersistTaps="handled"
+        />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -541,15 +545,10 @@ const styles = StyleSheet.create({
     minWidth: 42,
     textAlign: 'right',
   },
-  // Separator
-  separator: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginBottom: 16,
-  },
   // Financials Section
   financialsSection: {
     marginBottom: 16,
+    marginTop: 16,
   },
   financialRow: {
     flexDirection: 'row',
@@ -566,7 +565,7 @@ const styles = StyleSheet.create({
   },
   financialLabel: {
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '600',
     color: COLORS.textLight,
     marginBottom: 4,
   },
