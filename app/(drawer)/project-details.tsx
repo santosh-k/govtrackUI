@@ -81,6 +81,17 @@ interface StatusUpdateActivity {
   attachments: MediaItem[];
 }
 
+interface ProgressUpdate {
+  id: string;
+  progress: number;
+  previousProgress: number;
+  remarks: string;
+  updatedBy: string;
+  designation: string;
+  timestamp: string;
+  attachments: MediaItem[];
+}
+
 interface Inspection {
   id: string;
   date: string;
@@ -211,6 +222,11 @@ export default function ProjectDetailsScreen() {
   const [activityHistory, setActivityHistory] = useState<StatusUpdateActivity[]>([]);
   const [viewerMediaItems, setViewerMediaItems] = useState<MediaItem[]>([]);
 
+  // Progress update enhancement states
+  const [progressAttachments, setProgressAttachments] = useState<MediaItem[]>([]);
+  const [progressHistory, setProgressHistory] = useState<ProgressUpdate[]>([]);
+  const [lastProgressUpdate, setLastProgressUpdate] = useState<ProgressUpdate | null>(null);
+
   // Sample data
   const projectName = 'National Highway 44 Widening and Resurfacing Project';
   const [progress, setProgress] = useState(75);
@@ -243,6 +259,24 @@ export default function ProjectDetailsScreen() {
     { id: '2', title: 'Weather Conditions', reportedBy: 'Contractor', date: '05-Dec-24', priority: 'Medium' },
     { id: '3', title: 'Equipment Maintenance', reportedBy: 'Engineer', date: '01-Dec-24', priority: 'Low' },
   ];
+
+  // Initialize progress history with placeholder data
+  useEffect(() => {
+    const initialProgressHistory: ProgressUpdate[] = [
+      {
+        id: 'prog-1',
+        progress: 75,
+        previousProgress: 60,
+        remarks: 'Completed Phase 3 successfully. All major milestones achieved.',
+        updatedBy: 'Er Sabir Ali',
+        designation: 'Assistant Engineer',
+        timestamp: '15-Dec-24 at 2:30 PM',
+        attachments: [],
+      },
+    ];
+    setProgressHistory(initialProgressHistory);
+    setLastProgressUpdate(initialProgressHistory[0]);
+  }, []);
 
   // Initialize activity history with placeholder data
   useEffect(() => {
@@ -445,7 +479,72 @@ export default function ProjectDetailsScreen() {
   const handleUpdateProgressPress = () => {
     setNewProgress(progress);
     setProgressRemarks('');
+    setProgressAttachments([]);
     setShowAddProgressModal(true);
+  };
+
+  const handleAddProgressAttachment = async () => {
+    Alert.alert(
+      'Add Media',
+      'Choose an option',
+      [
+        { text: 'Take Photo or Video', onPress: () => takeProgressPhoto() },
+        { text: 'Choose from Gallery', onPress: () => pickProgressFromGallery() },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const takeProgressPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Camera permission is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newAttachment: MediaItem = {
+        id: `progress-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setProgressAttachments([...progressAttachments, newAttachment]);
+    }
+  };
+
+  const pickProgressFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Gallery permission is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newAttachment: MediaItem = {
+        id: `progress-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setProgressAttachments([...progressAttachments, newAttachment]);
+    }
+  };
+
+  const handleRemoveProgressAttachment = (id: string) => {
+    setProgressAttachments(progressAttachments.filter(att => att.id !== id));
   };
 
   const handleSaveProgress = async () => {
@@ -453,6 +552,28 @@ export default function ProjectDetailsScreen() {
 
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Create new progress update
+    const newProgressUpdate: ProgressUpdate = {
+      id: `prog-${Date.now()}`,
+      progress: newProgress,
+      previousProgress: progress,
+      remarks: progressRemarks,
+      updatedBy: 'Current User',
+      designation: 'Engineer',
+      timestamp: new Date().toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }).replace(',', ' at'),
+      attachments: progressAttachments,
+    };
+
+    setProgressHistory([newProgressUpdate, ...progressHistory]);
+    setLastProgressUpdate(newProgressUpdate);
 
     setIsSavingProgress(false);
     setShowAddProgressModal(false);
@@ -1135,6 +1256,66 @@ export default function ProjectDetailsScreen() {
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
+              </View>
+
+              {/* Add Attachments Section */}
+              <View style={styles.remarksSection}>
+                <Text style={styles.inputLabel}>Add Attachments (Optional)</Text>
+                <TouchableOpacity
+                  style={styles.addAttachmentButton}
+                  onPress={handleAddProgressAttachment}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="camera-outline" size={24} color={COLORS.textSecondary} />
+                  <Text style={styles.addAttachmentText}>Add Photo, Video, or File</Text>
+                </TouchableOpacity>
+
+                {/* Attachment Thumbnails */}
+                {progressAttachments.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.attachmentScrollView}
+                  >
+                    {progressAttachments.map((attachment) => (
+                      <View key={attachment.id} style={styles.attachmentThumbContainer}>
+                        <Image source={{ uri: attachment.uri }} style={styles.attachmentThumb} />
+                        <TouchableOpacity
+                          style={styles.removeAttachmentButton}
+                          onPress={() => handleRemoveProgressAttachment(attachment.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="close-circle" size={24} color={COLORS.statusDelayed} />
+                        </TouchableOpacity>
+                        {attachment.type === 'video' && (
+                          <View style={styles.attachmentVideoIndicator}>
+                            <Ionicons name="play-circle" size={20} color="white" />
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+
+              {/* Last Update Section */}
+              <View style={styles.lastUpdateSection}>
+                <View style={styles.lastUpdateDivider} />
+                <Text style={styles.lastUpdateTitle}>Last Update</Text>
+                {lastProgressUpdate ? (
+                  <View style={styles.lastUpdateInfo}>
+                    <Text style={styles.lastUpdateText}>
+                      by <Text style={styles.lastUpdateAuthor}>{lastProgressUpdate.updatedBy}</Text> ({lastProgressUpdate.designation}) on {lastProgressUpdate.timestamp}
+                    </Text>
+                    {lastProgressUpdate.remarks && (
+                      <Text style={styles.lastUpdateRemarks}>
+                        &ldquo;{lastProgressUpdate.remarks}&rdquo;
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={styles.noUpdateText}>No previous updates recorded.</Text>
+                )}
               </View>
             </ScrollView>
 
@@ -1903,5 +2084,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 8,
+  },
+  // Last Update Section Styles
+  lastUpdateSection: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  lastUpdateDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 16,
+  },
+  lastUpdateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  lastUpdateInfo: {
+    backgroundColor: COLORS.background,
+    padding: 14,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  lastUpdateText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+  lastUpdateAuthor: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  lastUpdateRemarks: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontStyle: 'italic',
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  noUpdateText: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 16,
   },
 });
