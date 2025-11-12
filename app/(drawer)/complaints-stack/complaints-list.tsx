@@ -537,7 +537,7 @@ export default function ComplaintsScreen() {
 
   // Handle infinite scroll
   const handleInfiniteScroll = () => {
-    if (pagination.has_next && !loading) {
+    if (pagination && pagination.has_next && !loading) {
       handleFetchComplaints(currentPage + 1, undefined, true);
     }
   };

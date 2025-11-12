@@ -1,36 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from './index';
+import { 
+  Complaint, 
+  Pagination, 
+  FilterOptions, 
+  CurrentFilters,
+  ComplaintsState as ComplaintsStateType 
+} from '@/src/types/complaints.types';
 
-interface Complaint {
-  id: string;
-  category: string;
-  department: string;
-  location: string;
-  status: string;
-  sla: string;
-  createdAt: string;
-  hasPhotos?: boolean;
-  hasVideos?: boolean;
-  hasDocuments?: boolean;
-}
-
-interface Pagination {
-  page: number;
-  pages: number;
-  total: number;
-  has_next: boolean;
-  has_prev: boolean;
-}
-
-interface ComplaintsState {
-  isLoading: boolean;
-  error: string | null;
-  complaints: any[];
-  pagination: Pagination;
-  currentPage: number;
-  statusFilter: string;
-  searchQuery: string;
-}
+// Use the interface type but ensure it extends properly
+interface ComplaintsState extends ComplaintsStateType {}
 
 const initialState: ComplaintsState = {
   isLoading: false,
@@ -38,11 +17,14 @@ const initialState: ComplaintsState = {
   complaints: [],
   pagination: {
     page: 1,
+    limit: 10,
     pages: 1,
     total: 0,
     has_next: false,
     has_prev: false,
   },
+  filterOptions: null,
+  currentFilters: null,
   currentPage: 1,
   statusFilter: 'open',
   searchQuery: '',
@@ -107,6 +89,7 @@ const complaintsSlice = createSlice({
       state.currentPage = 1;
       state.pagination = {
         page: 1,
+        limit: 10,
         pages: 1,
         total: 0,
         has_next: false,
