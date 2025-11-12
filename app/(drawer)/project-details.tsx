@@ -232,11 +232,19 @@ export default function ProjectDetailsScreen() {
   const [progress, setProgress] = useState(75);
   const startDate = '01-Jan-24';
   const endDate = '31-Dec-24';
+  const totalCostRaw = 5.0; // In Crores
+  const expenditureRaw = 3.8; // In Crores
   const totalCost = '₹5.0 Cr';
   const expenditure = '₹3.8 Cr';
+  const estimatedCost = '₹4.5 Cr';
   const expectedCompletionDate = '31-Mar-25';
   const financialExpenditure = '76%';
   const lastUpdated = '15-Dec-24, 2:30 PM';
+
+  // Calculate remaining cost dynamically
+  const remainingCostRaw = totalCostRaw - expenditureRaw;
+  const remainingCost = `₹${remainingCostRaw.toFixed(1)} Cr`;
+  const budgetUtilizationPercentage = Math.round((expenditureRaw / totalCostRaw) * 100);
 
   const mediaItems: MediaItem[] = [
     { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Photo+1' },
@@ -673,25 +681,66 @@ export default function ProjectDetailsScreen() {
         </View>
       </View>
 
-      {/* Financials Card */}
+      {/* Financials Card - Comprehensive Mini-Dashboard */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Financial Summary</Text>
-        <View style={styles.financialsGrid}>
-          <View style={styles.financialItem}>
-            <Text style={styles.financialLabel}>Total Cost</Text>
-            <Text style={styles.financialValue}>{totalCost}</Text>
+        {/* Card Header */}
+        <Text style={styles.financialSummaryTitle}>Financial Summary</Text>
+
+        {/* Primary Visual Indicator - Budget Utilization */}
+        <View style={styles.budgetUtilizationSection}>
+          <Text style={styles.budgetSummaryText}>
+            {expenditure} Spent of {totalCost} Total Cost
+          </Text>
+
+          {/* Progress Bar with Percentage Overlay */}
+          <View style={styles.budgetProgressBarContainer}>
+            <View style={styles.budgetProgressBarBackground}>
+              <View
+                style={[
+                  styles.budgetProgressBarFill,
+                  { width: `${budgetUtilizationPercentage}%` }
+                ]}
+              />
+            </View>
+            <View style={styles.budgetPercentageOverlay}>
+              <Text style={styles.budgetPercentageText}>
+                {budgetUtilizationPercentage}% Utilized
+              </Text>
+            </View>
           </View>
-          <View style={styles.financialItem}>
-            <Text style={styles.financialLabel}>Expenditure</Text>
-            <Text style={styles.financialValue}>{expenditure}</Text>
+        </View>
+
+        {/* Divider Line */}
+        <View style={styles.financialDivider} />
+
+        {/* Detailed Financial Grid - 2 Columns */}
+        <View style={styles.financialStatsGrid}>
+          {/* Left Column */}
+          <View style={styles.financialColumn}>
+            <View style={styles.statBlock}>
+              <Text style={styles.statLabel}>Remaining Cost</Text>
+              <Text style={styles.statValue}>{remainingCost}</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statLabel}>Estimated Cost</Text>
+              <Text style={styles.statValue}>{estimatedCost}</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statLabel}>Exp. Comp. Date</Text>
+              <Text style={styles.statValue}>{expectedCompletionDate}</Text>
+            </View>
           </View>
-          <View style={styles.financialItem}>
-            <Text style={styles.financialLabel}>Exp. Comp. Date</Text>
-            <Text style={styles.financialValue}>{expectedCompletionDate}</Text>
-          </View>
-          <View style={styles.financialItem}>
-            <Text style={styles.financialLabel}>Financial Exp.</Text>
-            <Text style={styles.financialValue}>{financialExpenditure}</Text>
+
+          {/* Right Column */}
+          <View style={styles.financialColumn}>
+            <View style={styles.statBlock}>
+              <Text style={styles.statLabel}>Expenditure</Text>
+              <Text style={styles.statValue}>{expenditure}</Text>
+            </View>
+            <View style={styles.statBlock}>
+              <Text style={styles.statLabel}>Financial Exp. %</Text>
+              <Text style={styles.statValue}>{financialExpenditure}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -1531,22 +1580,78 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
-  financialsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  // Financial Summary Card Styles - Redesigned
+  financialSummaryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 20,
   },
-  financialItem: {
-    width: '50%',
+  budgetUtilizationSection: {
+    marginBottom: 20,
+  },
+  budgetSummaryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
     marginBottom: 16,
+    textAlign: 'center',
   },
-  financialLabel: {
-    fontSize: 13,
+  budgetProgressBarContainer: {
+    position: 'relative',
+    height: 40,
+  },
+  budgetProgressBarBackground: {
+    height: 40,
+    backgroundColor: '#E8E8E8',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  budgetProgressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+  },
+  budgetPercentageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  budgetPercentageText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  financialDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 24,
+  },
+  financialStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  financialColumn: {
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  statBlock: {
+    marginBottom: 20,
+  },
+  statLabel: {
+    fontSize: 12,
     fontWeight: '500',
     color: COLORS.textLight,
-    marginBottom: 4,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  financialValue: {
-    fontSize: 16,
+  statValue: {
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
   },
