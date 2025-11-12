@@ -751,14 +751,16 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusStatText}>
                 Overdue: <Text style={[styles.statusStatValue, styles.warningText]}>2</Text>
               </Text>
+              <Text style={styles.statusLastUpdateText}>Last Update: 24-Jul-24, 10:30 AM</Text>
+              <Text style={styles.statusLastUpdateByText}>By: Er Sabir Ali</Text>
             </View>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={styles.pillButton}
               onPress={() => router.push('/(drawer)/create-inspection')}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.actionButtonText}>New Inspection</Text>
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.pillButtonText}>New Inspection</Text>
             </TouchableOpacity>
           </View>
 
@@ -773,14 +775,16 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusStatText}>
                 High Priority: <Text style={[styles.statusStatValue, styles.warningText]}>1</Text>
               </Text>
+              <Text style={styles.statusLastUpdateText}>Last Update: 23-Jul-24, 05:15 PM</Text>
+              <Text style={styles.statusLastUpdateByText}>By: Test User</Text>
             </View>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={styles.pillButton}
               onPress={() => router.push('/(drawer)/create-bottleneck')}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.actionButtonText}>Add Bottleneck</Text>
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.pillButtonText}>Add Bottleneck</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1739,27 +1743,42 @@ const styles = StyleSheet.create({
   warningText: {
     color: COLORS.statusDelayed,
   },
+  statusLastUpdateText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  statusLastUpdateByText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
   verticalDivider: {
     width: 1,
     backgroundColor: COLORS.border,
     marginVertical: 8,
   },
-  actionButton: {
+  pillButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    backgroundColor: COLORS.saffron,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    paddingHorizontal: 20,
+    borderRadius: 50,
+    shadowColor: COLORS.saffron,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  actionButtonText: {
+  pillButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginLeft: 6,
+    fontWeight: '700',
+    color: 'white',
+    marginLeft: 8,
   },
   lastUpdatedText: {
     fontSize: 15,
