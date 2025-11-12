@@ -755,12 +755,11 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateByText}>By: Er Sabir Ali</Text>
             </View>
             <TouchableOpacity
-              style={styles.pillButton}
+              style={styles.inspectionButton}
               onPress={() => router.push('/(drawer)/create-inspection')}
               activeOpacity={0.8}
             >
-              <Ionicons name="add" size={20} color="white" />
-              <Text style={styles.pillButtonText}>New Inspection</Text>
+              <Text style={styles.buttonText}>New Inspection</Text>
             </TouchableOpacity>
           </View>
 
@@ -779,12 +778,11 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateByText}>By: Test User</Text>
             </View>
             <TouchableOpacity
-              style={styles.pillButton}
+              style={styles.bottleneckButton}
               onPress={() => router.push('/(drawer)/create-bottleneck')}
               activeOpacity={0.8}
             >
-              <Ionicons name="add" size={20} color="white" />
-              <Text style={styles.pillButtonText}>Add Bottleneck</Text>
+              <Text style={styles.buttonText}>Add Bottleneck</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1760,25 +1758,36 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginVertical: 8,
   },
-  pillButton: {
-    flexDirection: 'row',
+  inspectionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.saffron,
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 50,
-    shadowColor: COLORS.saffron,
+    borderRadius: 8,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  pillButtonText: {
+  bottleneckButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#424242',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  buttonText: {
     fontSize: 14,
     fontWeight: '700',
     color: 'white',
-    marginLeft: 8,
   },
   lastUpdatedText: {
     fontSize: 15,
