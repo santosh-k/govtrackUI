@@ -181,7 +181,7 @@ export default function ProjectDetailsScreen() {
   ];
 
   const goBack = () => {
-    router.back();
+    router.push('/(drawer)/project-list');
   };
 
   const handleStatusPress = () => {
