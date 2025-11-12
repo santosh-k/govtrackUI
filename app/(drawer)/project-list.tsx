@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StatusBar,
   TouchableOpacity,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -19,6 +20,7 @@ const COLORS = {
   textLight: '#999999',
   border: '#E0E0E0',
   progressBackground: '#E8E8E8',
+  searchBarBackground: '#F0F0F0',
   // Status colors
   statusOnTrack: '#4CAF50',
   statusOnTrackBg: '#E8F5E9',
@@ -149,20 +151,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
   );
 };
 
-export default function ProjectListScreen() {
-  const navigateBack = () => {
-    router.back();
-  };
-
-  const navigateToProjectDetails = (projectId: string) => {
-    router.push({
-      pathname: '/(drawer)/project-details',
-      params: { projectId },
-    });
-  };
-
-  // Sample project data with realistic information
-  const projects: Project[] = [
+// Sample project data with realistic information
+const ALL_PROJECTS: Project[] = [
     {
       id: 'PRJ-2024-001',
       name: 'National Highway 44 Widening and Resurfacing Project',
@@ -295,11 +285,54 @@ export default function ProjectListScreen() {
     },
   ];
 
+export default function ProjectListScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const navigateBack = () => {
+    router.back();
+  };
+
+  const navigateToProjectDetails = (projectId: string) => {
+    router.push({
+      pathname: '/(drawer)/project-details',
+      params: { projectId },
+    });
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return ALL_PROJECTS;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return ALL_PROJECTS.filter((project) => {
+      const nameMatch = project.name.toLowerCase().includes(query);
+      const idMatch = project.id.toLowerCase().includes(query);
+      return nameMatch || idMatch;
+    });
+  }, [searchQuery]);
+
   const renderProjectItem = ({ item }: { item: Project }) => (
     <ProjectCard
       project={item}
       onPress={() => navigateToProjectDetails(item.id)}
     />
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="search-outline" size={64} color={COLORS.textLight} />
+      <Text style={styles.emptyStateTitle}>No projects found</Text>
+      <Text style={styles.emptyStateText}>
+        No projects match your search criteria.{'\n'}
+        Try adjusting your search terms.
+      </Text>
+    </View>
   );
 
   return (
@@ -318,13 +351,44 @@ export default function ProjectListScreen() {
         <Text style={styles.headerTitle}>Projects List</Text>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={COLORS.textSecondary}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by project name or ID..."
+            placeholderTextColor={COLORS.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={clearSearch}
+              style={styles.clearButton}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* List */}
       <FlatList
-        data={projects}
+        data={filteredProjects}
         renderItem={renderProjectItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={searchQuery.length > 0 ? renderEmptyState : null}
       />
     </SafeAreaView>
   );
@@ -354,6 +418,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
+  },
+  // Search Bar Styles
+  searchContainer: {
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.searchBarBackground,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  // Empty State Styles
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 64,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   listContent: {
     padding: 16,
