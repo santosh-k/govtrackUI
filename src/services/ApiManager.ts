@@ -198,9 +198,8 @@ class ApiManager {
     if (filter === 'custom' && startDate && endDate) {
       query += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
     }
-
+    console.log(query)
     const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/stats?${query}`;
-
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -220,6 +219,71 @@ class ApiManager {
     const message = error instanceof Error ? error.message : 'An error occurred';
     throw new Error(message);
   }
+}
+
+  /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
+  public async getComplaints(status: string, page: number = 1, limit: number = 10, search: string = ''): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        status,
+        page: page.toString(),
+        limit: limit.toString(),
+        search,
+      });
+
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to fetch complaints');
+      }
+
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- COMPLAINT DETAILS (EXTERNAL ADMIN API) ---------------- */
+  public async getComplaintDetails(complaintId: string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints/${complaintId}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to fetch complaint details');
+      }
+
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
   }
 }
 

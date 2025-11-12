@@ -120,10 +120,10 @@ export default function ComplaintDashboardScreen() {
     try {
       let response;
       if (filter === 'custom'){
-         response = await ApiManager.getInstance().getStats(filter);
+         response = await ApiManager.getInstance().getStats(filter,startDate,endDate);
          console.log('API Response:', response);
       }else{
-        response = await ApiManager.getInstance().getStats(filter,startDate,endDate);
+        response = await ApiManager.getInstance().getStats(filter);
         console.log('API Response:', response);
       }
       
@@ -212,16 +212,23 @@ export default function ComplaintDashboardScreen() {
       }
     }
   };
-
+  const formatDateForApi = (date: Date): string => {
+     const year = date.getFullYear();
+     const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
+     const day = String(date.getDate()).padStart(2, '0');
+     return `${year}-${month}-${day}`;
+  };
   const handleApplyDateRange = () => {
     if (selectedStartDate && selectedEndDate) {
       const startStr = selectedStartDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
       const endStr = selectedEndDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-      const startStrApi = selectedStartDate.toISOString().split('T')[0];
-      const endStrApi = selectedEndDate.toISOString().split('T')[0];
+      const startStrApi = formatDateForApi(selectedStartDate);
+      const endStrApi = formatDateForApi(selectedEndDate);
       setDateRange(`${startStr} - ${endStr}`);
       setSelectedFilter('custom');
       setShowCalendarModal(false);
+      console.log(startStrApi)
+      console.log(endStrApi)
       fetchStats('custom', startStrApi, endStrApi);
     
     }

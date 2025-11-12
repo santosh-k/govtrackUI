@@ -3,6 +3,8 @@ import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './authSlice';
 import statsReducer from './statsSlice';
+import complaintsReducer from './complaintsSlice';
+import complaintDetailsReducer from './complaintDetailsSlice';
 
 // Persist the root reducer and only whitelist the `auth` slice for persistence.
 const persistConfig = {
@@ -14,6 +16,8 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authReducer,
   stats: statsReducer,
+  complaints: complaintsReducer,
+  complaintDetails: complaintDetailsReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

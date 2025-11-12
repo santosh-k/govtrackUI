@@ -9,11 +9,25 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
+  ProgressBarAndroid,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import FilterBottomSheet from '@/components/FilterBottomSheet';
+import {
+  fetchComplaints,
+  setStatusFilter,
+  setSearchQuery,
+  selectComplaints,
+  selectComplaintsLoading,
+  selectComplaintsError,
+  selectComplaintsPagination,
+  selectCurrentPage,
+} from '@/src/store/complaintsSlice';
+import { AppDispatch } from '@/src/store/index';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -50,8 +64,8 @@ interface Complaint {
   category: string;
   department: string;
   location: string;
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
-  sla: 'Breached' | 'Nearing' | 'On Track';
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed' | string;
+  sla: 'Breached' | 'Nearing' | 'On Track' | string;
   createdAt: string;
   hasPhotos?: boolean;
   hasVideos?: boolean;
@@ -231,7 +245,17 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
 export default function ComplaintsScreen() {
   const params = useLocalSearchParams();
   const navigation = useNavigation();
-  const [searchQuery, setSearchQuery] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Redux selectors
+  const complaints = useSelector(selectComplaints);
+  const loading = useSelector(selectComplaintsLoading);
+  const error = useSelector(selectComplaintsError);
+  const pagination = useSelector(selectComplaintsPagination);
+  const currentPage = useSelector(selectCurrentPage);
+
+  // Local state
+  const [searchQuery, setSearchQueryLocal] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
 
   // Check if navigation came from dashboard
@@ -249,6 +273,43 @@ export default function ComplaintsScreen() {
   const [tempSelectedCategory, setTempSelectedCategory] = useState('');
   const [tempSelectedZone, setTempSelectedZone] = useState('');
   const [tempSelectedDepartment, setTempSelectedDepartment] = useState('');
+
+  // Map dashboard filter to API status
+  const getApiStatus = (filterType: string): string => {
+    switch (filterType) {
+      case 'pending':
+        return 'submitted';
+      case 'inProgress':
+        return 'assigned';
+      case 'completed':
+        return 'resolved';
+      case 'closed':
+        return 'closed';
+      default:
+        return 'open'; // default to 'open' for 'all'
+    }
+  };
+
+  // Fetch complaints from Redux
+  const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
+    const status = statusFilter || getApiStatus(params.filter as string) || 'open';
+    dispatch(
+      fetchComplaints({
+        status,
+        page,
+        limit: 10,
+        search: searchQuery,
+        isInfiniteScroll,
+      })
+    );
+  };
+
+  // Fetch on mount and when filter changes
+  useEffect(() => {
+    if (params.filter) {
+      handleFetchComplaints(1, undefined, false);
+    }
+  }, [params.filter]);
 
   // Handle incoming filter parameter from dashboard
   useEffect(() => {
@@ -277,13 +338,9 @@ export default function ComplaintsScreen() {
           setSelectedStatuses(['Closed']);
           break;
         case 'assignedByYou':
-          // TODO: This would require additional data structure to filter by assigner
-          // For now, clear filters as placeholder
           setSelectedStatuses([]);
           break;
         case 'completedByYou':
-          // TODO: This would require additional data structure to filter by completer
-          // For now, show resolved status as placeholder
           setSelectedStatuses(['Resolved']);
           break;
         default:
@@ -291,6 +348,22 @@ export default function ComplaintsScreen() {
       }
     }
   }, [params.filter]);
+
+  // Transform API complaints to display format
+  const transformedComplaints = useMemo(() => {
+    return complaints.map((complaint: any) => ({
+      id: complaint.id.toString(),
+      category: complaint.complaintOption?.option_name || complaint.service?.service_name_en || 'Unknown',
+      department: complaint.service?.service_name_en || 'Unknown Department',
+      location: complaint.location_address || 'Unknown Location',
+      status: complaint.status_display || complaint.status || 'Open',
+      sla: 'On Track', // SLA status from API if available
+      createdAt: new Date(complaint.created_at).toLocaleDateString(),
+      hasPhotos: !!complaint.photos, // Check if complaint has photos
+      hasVideos: !!complaint.videos, // Check if complaint has videos
+      hasDocuments: !!complaint.documents, // Check if complaint has documents
+    }));
+  }, [complaints]);
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
@@ -303,7 +376,7 @@ export default function ComplaintsScreen() {
 
   // Filter and search logic
   const filteredComplaints = useMemo(() => {
-    let filtered = SAMPLE_COMPLAINTS;
+    let filtered = transformedComplaints;
 
     // Apply status filter
     if (selectedStatuses.length > 0) {
@@ -338,7 +411,7 @@ export default function ComplaintsScreen() {
     }
 
     return filtered;
-  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedDepartment]);
+  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedDepartment, transformedComplaints]);
 
   const handleComplaintPress = (complaint: Complaint) => {
     router.push({
@@ -456,6 +529,26 @@ export default function ComplaintsScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  // Handle infinite scroll
+  const handleInfiniteScroll = () => {
+    if (pagination.has_next && !loading) {
+      handleFetchComplaints(currentPage + 1, undefined, true);
+    }
+  };
+
+  // Handle search query change
+  const handleSearchChange = (text: string) => {
+    setSearchQueryLocal(text);
+    if (text.trim()) {
+      // Reset to page 1 when searching
+      dispatch(setSearchQuery(text));
+      handleFetchComplaints(1, undefined, false);
+    } else {
+      dispatch(setSearchQuery(''));
+      handleFetchComplaints(1, undefined, false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
@@ -488,10 +581,10 @@ export default function ComplaintsScreen() {
             placeholder="Search by ID or Category..."
             placeholderTextColor={COLORS.textLight}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.6}>
+            <TouchableOpacity onPress={() => handleSearchChange('')} activeOpacity={0.6}>
               <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
             </TouchableOpacity>
           )}
@@ -586,20 +679,67 @@ export default function ComplaintsScreen() {
         </View>
       )}
 
+      {/* Loading Progress Bar */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          {Platform.OS === 'android' ? (
+            <ProgressBarAndroid styleAttr="Horizontal" indeterminate={true} color={COLORS.primary} />
+          ) : (
+            <View style={styles.loadingProgress}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Loading complaints...</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={20} color="#D32F2F" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
       {/* Complaints List */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={({ nativeEvent }) => {
+          const paddingToBottom = 20;
+          if (
+            nativeEvent.layoutMeasurement.height +
+            nativeEvent.contentOffset.y >=
+            nativeEvent.contentSize.height - paddingToBottom
+          ) {
+            handleInfiniteScroll();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {filteredComplaints.length > 0 ? (
-          filteredComplaints.map((complaint) => (
-            <ComplaintCard
-              key={complaint.id}
-              complaint={complaint}
-              onPress={() => handleComplaintPress(complaint)}
-            />
-          ))
+          <>
+            {filteredComplaints.map((complaint) => (
+              <ComplaintCard
+                key={complaint.id}
+                complaint={complaint}
+                onPress={() => handleComplaintPress(complaint)}
+              />
+            ))}
+
+            {/* Loading indicator at bottom for infinite scroll */}
+            {loading && (
+              <View style={styles.bottomLoadingContainer}>
+                {Platform.OS === 'android' ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                )}
+                <Text style={styles.bottomLoadingText}>Loading more complaints...</Text>
+              </View>
+            )}
+          </>
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={80} color={COLORS.textLight} />
@@ -879,4 +1019,102 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textLight,
   },
+  // Loading and Error Styles
+  loadingContainer: {
+    paddingVertical: 12,
+    backgroundColor: COLORS.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  loadingProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFEBEE',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EF5350',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#D32F2F',
+    fontWeight: '500',
+    flex: 1,
+  },
+  // Pagination Styles
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginTop: 16,
+    marginBottom: 24,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    gap: 12,
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    gap: 4,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: COLORS.background,
+    borderColor: COLORS.border,
+    opacity: 0.5,
+  },
+  paginationButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  paginationButtonTextDisabled: {
+    color: COLORS.textLight,
+  },
+  paginationInfo: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  paginationInfoText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  // Infinite Scroll Loading Indicator
+  bottomLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  bottomLoadingText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
 });
+
