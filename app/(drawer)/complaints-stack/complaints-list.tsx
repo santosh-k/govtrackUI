@@ -72,7 +72,7 @@ interface Complaint {
   hasDocuments?: boolean;
 }
 
-const SAMPLE_COMPLAINTS: Complaint[] = [
+/*const SAMPLE_COMPLAINTS: Complaint[] = [
   {
     id: 'C-2023-4513',
     category: 'Pothole Repair Request',
@@ -157,7 +157,7 @@ const SAMPLE_COMPLAINTS: Complaint[] = [
     hasVideos: false,
     hasDocuments: false,
   },
-];
+]; */
 
 interface ComplaintCardProps {
   complaint: Complaint;
@@ -278,23 +278,29 @@ export default function ComplaintsScreen() {
   const getApiStatus = (filterType: string): string => {
     switch (filterType) {
       case 'pending':
-        return 'submitted';
+        return 'pending';
       case 'inProgress':
-        return 'assigned';
+        return 'in_progress';
       case 'completed':
         return 'resolved';
       case 'closed':
         return 'closed';
+      case 'completedByYou':
+        return 'completed_by_you'
+      case  'assignedByYou':
+        return 'assigned_by_you'
       default:
-        return 'open'; // default to 'open' for 'all'
+        return 'total'; // default to 'open' for 'all'
     }
   };
 
   // Fetch complaints from Redux
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
-    const status = statusFilter || getApiStatus(params.filter as string) || 'open';
+    const status = statusFilter || '';
+    const stats_filter = getApiStatus(params.filter as string) || 'total';
     dispatch(
       fetchComplaints({
+        stats_filter,
         status,
         page,
         limit: 10,

@@ -59,6 +59,67 @@ class ApiManager {
     return response;
   }
 
+  /**
+   * Helper for external API requests that may return success: false with error codes
+   * If TOKEN_EXPIRED is returned, attempt a refresh and retry once.
+   */
+  private async fetchExternalWithRetry(url: string, options: RequestInit = {}, retry: boolean = true): Promise<any> {
+    // attach token header
+    const headers = new Headers(options.headers);
+    const token = this.getToken();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+
+    if (!(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    let data: any = undefined;
+    try {
+      data = await response.json();
+    } catch (e) {
+      // ignore JSON parse errors
+    }
+
+    // If API returned a structured error indicating token expired, try refresh once
+    if (data && data.success === false && data.error && data.error.code === 'TOKEN_EXPIRED') {
+      if (!retry) {
+        const msg = data.error.message || 'Token expired';
+        throw new Error(msg);
+      }
+
+      // Attempt refresh
+      try {
+        await this.refreshToken();
+      } catch (err) {
+        // couldn't refresh, propagate original error message if available
+        const msg = (data.error && data.error.message) || (err instanceof Error ? err.message : 'Token refresh failed');
+        throw new Error(msg);
+      }
+
+      // Retry the original request once with new token
+      return this.fetchExternalWithRetry(url, options, false);
+    }
+
+    // If non-OK HTTP status
+    if (!response.ok) {
+      const msg = (data && (data.message || data.error?.message)) || 'Request failed';
+      throw new Error(msg);
+    }
+
+    // If API returned success:false for other reasons
+    if (data && data.success === false) {
+      const msg = data.message || data.error?.message || 'Request failed';
+      throw new Error(msg);
+    }
+
+    return data;
+  }
+
   /** ---------------- LOGIN ---------------- */
   public async login(credentials: LoginRequest): Promise<LoginResponse> {
     store.dispatch(loginStart());
@@ -198,22 +259,10 @@ class ApiManager {
     if (filter === 'custom' && startDate && endDate) {
       query += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
     }
+    console.log(token)
     console.log(query)
     const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/stats?${query}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to fetch stats');
-    }
-
+    const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
     return data;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An error occurred';
@@ -222,13 +271,14 @@ class ApiManager {
 }
 
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
-  public async getComplaints(status: string, page: number = 1, limit: number = 10, search: string = ''): Promise<any> {
+  public async getComplaints(stats_filter: string,status: string, page: number = 1, limit: number = 10, search: string = ''): Promise<any> {
     try {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
       // Build query parameters
       const queryParams = new URLSearchParams({
+        stats_filter,
         status,
         page: page.toString(),
         limit: limit.toString(),
@@ -237,20 +287,7 @@ class ApiManager {
 
       const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to fetch complaints');
-      }
-
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -265,20 +302,7 @@ class ApiManager {
       if (!token) throw new Error('No authentication token available');
 
       const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints/${complaintId}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to fetch complaint details');
-      }
-
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';

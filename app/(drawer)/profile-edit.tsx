@@ -108,8 +108,10 @@ export default function EditProfileScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [isSuccessToast, setIsSuccessToast] = useState(false);
 
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [originalProfileImage] = useState<string | null>(null);
+  // Initialize profile image from route params if available (param key: profile_Image)
+  const initialProfileImage = ((params.profile_Image as string) || null) as string | null;
+  const [profileImage, setProfileImage] = useState<string | null>(initialProfileImage);
+  const [originalProfileImage] = useState<string | null>(initialProfileImage);
 
   const slideAnim = React.useRef(new Animated.Value(100)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
@@ -260,7 +262,8 @@ export default function EditProfileScreen() {
           : profileImage;
         const fileName = profileImage.split('/').pop() || 'profile.jpg';
 
-        (formData as any).append('profile_img', {
+        // Append image file with correct field name
+        (formData as any).append('profile_image', {
           uri: Platform.OS === 'ios' ? `file://${imageUri}` : imageUri,
           name: fileName,
           type: 'image/jpeg',

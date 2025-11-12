@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
@@ -58,6 +59,7 @@ export default function ProfileScreen() {
         ? user.departments[0]?.name ?? ''
         : '',
     address: user?.address ?? '',
+    profile_Image: user?.profile_image,
   };
 
   return (
@@ -72,8 +74,16 @@ export default function ProfileScreen() {
       >
         {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
-          <View style={styles.profilePicture}>
-            <Ionicons name="person" size={48} color={COLORS.profileBorder} />
+          <View >
+            {userData?.profile_Image ? (
+                          <Image
+                            source={{ uri: userData?.profile_Image }}
+                            style={styles.profilePicture}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <Ionicons name="person" size={48} color={COLORS.primary} />
+                        )}
           </View>
           <Text style={styles.profileName}>
             {userData.fullName || 'No Name Available'}

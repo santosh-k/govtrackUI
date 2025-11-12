@@ -487,7 +487,7 @@ export default function AssignComplaintScreen() {
     // Navigate back to complaint details after a brief delay
     setTimeout(() => {
       router.replace({
-        pathname: '/complaint-details',
+        pathname: '/(drawer)/complaints-stack/complaint-details',
         params: {
           complaintId: complaintId,
           assignedUser: assignedTo,
@@ -501,7 +501,7 @@ export default function AssignComplaintScreen() {
   const handleBackPress = () => {
     // Navigate back to complaint details
     router.replace({
-      pathname: '/complaint-details',
+      pathname: '/(drawer)/complaints-stack/complaint-details',
       params: {
         complaintId: complaintId,
       },

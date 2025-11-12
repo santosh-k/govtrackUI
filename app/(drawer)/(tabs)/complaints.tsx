@@ -80,7 +80,7 @@ function StatCard({ title, value, icon, backgroundColor, iconColor, onPress }: S
 
 export default function ComplaintDashboardScreen() {
   const navigation = useNavigation();
-  const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('month');
+  const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('today');
   const [dateRange, setDateRange] = useState('01 Jan - 31 Jan');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);

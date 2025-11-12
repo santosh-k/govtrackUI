@@ -23,6 +23,7 @@ interface ProfileHeaderProps {
     designation: string;
     department: string;
     address: string;
+    profile_Image?: string;
   };
 }
 
@@ -41,6 +42,7 @@ export default function ProfileHeader({ userData }: ProfileHeaderProps) {
           designation: userData.designation,
           department: userData.department,
           address: userData.address,
+          profile_Image:  userData.profile_Image,
         },
       });
     }

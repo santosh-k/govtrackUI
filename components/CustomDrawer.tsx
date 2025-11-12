@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -65,7 +66,15 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         {/* User Profile Section */}
         <View style={styles.profileContainer}>
           <View style={styles.profilePicture}>
-            <Ionicons name="person" size={48} color={COLORS.primary} />
+            {user?.profile_image ? (
+              <Image
+                source={{ uri: user.profile_image }}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons name="person" size={48} color={COLORS.primary} />
+            )}
           </View>
           <Text style={styles.userName}>{displayName}{displayDesignation ? `, ${displayDesignation}` : ''}</Text>
           {displayDivision ? <Text style={styles.userDivision}>{displayDivision}</Text> : null}
@@ -120,6 +129,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 2,
     borderColor: COLORS.primary,
+    overflow: 'hidden',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 70,
   },
   userName: {
     fontSize: 16,

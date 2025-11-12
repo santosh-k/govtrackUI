@@ -51,13 +51,14 @@ const initialState: ComplaintsState = {
 export const fetchComplaints = createAsyncThunk(
   'complaints/fetchComplaints',
   async (
-    {
+    { stats_filter,
       status,
       page = 1,
       limit = 10,
       search = '',
       isInfiniteScroll = false,
     }: {
+      stats_filter: string
       status: string;
       page?: number;
       limit?: number;
@@ -69,7 +70,7 @@ export const fetchComplaints = createAsyncThunk(
     try {
       // Use dynamic import to avoid circular dependency
       const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getComplaints(status, page, limit, search);
+      const response = await ApiManager.getInstance().getComplaints(stats_filter,status, page, limit, search);
 
       if (response?.success && response?.data) {
         return {
