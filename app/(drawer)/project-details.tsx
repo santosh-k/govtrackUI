@@ -1218,8 +1218,8 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Progress Slider Section */}
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.progressScrollContent}>
+              {/* 1. Progress Slider Section */}
               <View style={styles.progressSliderSection}>
                 <Text style={styles.largePercentageText}>{newProgress}%</Text>
 
@@ -1243,7 +1243,47 @@ export default function ProjectDetailsScreen() {
                 </View>
               </View>
 
-              {/* Remarks Field */}
+              {/* 2. New Attachments Section */}
+              <View style={styles.attachmentsRow}>
+                <Text style={styles.attachmentsLabel}>Attachments</Text>
+                <TouchableOpacity
+                  style={styles.addButtonCircle}
+                  onPress={handleAddProgressAttachment}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* 3. Thumbnail Gallery (Dynamic - Only shows when files are attached) */}
+              {progressAttachments.length > 0 && (
+                <View style={styles.thumbnailGallery}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {progressAttachments.map((attachment) => (
+                      <View key={attachment.id} style={styles.galleryThumbContainer}>
+                        <Image source={{ uri: attachment.uri }} style={styles.galleryThumb} />
+                        <TouchableOpacity
+                          style={styles.removeThumbButton}
+                          onPress={() => handleRemoveProgressAttachment(attachment.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Ionicons name="close-circle" size={22} color="white" />
+                        </TouchableOpacity>
+                        {attachment.type === 'video' && (
+                          <View style={styles.galleryVideoOverlay}>
+                            <Ionicons name="play-circle" size={28} color="white" />
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* 4. Remarks Box */}
               <View style={styles.remarksSection}>
                 <Text style={styles.inputLabel}>Remarks (Optional)</Text>
                 <TextInput
@@ -1258,47 +1298,7 @@ export default function ProjectDetailsScreen() {
                 />
               </View>
 
-              {/* Add Attachments Section */}
-              <View style={styles.remarksSection}>
-                <Text style={styles.inputLabel}>Add Attachments (Optional)</Text>
-                <TouchableOpacity
-                  style={styles.addAttachmentButton}
-                  onPress={handleAddProgressAttachment}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="camera-outline" size={24} color={COLORS.textSecondary} />
-                  <Text style={styles.addAttachmentText}>Add Photo, Video, or File</Text>
-                </TouchableOpacity>
-
-                {/* Attachment Thumbnails */}
-                {progressAttachments.length > 0 && (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.attachmentScrollView}
-                  >
-                    {progressAttachments.map((attachment) => (
-                      <View key={attachment.id} style={styles.attachmentThumbContainer}>
-                        <Image source={{ uri: attachment.uri }} style={styles.attachmentThumb} />
-                        <TouchableOpacity
-                          style={styles.removeAttachmentButton}
-                          onPress={() => handleRemoveProgressAttachment(attachment.id)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="close-circle" size={24} color={COLORS.statusDelayed} />
-                        </TouchableOpacity>
-                        {attachment.type === 'video' && (
-                          <View style={styles.attachmentVideoIndicator}>
-                            <Ionicons name="play-circle" size={20} color="white" />
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
-
-              {/* Last Update Section */}
+              {/* 5. Last Updated Section */}
               <View style={styles.lastUpdateSection}>
                 <View style={styles.lastUpdateDivider} />
                 <Text style={styles.lastUpdateTitle}>Last Update</Text>
@@ -1789,7 +1789,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingBottom: 24,
-    maxHeight: '85%',
+    height: '85%',
+  },
+  progressScrollContent: {
+    flex: 1,
   },
   grabberHandle: {
     width: 40,
@@ -1828,8 +1831,79 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
+  // New Attachments Row Styles
+  attachmentsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  addButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  // Thumbnail Gallery Styles
+  thumbnailGallery: {
+    marginBottom: 20,
+    paddingVertical: 12,
+  },
+  galleryThumbContainer: {
+    width: 100,
+    height: 100,
+    marginRight: 12,
+    borderRadius: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  galleryThumb: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  removeThumbButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 11,
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  galleryVideoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
   remarksSection: {
-    marginTop: 16,
+    marginTop: 8,
     marginBottom: 24,
   },
   remarksTextArea: {
