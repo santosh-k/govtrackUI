@@ -388,7 +388,7 @@ export default function ComplaintDetailsScreen() {
             <View style={styles.headerLeftSection}>
               <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => router.replace('/(drawer)/complaints-list')}
+                onPress={() => router.back()}
                 activeOpacity={0.6}
               >
                 <Ionicons name="arrow-back" size={28} color={COLORS.text} />
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textLight,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.5 as any,
   },
   personName: {
     fontSize: 16,
