@@ -9,7 +9,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -150,9 +150,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
 };
 
 export default function ProjectListScreen() {
-  const params = useLocalSearchParams();
-  const filter = params.filter as string || 'All Projects';
-
   const navigateBack = () => {
     router.back();
   };
@@ -318,7 +315,7 @@ export default function ProjectListScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{filter}</Text>
+        <Text style={styles.headerTitle}>Projects List</Text>
       </View>
 
       {/* List */}
