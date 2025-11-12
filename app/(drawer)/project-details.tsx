@@ -740,6 +740,52 @@ export default function ProjectDetailsScreen() {
         </View>
       </View>
 
+      {/* Status & Actions Card */}
+      <View style={styles.card}>
+        <View style={styles.statusActionsContainer}>
+          {/* Left Section: Inspections Overview */}
+          <View style={styles.statusSection}>
+            <Text style={styles.statusSectionTitle}>Inspections</Text>
+            <View style={styles.statusStatsContainer}>
+              <Text style={styles.statusStatText}>Total: <Text style={styles.statusStatValue}>12</Text></Text>
+              <Text style={styles.statusStatText}>
+                Overdue: <Text style={[styles.statusStatValue, styles.warningText]}>2</Text>
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/(drawer)/create-inspection')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.actionButtonText}>New Inspection</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Vertical Divider */}
+          <View style={styles.verticalDivider} />
+
+          {/* Right Section: Bottlenecks Overview */}
+          <View style={styles.statusSection}>
+            <Text style={styles.statusSectionTitle}>Bottlenecks</Text>
+            <View style={styles.statusStatsContainer}>
+              <Text style={styles.statusStatText}>Total: <Text style={styles.statusStatValue}>5</Text></Text>
+              <Text style={styles.statusStatText}>
+                High Priority: <Text style={[styles.statusStatValue, styles.warningText]}>1</Text>
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/(drawer)/create-bottleneck')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.actionButtonText}>Add Bottleneck</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
       {/* Last Updated Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Last Updated</Text>
@@ -1660,6 +1706,60 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
+  },
+  // Status & Actions Card Styles
+  statusActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  statusSection: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  statusSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 16,
+  },
+  statusStatsContainer: {
+    marginBottom: 20,
+  },
+  statusStatText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  statusStatValue: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  warningText: {
+    color: COLORS.statusDelayed,
+  },
+  verticalDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginLeft: 6,
   },
   lastUpdatedText: {
     fontSize: 15,
