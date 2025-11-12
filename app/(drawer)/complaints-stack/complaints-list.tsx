@@ -415,9 +415,9 @@ export default function ComplaintsScreen() {
 
   const handleComplaintPress = (complaint: Complaint) => {
     router.push({
-      pathname: '/(drawer)/complaint-details',
-      params: { id: complaint.id },
-    });
+     pathname: '/(drawer)/complaints-stack/complaint-details',
+     params: { id: complaint.id },
+});
   };
 
   const handleFilterPress = () => {
@@ -450,7 +450,7 @@ export default function ComplaintsScreen() {
     };
     setFilterSheetVisible(false);
     router.push({
-      pathname: '/(drawer)/select-category',
+      pathname: '/(drawer)/complaints-stack/select-category',
       params: { selected: tempSelectedCategory },
     });
   };
@@ -466,7 +466,7 @@ export default function ComplaintsScreen() {
     };
     setFilterSheetVisible(false);
     router.push({
-      pathname: '/(drawer)/select-zone',
+      pathname: '/(drawer)/complaints-stack/select-zone',
       params: { selected: tempSelectedZone },
     });
   };
@@ -482,7 +482,7 @@ export default function ComplaintsScreen() {
     };
     setFilterSheetVisible(false);
     router.push({
-      pathname: '/(drawer)/select-department',
+      pathname: '/(drawer)/complaints-stack/select-department',
       params: { selected: tempSelectedDepartment },
     });
   };

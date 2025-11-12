@@ -183,7 +183,7 @@ export default function ComplaintDashboardScreen() {
   const handleStatCardPress = (filterType: string, title: string) => {
     // Navigate to complaints list with pre-applied filter and title
     router.push({
-      pathname: '/complaints-list',
+      pathname: '/complaints-stack/complaints-list',
       params: {
         filter: filterType,
         title: title,

@@ -24,6 +24,14 @@ export default function DrawerLayout() {
           headerShown: false,
         }}
       />
+      {/* ✅ Stack to manage complaint-related screens */}
+      <Drawer.Screen
+        name="complaints-stack"
+        options={{
+          drawerLabel: 'Complaints',
+          headerShown: false,
+        }}
+      />
     </Drawer>
   );
 }
