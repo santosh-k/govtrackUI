@@ -407,8 +407,9 @@ export default function ProjectDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
-      {/* Main Header */}
-      <View style={styles.header}>
+      {/* Unified Header */}
+      <View style={styles.unifiedHeader}>
+        {/* Left: Back Button */}
         <TouchableOpacity
           style={styles.backButton}
           onPress={goBack}
@@ -416,24 +417,23 @@ export default function ProjectDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Project Details</Text>
-      </View>
 
-      {/* Sticky Info Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.projectInfo}>
-          <Text style={styles.projectName} numberOfLines={2}>{projectName}</Text>
-          <Text style={styles.projectId}>{projectId}</Text>
+        {/* Middle: Project Info */}
+        <View style={styles.headerProjectInfo}>
+          <Text style={styles.headerProjectName} numberOfLines={1}>{projectName}</Text>
+          <Text style={styles.headerProjectId}>{projectId}</Text>
         </View>
+
+        {/* Right: Status Button */}
         <TouchableOpacity
-          style={[styles.statusButton, { backgroundColor: statusColors.bg }]}
+          style={[styles.headerStatusButton, { backgroundColor: statusColors.bg }]}
           onPress={handleStatusPress}
           activeOpacity={0.7}
         >
-          <Text style={[styles.statusButtonText, { color: statusColors.text }]}>
+          <Text style={[styles.headerStatusText, { color: statusColors.text }]}>
             {projectStatus}
           </Text>
-          <Ionicons name="chevron-down" size={16} color={statusColors.text} style={styles.chevronIcon} />
+          <Ionicons name="chevron-down" size={14} color={statusColors.text} style={styles.headerChevronIcon} />
         </TouchableOpacity>
       </View>
 
@@ -630,56 +630,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
+  // Unified Header Styles
+  unifiedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBackground,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    minHeight: 70,
   },
   backButton: {
     padding: 8,
     marginLeft: -8,
-    marginRight: 12,
+    marginRight: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  stickyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  projectInfo: {
+  headerProjectInfo: {
     flex: 1,
     marginRight: 12,
+    justifyContent: 'center',
   },
-  projectName: {
-    fontSize: 18,
+  headerProjectName: {
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  projectId: {
-    fontSize: 13,
+  headerProjectId: {
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
-  statusButton: {
+  headerStatusButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: 'transparent',
     shadowColor: '#000',
@@ -688,12 +676,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  statusButtonText: {
-    fontSize: 13,
+  headerStatusText: {
+    fontSize: 12,
     fontWeight: '700',
     marginRight: 4,
   },
-  chevronIcon: {
+  headerChevronIcon: {
     marginLeft: 2,
   },
   tabBar: {
