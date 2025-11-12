@@ -238,7 +238,6 @@ export default function ProjectDetailsScreen() {
   const expenditure = '₹3.8 Cr';
   const estimatedCost = '₹4.5 Cr';
   const expectedCompletionDate = '31-Mar-25';
-  const financialExpenditure = '76%';
   const lastUpdated = '15-Dec-24, 2:30 PM';
 
   // Calculate remaining cost dynamically
@@ -725,10 +724,6 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statLabel}>Estimated Cost</Text>
               <Text style={styles.statValue}>{estimatedCost}</Text>
             </View>
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>Exp. Comp. Date</Text>
-              <Text style={styles.statValue}>{expectedCompletionDate}</Text>
-            </View>
           </View>
 
           {/* Right Column */}
@@ -738,8 +733,8 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statValue}>{expenditure}</Text>
             </View>
             <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>Financial Exp. %</Text>
-              <Text style={styles.statValue}>{financialExpenditure}</Text>
+              <Text style={styles.statLabel}>Exp. Comp. Date</Text>
+              <Text style={styles.statValue}>{expectedCompletionDate}</Text>
             </View>
           </View>
         </View>
