@@ -21,7 +21,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import ApiManager from '@/src/services/ApiManager';
 
 const COLORS = {
   primary: '#2196F3',
@@ -268,6 +267,8 @@ export default function EditProfileScreen() {
         });
       }
 
+      // Dynamic import to avoid circular dependency
+      const { default: ApiManager } = await import('@/src/services/ApiManager');
       const response = await ApiManager.getInstance().updateProfile(formData);
       setIsLoading(false);
 

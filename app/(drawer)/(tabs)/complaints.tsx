@@ -111,21 +111,22 @@ export default function ComplaintDashboardScreen() {
   };
 
   /** ✅ Fetch stats from API **/
-  const fetchStats = async (filter: string,startDate?: string,
-  endDate?: string) => {
+  const fetchStats = async (filter: string, startDate?: string, endDate?: string) => {
     setLoading(true);
     setError(null);
 
     try {
+      // Dynamic import to avoid circular dependency
+      const { default: ApiManager } = await import('@/src/services/ApiManager');
       let response;
-      if (filter === 'custom'){
-         response = await ApiManager.getInstance().getStats(filter,startDate,endDate);
-         console.log('API Response:', response);
-      }else{
+      if (filter === 'custom') {
+        response = await ApiManager.getInstance().getStats(filter, startDate, endDate);
+        console.log('API Response:', response);
+      } else {
         response = await ApiManager.getInstance().getStats(filter);
         console.log('API Response:', response);
       }
-      
+
       if (response?.success && response?.data) {
         setStats(response.data);
         console.log('Stats set:', response.data);

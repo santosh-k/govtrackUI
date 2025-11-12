@@ -19,7 +19,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../src/store';
 import { loginStart, loginFailure } from '../src/store/authSlice';
 import { AuthContext } from '../src/contexts/AuthContext';
-import ApiManager from '../src/services/ApiManager';
 import { User } from '../src/types/auth.types';
 
 const COLORS = {
@@ -85,6 +84,8 @@ export default function LoginScreen() {
     dispatch(loginStart());
 
     try {
+      // Dynamic import to avoid circular dependency
+      const { default: ApiManager } = await import('../src/services/ApiManager');
       const apiManager = ApiManager.getInstance();
       const response = await apiManager.login({ username: username.trim(), password: password.trim() });
 
