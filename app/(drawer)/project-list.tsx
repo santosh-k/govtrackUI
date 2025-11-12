@@ -40,6 +40,10 @@ interface Project {
   progress: number;
   startDate: string;
   endDate: string;
+  totalCost: string;
+  expenditure: string;
+  expectedCompletionDate: string;
+  financialExpenditure: string;
 }
 
 // Helper function to get status colors
@@ -101,6 +105,36 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
         <Text style={styles.progressText}>{project.progress}%</Text>
       </View>
 
+      {/* Separator Line */}
+      <View style={styles.separator} />
+
+      {/* Financials Section - 2x2 Grid */}
+      <View style={styles.financialsSection}>
+        {/* Top Row */}
+        <View style={styles.financialRow}>
+          <View style={styles.financialStatBlock}>
+            <Text style={styles.financialLabel}>Total Cost</Text>
+            <Text style={styles.financialValue}>{project.totalCost}</Text>
+          </View>
+          <View style={styles.financialStatBlock}>
+            <Text style={styles.financialLabel}>Expenditure</Text>
+            <Text style={styles.financialValue}>{project.expenditure}</Text>
+          </View>
+        </View>
+
+        {/* Bottom Row */}
+        <View style={styles.financialRow}>
+          <View style={styles.financialStatBlock}>
+            <Text style={styles.financialLabel}>Exp. Comp. Date</Text>
+            <Text style={styles.financialValue}>{project.expectedCompletionDate}</Text>
+          </View>
+          <View style={styles.financialStatBlock}>
+            <Text style={styles.financialLabel}>Financial Exp.</Text>
+            <Text style={styles.financialValue}>{project.financialExpenditure}</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Footer Row: Dates and Action */}
       <View style={styles.cardFooter}>
         <Text style={styles.datesText}>
@@ -140,6 +174,10 @@ export default function ProjectListScreen() {
       progress: 75,
       startDate: '01-Jan-24',
       endDate: '31-Dec-24',
+      totalCost: '₹5.0 Cr',
+      expenditure: '₹3.8 Cr',
+      expectedCompletionDate: '31-Mar-25',
+      financialExpenditure: '76%',
     },
     {
       id: 'PRJ-2024-002',
@@ -149,6 +187,10 @@ export default function ProjectListScreen() {
       progress: 45,
       startDate: '15-Feb-24',
       endDate: '30-Nov-24',
+      totalCost: '₹8.2 Cr',
+      expenditure: '₹4.1 Cr',
+      expectedCompletionDate: '15-Jan-25',
+      financialExpenditure: '50%',
     },
     {
       id: 'PRJ-2024-003',
@@ -158,6 +200,10 @@ export default function ProjectListScreen() {
       progress: 100,
       startDate: '10-Jan-24',
       endDate: '30-Jun-24',
+      totalCost: '₹2.5 Cr',
+      expenditure: '₹2.5 Cr',
+      expectedCompletionDate: '30-Jun-24',
+      financialExpenditure: '100%',
     },
     {
       id: 'PRJ-2024-004',
@@ -167,6 +213,10 @@ export default function ProjectListScreen() {
       progress: 30,
       startDate: '01-Mar-24',
       endDate: '31-Aug-24',
+      totalCost: '₹12.0 Cr',
+      expenditure: '₹4.2 Cr',
+      expectedCompletionDate: '31-Dec-24',
+      financialExpenditure: '35%',
     },
     {
       id: 'PRJ-2024-005',
@@ -176,6 +226,10 @@ export default function ProjectListScreen() {
       progress: 62,
       startDate: '20-Feb-24',
       endDate: '15-Oct-24',
+      totalCost: '₹4.5 Cr',
+      expenditure: '₹2.9 Cr',
+      expectedCompletionDate: '15-Oct-24',
+      financialExpenditure: '64%',
     },
     {
       id: 'PRJ-2024-006',
@@ -185,6 +239,10 @@ export default function ProjectListScreen() {
       progress: 88,
       startDate: '05-Jan-24',
       endDate: '20-Sep-24',
+      totalCost: '₹6.8 Cr',
+      expenditure: '₹6.0 Cr',
+      expectedCompletionDate: '20-Sep-24',
+      financialExpenditure: '88%',
     },
     {
       id: 'PRJ-2024-007',
@@ -194,6 +252,10 @@ export default function ProjectListScreen() {
       progress: 55,
       startDate: '10-Apr-24',
       endDate: '30-Oct-24',
+      totalCost: '₹3.2 Cr',
+      expenditure: '₹1.9 Cr',
+      expectedCompletionDate: '15-Nov-24',
+      financialExpenditure: '59%',
     },
     {
       id: 'PRJ-2024-008',
@@ -203,6 +265,10 @@ export default function ProjectListScreen() {
       progress: 25,
       startDate: '01-Feb-24',
       endDate: '31-Jul-24',
+      totalCost: '₹7.5 Cr',
+      expenditure: '₹2.3 Cr',
+      expectedCompletionDate: '30-Oct-24',
+      financialExpenditure: '31%',
     },
     {
       id: 'PRJ-2024-009',
@@ -212,6 +278,10 @@ export default function ProjectListScreen() {
       progress: 42,
       startDate: '01-Jan-24',
       endDate: '31-Dec-25',
+      totalCost: '₹18.0 Cr',
+      expenditure: '₹7.8 Cr',
+      expectedCompletionDate: '31-Dec-25',
+      financialExpenditure: '43%',
     },
     {
       id: 'PRJ-2024-010',
@@ -221,6 +291,10 @@ export default function ProjectListScreen() {
       progress: 100,
       startDate: '01-Nov-23',
       endDate: '30-May-24',
+      totalCost: '₹3.8 Cr',
+      expenditure: '₹3.8 Cr',
+      expectedCompletionDate: '30-May-24',
+      financialExpenditure: '100%',
     },
   ];
 
@@ -356,6 +430,37 @@ const styles = StyleSheet.create({
     minWidth: 42,
     textAlign: 'right',
   },
+  // Separator
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 16,
+  },
+  // Financials Section
+  financialsSection: {
+    marginBottom: 16,
+  },
+  financialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  financialStatBlock: {
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  financialLabel: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textLight,
+    marginBottom: 4,
+  },
+  financialValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  // Footer
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
