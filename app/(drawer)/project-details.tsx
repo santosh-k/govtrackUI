@@ -22,8 +22,58 @@ import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
+import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Zoomable Image Component
+const ZoomableImage: React.FC<{ uri: string }> = ({ uri }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const baseScale = useRef(1);
+
+  const onPinchEvent = Animated.event(
+    [{ nativeEvent: { scale: scale } }],
+    { useNativeDriver: true }
+  );
+
+  const onPinchStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      baseScale.current *= event.nativeEvent.scale;
+      scale.setValue(1);
+
+      // Reset if zoomed out too much
+      if (baseScale.current < 1) {
+        baseScale.current = 1;
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start();
+      }
+
+      // Limit max zoom
+      if (baseScale.current > 3) {
+        baseScale.current = 3;
+      }
+    }
+  };
+
+  const animatedScale = Animated.multiply(baseScale.current, scale);
+
+  return (
+    <PinchGestureHandler
+      onGestureEvent={onPinchEvent}
+      onHandlerStateChange={onPinchStateChange}
+    >
+      <Animated.View style={[styles.zoomableContainer]}>
+        <Animated.Image
+          source={{ uri }}
+          style={[styles.fullImage, { transform: [{ scale: animatedScale }] }]}
+          resizeMode="contain"
+        />
+      </Animated.View>
+    </PinchGestureHandler>
+  );
+};
 
 const COLORS = {
   background: '#F5F5F5',
@@ -55,12 +105,14 @@ type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
 type TabName = 'Overview' | 'Media' | 'Inspections' | 'Bottlenecks' | 'Activity';
 type InspectionStatus = 'Passed' | 'Failed' | 'Pending';
 type Priority = 'High' | 'Medium' | 'Low';
+type MediaFilterType = 'All' | 'Photos' | 'Videos' | 'Documents';
 
 interface MediaItem {
   id: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'document';
   uri: string;
   thumbnail?: string;
+  filename?: string;
 }
 
 interface LocationData {
@@ -215,6 +267,11 @@ export default function ProjectDetailsScreen() {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
+  // Media tab states
+  const [mediaFilter, setMediaFilter] = useState<MediaFilterType>('All');
+  const [allMediaItems, setAllMediaItems] = useState<MediaItem[]>([]);
+  const [showUploadSheet, setShowUploadSheet] = useState(false);
+
   // Status update enhancement states
   const [capturedLocation, setCapturedLocation] = useState<LocationData | null>(null);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
@@ -244,14 +301,24 @@ export default function ProjectDetailsScreen() {
   const remainingCost = `₹${remainingCostRaw.toFixed(1)} Cr`;
   const budgetUtilizationPercentage = Math.round((expenditureRaw / totalCostRaw) * 100);
 
-  const mediaItems: MediaItem[] = [
-    { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Photo+1' },
-    { id: '2', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1' },
-    { id: '3', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Photo+2' },
-    { id: '4', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Site+Photo+3' },
-    { id: '5', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2' },
-    { id: '6', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Site+Photo+4' },
-  ];
+  // Initialize media items with mixed content
+  useEffect(() => {
+    const initialMedia: MediaItem[] = [
+      { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Photo+1' },
+      { id: '2', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1' },
+      { id: '3', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Photo+2' },
+      { id: '4', type: 'document', uri: 'https://example.com/project-plan.pdf', filename: 'Project_Plan_2024.pdf' },
+      { id: '5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Site+Photo+3' },
+      { id: '6', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2' },
+      { id: '7', type: 'document', uri: 'https://example.com/safety-report.pdf', filename: 'Safety_Report.pdf' },
+      { id: '8', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Site+Photo+4' },
+      { id: '9', type: 'document', uri: 'https://example.com/budget.xlsx', filename: 'Budget_Analysis.xlsx' },
+      { id: '10', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Site+Photo+5' },
+      { id: '11', type: 'video', uri: 'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3', thumbnail: 'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3' },
+      { id: '12', type: 'document', uri: 'https://example.com/inspection.pdf', filename: 'Inspection_Report_Dec.pdf' },
+    ];
+    setAllMediaItems(initialMedia);
+  }, []);
 
   const inspections: Inspection[] = [
     { id: '1', date: '15-Dec-24', inspector: 'John Smith', status: 'Passed' },
@@ -606,41 +673,106 @@ export default function ProjectDetailsScreen() {
     });
   };
 
-  const handleMediaPress = (index: number) => {
-    setSelectedMediaIndex(index);
+  // Get filtered media items based on current filter
+  const getFilteredMediaItems = (): MediaItem[] => {
+    switch (mediaFilter) {
+      case 'Photos':
+        return allMediaItems.filter(item => item.type === 'image');
+      case 'Videos':
+        return allMediaItems.filter(item => item.type === 'video');
+      case 'Documents':
+        return allMediaItems.filter(item => item.type === 'document');
+      default:
+        return allMediaItems;
+    }
+  };
+
+  // Get viewable media items (exclude documents for viewer)
+  const getViewableMediaItems = (): MediaItem[] => {
+    return getFilteredMediaItems().filter(item => item.type !== 'document');
+  };
+
+  const handleMediaPress = (item: MediaItem, index: number) => {
+    if (item.type === 'document') {
+      Alert.alert('Document', `Open ${item.filename || 'document'}`);
+      return;
+    }
+
+    // For images and videos, open the viewer
+    const viewableItems = getViewableMediaItems();
+    const viewableIndex = viewableItems.findIndex(m => m.id === item.id);
+    setViewerMediaItems(viewableItems);
+    setSelectedMediaIndex(viewableIndex >= 0 ? viewableIndex : 0);
     setShowMediaViewer(true);
   };
 
-  const handleUploadMedia = async () => {
-    Alert.alert(
-      'Upload Media',
-      'Choose an option',
-      [
-        { text: 'Take Photo or Video', onPress: () => takePhoto() },
-        { text: 'Choose from Gallery', onPress: () => pickFromGallery() },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+  const handleUploadMedia = () => {
+    setShowUploadSheet(true);
   };
 
-  const takePhoto = async () => {
+  const takePhotoOrVideo = async () => {
+    setShowUploadSheet(false);
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Camera permission is required');
       return;
     }
-    // Implementation would go here
-    Alert.alert('Info', 'Camera functionality would open here');
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newMedia: MediaItem = {
+        id: `media-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setAllMediaItems([newMedia, ...allMediaItems]);
+      Alert.alert('Success', 'Media uploaded successfully');
+    }
   };
 
   const pickFromGallery = async () => {
+    setShowUploadSheet(false);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Gallery permission is required');
       return;
     }
-    // Implementation would go here
-    Alert.alert('Info', 'Gallery picker would open here');
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newMedia: MediaItem = {
+        id: `media-${Date.now()}`,
+        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        uri: result.assets[0].uri,
+        thumbnail: result.assets[0].uri,
+      };
+      setAllMediaItems([newMedia, ...allMediaItems]);
+      Alert.alert('Success', 'Media uploaded successfully');
+    }
+  };
+
+  const pickDocument = async () => {
+    setShowUploadSheet(false);
+    // Simulate document picker
+    const newDocument: MediaItem = {
+      id: `doc-${Date.now()}`,
+      type: 'document',
+      uri: 'https://example.com/new-document.pdf',
+      filename: `Document_${Date.now()}.pdf`,
+    };
+    setAllMediaItems([newDocument, ...allMediaItems]);
+    Alert.alert('Success', 'Document uploaded successfully');
   };
 
   const statusColors = getStatusColors(projectStatus);
@@ -789,40 +921,96 @@ export default function ProjectDetailsScreen() {
     </ScrollView>
   );
 
-  const renderMediaTab = () => (
-    <View style={styles.tabContent}>
-      <FlatList
-        data={mediaItems}
-        numColumns={3}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.mediaThumbnail}
-            onPress={() => handleMediaPress(index)}
-            activeOpacity={0.8}
-          >
-            <Image source={{ uri: item.uri }} style={styles.thumbnailImage} />
-            {item.type === 'video' && (
-              <View style={styles.playIconOverlay}>
-                <Ionicons name="play-circle" size={40} color="white" />
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.mediaGrid}
-        showsVerticalScrollIndicator={false}
-      />
+  const renderMediaTab = () => {
+    const filteredMedia = getFilteredMediaItems();
 
-      {/* FAB for Upload Media */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleUploadMedia}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="camera" size={24} color="white" />
-      </TouchableOpacity>
-    </View>
-  );
+    return (
+      <View style={styles.tabContent}>
+        {/* Filter Tabs */}
+        <View style={styles.mediaFilterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.mediaFilterScrollContent}
+          >
+            {(['All', 'Photos', 'Videos', 'Documents'] as MediaFilterType[]).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.mediaFilterTab,
+                  mediaFilter === filter && styles.mediaFilterTabActive
+                ]}
+                onPress={() => setMediaFilter(filter)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.mediaFilterTabText,
+                  mediaFilter === filter && styles.mediaFilterTabTextActive
+                ]}>
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Media Grid */}
+        {filteredMedia.length === 0 ? (
+          <View style={styles.emptyMediaState}>
+            <Ionicons name="images-outline" size={64} color={COLORS.textLight} />
+            <Text style={styles.emptyMediaTitle}>No {mediaFilter === 'All' ? 'Media' : mediaFilter} Yet</Text>
+            <Text style={styles.emptyMediaText}>Tap the + button to upload</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredMedia}
+            numColumns={3}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={styles.mediaThumbnail}
+                onPress={() => handleMediaPress(item, index)}
+                activeOpacity={0.8}
+              >
+                {item.type === 'document' ? (
+                  <View style={styles.documentThumbnail}>
+                    <Ionicons
+                      name={item.filename?.endsWith('.pdf') ? 'document-text' : 'document'}
+                      size={40}
+                      color={COLORS.primary}
+                    />
+                    <Text style={styles.documentFilename} numberOfLines={2}>
+                      {item.filename || 'Document'}
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Image source={{ uri: item.uri }} style={styles.thumbnailImage} />
+                    {item.type === 'video' && (
+                      <View style={styles.playIconOverlay}>
+                        <Ionicons name="play-circle" size={40} color="white" />
+                      </View>
+                    )}
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+            contentContainerStyle={styles.mediaGrid}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        {/* FAB for Upload Media */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleUploadMedia}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderInspectionsTab = () => (
     <View style={styles.tabContent}>
@@ -1189,42 +1377,48 @@ export default function ProjectDetailsScreen() {
         animationType="fade"
         onRequestClose={() => setShowMediaViewer(false)}
       >
-        <View style={styles.mediaViewerContainer}>
-          <TouchableOpacity
-            style={styles.closeMediaButton}
-            onPress={() => setShowMediaViewer(false)}
-          >
-            <Ionicons name="close" size={32} color="white" />
-          </TouchableOpacity>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View style={styles.mediaViewerContainer}>
+            <TouchableOpacity
+              style={styles.closeMediaButton}
+              onPress={() => setShowMediaViewer(false)}
+            >
+              <Ionicons name="close" size={32} color="white" />
+            </TouchableOpacity>
 
-          <FlatList
-            data={viewerMediaItems.length > 0 ? viewerMediaItems : mediaItems}
-            horizontal
-            pagingEnabled
-            initialScrollIndex={selectedMediaIndex}
-            getItemLayout={(data, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-            renderItem={({ item }) => (
-              <View style={styles.mediaViewerItem}>
-                <Image
-                  source={{ uri: item.uri }}
-                  style={styles.fullImage}
-                  resizeMode="contain"
-                />
-                {item.type === 'video' && (
-                  <TouchableOpacity style={styles.playButton}>
-                    <Ionicons name="play-circle" size={80} color="white" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-            keyExtractor={(item) => item.id}
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
+            <FlatList
+              data={viewerMediaItems.length > 0 ? viewerMediaItems : []}
+              horizontal
+              pagingEnabled
+              initialScrollIndex={selectedMediaIndex}
+              getItemLayout={(data, index) => ({
+                length: width,
+                offset: width * index,
+                index,
+              })}
+              renderItem={({ item }) => (
+                <View style={styles.mediaViewerItem}>
+                  {item.type === 'image' ? (
+                    <ZoomableImage uri={item.uri} />
+                  ) : (
+                    <>
+                      <Image
+                        source={{ uri: item.uri }}
+                        style={styles.fullImage}
+                        resizeMode="contain"
+                      />
+                      <TouchableOpacity style={styles.playButton}>
+                        <Ionicons name="play-circle" size={80} color="white" />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
+        </GestureHandlerRootView>
       </Modal>
 
       {/* Add Inspection Modal */}
@@ -1419,6 +1613,79 @@ export default function ProjectDetailsScreen() {
               ) : (
                 <Text style={styles.progressSaveButtonText}>Save Progress</Text>
               )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Upload Action Sheet */}
+      <Modal
+        visible={showUploadSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowUploadSheet(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.overlayTouchable}
+            activeOpacity={1}
+            onPress={() => setShowUploadSheet(false)}
+          />
+          <View style={styles.uploadSheet}>
+            <View style={styles.uploadSheetHandle} />
+            <Text style={styles.uploadSheetTitle}>Upload Media</Text>
+
+            <TouchableOpacity
+              style={styles.uploadOption}
+              onPress={takePhotoOrVideo}
+              activeOpacity={0.7}
+            >
+              <View style={styles.uploadOptionIconContainer}>
+                <Ionicons name="camera" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.uploadOptionTextContainer}>
+                <Text style={styles.uploadOptionTitle}>Take Photo or Video</Text>
+                <Text style={styles.uploadOptionSubtitle}>Use your camera</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.uploadOption}
+              onPress={pickFromGallery}
+              activeOpacity={0.7}
+            >
+              <View style={styles.uploadOptionIconContainer}>
+                <Ionicons name="images" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.uploadOptionTextContainer}>
+                <Text style={styles.uploadOptionTitle}>Choose from Gallery</Text>
+                <Text style={styles.uploadOptionSubtitle}>Select photos or videos</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.uploadOption}
+              onPress={pickDocument}
+              activeOpacity={0.7}
+            >
+              <View style={styles.uploadOptionIconContainer}>
+                <Ionicons name="document-text" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.uploadOptionTextContainer}>
+                <Text style={styles.uploadOptionTitle}>Choose File</Text>
+                <Text style={styles.uploadOptionSubtitle}>Upload documents</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.uploadCancelButton}
+              onPress={() => setShowUploadSheet(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.uploadCancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1784,6 +2051,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'white',
   },
+  // Media Tab Styles
+  mediaFilterContainer: {
+    backgroundColor: COLORS.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingVertical: 12,
+  },
+  mediaFilterScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  mediaFilterTab: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    marginRight: 8,
+  },
+  mediaFilterTabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  mediaFilterTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  mediaFilterTabTextActive: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  emptyMediaState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyMediaTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyMediaText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
   mediaGrid: {
     padding: 4,
   },
@@ -1798,6 +2112,24 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 8,
   },
+  documentThumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  documentFilename: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginTop: 8,
+  },
   playIconOverlay: {
     position: 'absolute',
     top: 0,
@@ -1806,6 +2138,74 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Upload Action Sheet Styles
+  overlayTouchable: {
+    flex: 1,
+  },
+  uploadSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    paddingTop: 8,
+  },
+  uploadSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: COLORS.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  uploadSheetTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  uploadOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  uploadOptionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  uploadOptionTextContainer: {
+    flex: 1,
+  },
+  uploadOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  uploadOptionSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  uploadCancelButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  uploadCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   fab: {
     position: 'absolute',
@@ -1999,6 +2399,13 @@ const styles = StyleSheet.create({
   mediaViewerItem: {
     width: width,
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomableContainer: {
+    flex: 1,
+    width: width,
+    height: height,
     justifyContent: 'center',
     alignItems: 'center',
   },
