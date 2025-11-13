@@ -238,7 +238,6 @@ export default function ProjectDetailsScreen() {
   const expenditure = '₹3.8 Cr';
   const estimatedCost = '₹4.5 Cr';
   const expectedCompletionDate = '31-Mar-25';
-  const lastUpdated = '15-Dec-24, 2:30 PM';
 
   // Calculate remaining cost dynamically
   const remainingCostRaw = totalCostRaw - expenditureRaw;
@@ -786,12 +785,6 @@ export default function ProjectDetailsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
-
-      {/* Last Updated Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Last Updated</Text>
-        <Text style={styles.lastUpdatedText}>{lastUpdated}</Text>
       </View>
     </ScrollView>
   );
@@ -1790,11 +1783,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: 'white',
-  },
-  lastUpdatedText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.text,
   },
   mediaGrid: {
     padding: 4,
