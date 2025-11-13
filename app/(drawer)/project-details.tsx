@@ -105,7 +105,7 @@ type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
 type TabName = 'Overview' | 'Media' | 'Inspections' | 'Bottlenecks' | 'Activity';
 type InspectionStatus = 'Passed' | 'Failed' | 'Pending';
 type Priority = 'High' | 'Medium' | 'Low';
-type MediaFilterType = 'All' | 'Photos' | 'Videos' | 'Documents';
+type MediaFilterType = 'Photos' | 'Videos' | 'Documents';
 
 interface MediaItem {
   id: string;
@@ -268,7 +268,7 @@ export default function ProjectDetailsScreen() {
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Media tab states
-  const [mediaFilter, setMediaFilter] = useState<MediaFilterType>('All');
+  const [mediaFilter, setMediaFilter] = useState<MediaFilterType>('Photos');
   const [allMediaItems, setAllMediaItems] = useState<MediaItem[]>([]);
   const [showUploadSheet, setShowUploadSheet] = useState(false);
 
@@ -682,8 +682,6 @@ export default function ProjectDetailsScreen() {
         return allMediaItems.filter(item => item.type === 'video');
       case 'Documents':
         return allMediaItems.filter(item => item.type === 'document');
-      default:
-        return allMediaItems;
     }
   };
 
@@ -926,39 +924,11 @@ export default function ProjectDetailsScreen() {
 
     return (
       <View style={styles.tabContent}>
-        {/* Filter Tabs */}
-        <View style={styles.mediaFilterContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.mediaFilterScrollContent}
-          >
-            {(['All', 'Photos', 'Videos', 'Documents'] as MediaFilterType[]).map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  styles.mediaFilterTab,
-                  mediaFilter === filter && styles.mediaFilterTabActive
-                ]}
-                onPress={() => setMediaFilter(filter)}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.mediaFilterTabText,
-                  mediaFilter === filter && styles.mediaFilterTabTextActive
-                ]}>
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
         {/* Media Grid */}
         {filteredMedia.length === 0 ? (
           <View style={styles.emptyMediaState}>
             <Ionicons name="images-outline" size={64} color={COLORS.textLight} />
-            <Text style={styles.emptyMediaTitle}>No {mediaFilter === 'All' ? 'Media' : mediaFilter} Yet</Text>
+            <Text style={styles.emptyMediaTitle}>No {mediaFilter} Yet</Text>
             <Text style={styles.emptyMediaText}>Tap the + button to upload</Text>
           </View>
         ) : (
@@ -999,6 +969,30 @@ export default function ProjectDetailsScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
+
+        {/* Bottom Segmented Control Switcher */}
+        <View style={styles.segmentedControlContainer}>
+          <View style={styles.segmentedControl}>
+            {(['Photos', 'Videos', 'Documents'] as MediaFilterType[]).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.segmentedControlSegment,
+                  mediaFilter === filter && styles.segmentedControlSegmentActive
+                ]}
+                onPress={() => setMediaFilter(filter)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.segmentedControlText,
+                  mediaFilter === filter && styles.segmentedControlTextActive
+                ]}>
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         {/* FAB for Upload Media */}
         <TouchableOpacity
@@ -2052,35 +2046,6 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   // Media Tab Styles
-  mediaFilterContainer: {
-    backgroundColor: COLORS.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingVertical: 12,
-  },
-  mediaFilterScrollContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  mediaFilterTab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    marginRight: 8,
-  },
-  mediaFilterTabActive: {
-    backgroundColor: COLORS.primary,
-  },
-  mediaFilterTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  mediaFilterTabTextActive: {
-    color: 'white',
-    fontWeight: '700',
-  },
   emptyMediaState: {
     flex: 1,
     justifyContent: 'center',
@@ -2138,6 +2103,54 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Bottom Segmented Control Styles
+  segmentedControlContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 28,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  segmentedControlSegment: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  segmentedControlSegmentActive: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  segmentedControlText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  segmentedControlTextActive: {
+    color: 'white',
+    fontWeight: '700',
   },
   // Upload Action Sheet Styles
   overlayTouchable: {
