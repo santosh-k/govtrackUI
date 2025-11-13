@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { selectFilterOptions } from '@/src/store/complaintsSlice';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -38,25 +40,37 @@ export default function SelectDepartmentScreen() {
   const params = useLocalSearchParams();
   const selectedValue = params.selected as string;
   const [searchQuery, setSearchQuery] = React.useState('');
+  
+  // Get filter options from Redux
+  const filterOptions = useSelector(selectFilterOptions);
+
+  // Build departments list from Redux data (objects)
+  const departments = React.useMemo(() => {
+    if (filterOptions && filterOptions.departments && filterOptions.departments.length > 0) {
+      return filterOptions.departments.map((d) => ({ id: d.id, name: d.name }));
+    }
+    // Fallback to hardcoded if API data not available
+    return DEPARTMENTS.map((name, idx) => ({ id: String(idx), name }));
+  }, [filterOptions]);
 
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery.trim()) {
-      return DEPARTMENTS;
+      return departments;
     }
     const query = searchQuery.toLowerCase();
-    return DEPARTMENTS.filter((option) => option.toLowerCase().includes(query));
-  }, [searchQuery]);
+    return departments.filter((option) => option.name.toLowerCase().includes(query));
+  }, [searchQuery, departments]);
 
-  const handleSelectOption = (option: string) => {
+  const handleSelectOption = (option: { id: string | number; name: string }) => {
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('department', option);
+      global.filterSelectionCallback('department', { id: option.id, name: option.name });
     }
     router.back();
   };
 
   const handleClearSelection = () => {
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('department', '');
+      global.filterSelectionCallback('department', { id: null, name: '' });
     }
     router.back();
   };
@@ -130,7 +144,7 @@ export default function SelectDepartmentScreen() {
         </TouchableOpacity>
 
         {filteredOptions.map((option, index) => {
-          const isSelected = selectedValue === option;
+          const isSelected = selectedValue === option.name;
           return (
             <TouchableOpacity
               key={index}
@@ -147,7 +161,7 @@ export default function SelectDepartmentScreen() {
                   isSelected && styles.optionTextSelected,
                 ]}
               >
-                {option}
+                {option.name}
               </Text>
               {isSelected && (
                 <Ionicons name="checkmark" size={24} color={COLORS.primary} />

@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { selectFilterOptions } from '@/src/store/complaintsSlice';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -39,26 +41,38 @@ export default function SelectCategoryScreen() {
   const params = useLocalSearchParams();
   const selectedValue = params.selected as string;
   const [searchQuery, setSearchQuery] = React.useState('');
+  
+  // Get filter options from Redux
+  const filterOptions = useSelector(selectFilterOptions);
+
+  // Build categories list from Redux data (objects with id + name)
+  const categories = React.useMemo(() => {
+    if (filterOptions && filterOptions.categories && filterOptions.categories.length > 0) {
+      return filterOptions.categories.map((cat) => ({ id: cat.id, name: cat.name }));
+    }
+    // Fallback to hardcoded if API data not available
+    return CATEGORIES.map((name, idx) => ({ id: String(idx), name }));
+  }, [filterOptions]);
 
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery.trim()) {
-      return CATEGORIES;
+      return categories;
     }
     const query = searchQuery.toLowerCase();
-    return CATEGORIES.filter((option) => option.toLowerCase().includes(query));
-  }, [searchQuery]);
+    return categories.filter((option) => option.name.toLowerCase().includes(query));
+  }, [searchQuery, categories]);
 
-  const handleSelectOption = (option: string) => {
-    // Store selection in global state and navigate back
+  const handleSelectOption = (option: { id: string | number; name: string }) => {
+    // Store selection in global state and navigate back — pass both id and name
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('category', option);
+      global.filterSelectionCallback('category', { id: option.id, name: option.name });
     }
     router.back();
   };
 
   const handleClearSelection = () => {
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('category', '');
+      global.filterSelectionCallback('category', { id: null, name: '' });
     }
     router.back();
   };
@@ -132,7 +146,7 @@ export default function SelectCategoryScreen() {
         </TouchableOpacity>
 
         {filteredOptions.map((option, index) => {
-          const isSelected = selectedValue === option;
+          const isSelected = selectedValue === option.name;
           return (
             <TouchableOpacity
               key={index}
@@ -149,7 +163,7 @@ export default function SelectCategoryScreen() {
                   isSelected && styles.optionTextSelected,
                 ]}
               >
-                {option}
+                {option.name}
               </Text>
               {isSelected && (
                 <Ionicons name="checkmark" size={24} color={COLORS.primary} />

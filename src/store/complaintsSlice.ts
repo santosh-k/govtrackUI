@@ -39,6 +39,9 @@ export const fetchComplaints = createAsyncThunk(
       limit = 10,
       search = '',
       isInfiniteScroll = false,
+      category_id,
+      zone_id,
+      department_id,
     }: {
       stats_filter: string
       status: string;
@@ -46,18 +49,32 @@ export const fetchComplaints = createAsyncThunk(
       limit?: number;
       search?: string;
       isInfiniteScroll?: boolean;
+      category_id?: string | number | null;
+      zone_id?: string | number | null;
+      department_id?: string | number | null;
     },
     { rejectWithValue }
   ) => {
     try {
       // Use dynamic import to avoid circular dependency
       const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getComplaints(stats_filter,status, page, limit, search);
-
+      const response = await ApiManager.getInstance().getComplaints(
+        stats_filter,
+        status,
+        page,
+        limit,
+        search,
+        category_id ?? undefined,
+        zone_id ?? undefined,
+        department_id ?? undefined,
+      );
+      console.log('Complaint List API Response:', response);
       if (response?.success && response?.data) {
         return {
           complaints: response.data.complaints || [],
           pagination: response.data.pagination || {},
+          filterOptions: response.data.filter_options || null,
+          filters: response.data.filters || null,
           isInfiniteScroll,
         };
       } else {
@@ -118,6 +135,11 @@ const complaintsSlice = createSlice({
 
         state.pagination = pagination;
         state.currentPage = pagination.page || 1;
+        
+        // Store filter options from API response if available
+        if (action.payload.filterOptions) {
+          state.filterOptions = action.payload.filterOptions;
+        }
       })
       .addCase(fetchComplaints.rejected, (state, action) => {
         state.isLoading = false;
@@ -136,5 +158,6 @@ export const selectComplaintsPagination = (state: RootState) => state.complaints
 export const selectCurrentPage = (state: RootState) => state.complaints.currentPage;
 export const selectStatusFilter = (state: RootState) => state.complaints.statusFilter;
 export const selectSearchQuery = (state: RootState) => state.complaints.searchQuery;
+export const selectFilterOptions = (state: RootState) => state.complaints.filterOptions;
 
 export default complaintsSlice.reducer;

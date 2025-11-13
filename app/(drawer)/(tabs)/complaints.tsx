@@ -143,7 +143,7 @@ export default function ComplaintDashboardScreen() {
   };
 
   useEffect(() => {
-    fetchStats('this_month');
+    fetchStats('today');
   }, []);
 
   const handleFilterChange = (filter: QuickFilter) => {

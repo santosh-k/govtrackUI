@@ -271,7 +271,16 @@ class ApiManager {
 }
 
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
-  public async getComplaints(stats_filter: string,status: string, page: number = 1, limit: number = 10, search: string = ''): Promise<any> {
+  public async getComplaints(
+    stats_filter: string,
+    status: string,
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    category_id?: string | number,
+    zone_id?: string | number,
+    department_id?: string | number,
+  ): Promise<any> {
     try {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
@@ -285,8 +294,19 @@ class ApiManager {
         search,
       });
 
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
+      // Append optional ID filters
+      if (category_id !== undefined && category_id !== null && category_id !== '') {
+        queryParams.append('category', String(category_id));
+      }
+      if (zone_id !== undefined && zone_id !== null && zone_id !== '') {
+        queryParams.append('zone', String(zone_id));
+      }
+      if (department_id !== undefined && department_id !== null && department_id !== '') {
+        queryParams.append('department', String(department_id));
+      }
 
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
+      console.log(url)
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
@@ -303,6 +323,39 @@ class ApiManager {
 
       const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints/${complaintId}`;
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- ASSIGNMENT OPTIONS (EXTERNAL ADMIN API) ---------------- */
+  public async getAssignmentOptions(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/assignment-options`;
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- ASSIGN COMPLAINT (EXTERNAL ADMIN API) ---------------- */
+  public async assignComplaint(payload: any): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/assign-complaint`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';

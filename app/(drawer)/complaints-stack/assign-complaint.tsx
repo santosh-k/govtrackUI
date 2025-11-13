@@ -19,6 +19,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import Toast from '@/components/Toast';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAssignmentOptions, selectAssignment } from '@/src/store/assignmentSlice';
+import { clearSelection } from '@/src/store/selectionSlice';
+import { AppDispatch, RootState } from '@/src/store';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -217,45 +221,69 @@ export default function AssignComplaintScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
+  const assignmentState = useSelector(selectAssignment);
+  const optionsLoading = assignmentState?.loading;
+  const divisions = assignmentState?.divisions?.length ? assignmentState.divisions : MOCK_DATA.divisions;
+  const subDivisions = assignmentState?.subdivisions || [];
+  const departments = assignmentState?.departments || [];
+  const designations = assignmentState?.designations || [];
+  const allUsers = assignmentState?.users?.length ? assignmentState.users : MOCK_DATA.allUsers;
+  const selections = useSelector((state: RootState) => state.selection?.byField || {});
 
-  // Handle selection from searchable screen with cascading logic for groups
+  // Handle selection dispatched to Redux from searchable-selection screens
   useEffect(() => {
-    if (params.selectedItem && params.selectedField) {
-      const item = JSON.parse(params.selectedItem as string);
-      const field = params.selectedField as string;
+    if (!selections) return;
 
-      switch (field) {
+    const applySelection = (fieldName: string) => {
+      const sel = selections[fieldName];
+      if (!sel) return;
+      // Only apply if complaintId matches (or if none provided)
+      if (sel.complaintId && sel.complaintId !== complaintId) return;
+
+      const item = sel.item;
+      switch (fieldName) {
         case 'division':
           setDivision(item);
-          // Reset dependent fields
           setSubDivision(null);
           setDepartment(null);
           setDesignation(null);
           break;
         case 'subDivision':
           setSubDivision(item);
-          // Reset dependent fields
           setDepartment(null);
           setDesignation(null);
           break;
         case 'department':
           setDepartment(item);
-          // Reset dependent field
           setDesignation(null);
           break;
         case 'designation':
           setDesignation(item);
           break;
         case 'user':
-          // User selection is independent
           setUser(item);
           break;
       }
 
-      // Clear params after processing
-      router.setParams({ selectedItem: undefined, selectedField: undefined });
+  // clear the selection after applying
+  dispatch(clearSelection({ field: fieldName }));
+    };
+
+    // try each possible field
+    ['division', 'subDivision', 'department', 'designation', 'user'].forEach(applySelection);
+  }, [selections, complaintId, dispatch]);
+
+  // Fetch assignment options on mount
+  const authToken = useSelector((state: RootState) => state.auth.token);
+
+  useEffect(() => {
+    // dispatch redux thunk to load options (ApiManager called inside thunk)
+    // Wait for auth token to be available so ApiManager has a token to attach
+    if (authToken) {
+      dispatch(fetchAssignmentOptions() as any);
     }
-  }, [params.selectedItem, params.selectedField]);
+  }, [authToken]);
 
   // Attachment handlers
   const handleRemoveAttachment = (index: number) => {
@@ -362,10 +390,10 @@ export default function AssignComplaintScreen() {
 
   const handleDivisionSelect = () => {
     router.push({
-      pathname: '/searchable-selection',
+      pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
         title: 'Select Division',
-        items: JSON.stringify(MOCK_DATA.divisions),
+        items: JSON.stringify(divisions),
         field: 'division',
         complaintId: complaintId,
       },
@@ -374,12 +402,12 @@ export default function AssignComplaintScreen() {
 
   const handleSubDivisionSelect = () => {
     if (!division) return;
-    const subDivisions = (MOCK_DATA.subDivisions as any)[division.id] || [];
+    const subs = subDivisions.filter((s) => Number(s.divisionId) === Number(division.id));
     router.push({
-      pathname: '/searchable-selection',
+      pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
         title: 'Select Sub-Division',
-        items: JSON.stringify(subDivisions),
+        items: JSON.stringify(subs),
         field: 'subDivision',
         complaintId: complaintId,
       },
@@ -387,13 +415,19 @@ export default function AssignComplaintScreen() {
   };
 
   const handleDepartmentSelect = () => {
-    if (!subDivision) return;
-    const departments = (MOCK_DATA.departments as any)[subDivision.id] || [];
+    // departments may be filtered by subdivision or division if such mapping exists
+    let deps: any[] = departments;
+    if (subDivision && (subDivision as any).departmentId) {
+      deps = departments.filter((d) => Number(d.id) === Number((subDivision as any).departmentId));
+    } else if (division && (division as any).departmentId) {
+      deps = departments.filter((d) => Number(d.id) === Number((division as any).departmentId));
+    }
+    // fallback: show all departments
     router.push({
-      pathname: '/searchable-selection',
+      pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
         title: 'Select Department',
-        items: JSON.stringify(departments),
+        items: JSON.stringify(deps.length ? deps : departments),
         field: 'department',
         complaintId: complaintId,
       },
@@ -402,12 +436,12 @@ export default function AssignComplaintScreen() {
 
   const handleDesignationSelect = () => {
     if (!department) return;
-    const designations = (MOCK_DATA.designations as any)[department.id] || [];
+    const des = designations.filter((d) => Number(d.departmentId) === Number(department.id));
     router.push({
-      pathname: '/searchable-selection',
+      pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
         title: 'Select Designation',
-        items: JSON.stringify(designations),
+        items: JSON.stringify(des.length ? des : designations),
         field: 'designation',
         complaintId: complaintId,
       },
@@ -415,11 +449,20 @@ export default function AssignComplaintScreen() {
   };
 
   const handleUserSelect = () => {
+    // Filter users based on selected division/subDivision/department/designation
+    const filtered = (allUsers as any[]).filter((u) => {
+      if (division && (u as any).divisionId !== null && Number((u as any).divisionId) !== Number(division.id)) return false;
+      if (subDivision && (u as any).subdivisionId !== null && Number((u as any).subdivisionId) !== Number(subDivision.id)) return false;
+      if (department && (u as any).departmentId !== null && Number((u as any).departmentId) !== Number(department.id)) return false;
+      if (designation && (u as any).designationId !== null && Number((u as any).designationId) !== Number(designation.id)) return false;
+      return true;
+    });
+
     router.push({
-      pathname: '/searchable-selection',
+      pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
         title: 'Select User',
-        items: JSON.stringify(MOCK_DATA.allUsers),
+        items: JSON.stringify(filtered.length ? filtered : allUsers),
         field: 'user',
         complaintId: complaintId,
       },

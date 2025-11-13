@@ -60,7 +60,6 @@ export interface Complaint {
   priority_display: string;
   age_days: number;
 }
-
 /** Pagination Info */
 export interface Pagination {
   page: number;

@@ -267,12 +267,18 @@ export default function ComplaintsScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | number | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | number | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | number | null>(null);
 
   // Temporary filter states (for the bottom sheet)
   const [tempSelectedStatuses, setTempSelectedStatuses] = useState<string[]>([]);
   const [tempSelectedCategory, setTempSelectedCategory] = useState('');
   const [tempSelectedZone, setTempSelectedZone] = useState('');
   const [tempSelectedDepartment, setTempSelectedDepartment] = useState('');
+  const [tempSelectedCategoryId, setTempSelectedCategoryId] = useState<string | number | null>(null);
+  const [tempSelectedZoneId, setTempSelectedZoneId] = useState<string | number | null>(null);
+  const [tempSelectedDepartmentId, setTempSelectedDepartmentId] = useState<string | number | null>(null);
 
   // Map dashboard filter to API status
   const getApiStatus = (filterType: string): string => {
@@ -306,6 +312,9 @@ export default function ComplaintsScreen() {
         limit: 10,
         search: searchQuery,
         isInfiniteScroll,
+        category_id: selectedCategoryId,
+        zone_id: selectedZoneId,
+        department_id: selectedDepartmentId,
       })
     );
   };
@@ -432,6 +441,9 @@ export default function ComplaintsScreen() {
     setTempSelectedCategory(selectedCategory);
     setTempSelectedZone(selectedZone);
     setTempSelectedDepartment(selectedDepartment);
+    setTempSelectedCategoryId(selectedCategoryId);
+    setTempSelectedZoneId(selectedZoneId);
+    setTempSelectedDepartmentId(selectedDepartmentId);
     setFilterSheetVisible(true);
   };
 
@@ -447,9 +459,16 @@ export default function ComplaintsScreen() {
 
   const handleCategoryPress = () => {
     // Set global callback to receive selection
-    global.filterSelectionCallback = (type: string, value: string) => {
+    global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'category') {
-        setTempSelectedCategory(value);
+        // value can be { id, name } or legacy string
+        if (value && typeof value === 'object') {
+          setTempSelectedCategory(String(value.name || ''));
+          setTempSelectedCategoryId(value.id ?? null);
+        } else {
+          setTempSelectedCategory(String(value || ''));
+          setTempSelectedCategoryId(null);
+        }
         // Re-open the filter sheet
         setTimeout(() => setFilterSheetVisible(true), 100);
       }
@@ -463,9 +482,15 @@ export default function ComplaintsScreen() {
 
   const handleZonePress = () => {
     // Set global callback to receive selection
-    global.filterSelectionCallback = (type: string, value: string) => {
+    global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'zone') {
-        setTempSelectedZone(value);
+        if (value && typeof value === 'object') {
+          setTempSelectedZone(String(value.name || ''));
+          setTempSelectedZoneId(value.id ?? null);
+        } else {
+          setTempSelectedZone(String(value || ''));
+          setTempSelectedZoneId(null);
+        }
         // Re-open the filter sheet
         setTimeout(() => setFilterSheetVisible(true), 100);
       }
@@ -479,9 +504,15 @@ export default function ComplaintsScreen() {
 
   const handleDepartmentPress = () => {
     // Set global callback to receive selection
-    global.filterSelectionCallback = (type: string, value: string) => {
+    global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'department') {
-        setTempSelectedDepartment(value);
+        if (value && typeof value === 'object') {
+          setTempSelectedDepartment(String(value.name || ''));
+          setTempSelectedDepartmentId(value.id ?? null);
+        } else {
+          setTempSelectedDepartment(String(value || ''));
+          setTempSelectedDepartmentId(null);
+        }
         // Re-open the filter sheet
         setTimeout(() => setFilterSheetVisible(true), 100);
       }
@@ -494,11 +525,35 @@ export default function ComplaintsScreen() {
   };
 
   const handleApplyFilters = () => {
+    console.log(tempSelectedStatuses)
+    console.log(tempSelectedCategory)
+    console.log(tempSelectedDepartment)
+    console.log(tempSelectedZone)
     setSelectedStatuses([...tempSelectedStatuses]);
     setSelectedCategory(tempSelectedCategory);
     setSelectedZone(tempSelectedZone);
     setSelectedDepartment(tempSelectedDepartment);
+    setSelectedCategoryId(tempSelectedCategoryId);
+    setSelectedZoneId(tempSelectedZoneId);
+    setSelectedDepartmentId(tempSelectedDepartmentId);
     setFilterSheetVisible(false);
+
+    // Fetch complaints with new filters (reset to page 1)
+    // Use tempSelected*Id directly because React state updates are async
+    const stats_filter = getApiStatus(params.filter as string) || 'total';
+    dispatch(
+      fetchComplaints({
+        stats_filter,
+        status: '',
+        page: 1,
+        limit: 10,
+        search: searchQuery,
+        isInfiniteScroll: false,
+        category_id: tempSelectedCategoryId ?? undefined,
+        zone_id: tempSelectedZoneId ?? undefined,
+        department_id: tempSelectedDepartmentId ?? undefined,
+      })
+    );
   };
 
   const handleResetFilters = () => {
@@ -506,6 +561,9 @@ export default function ComplaintsScreen() {
     setTempSelectedCategory('');
     setTempSelectedZone('');
     setTempSelectedDepartment('');
+    setTempSelectedCategoryId(null);
+    setTempSelectedZoneId(null);
+    setTempSelectedDepartmentId(null);
   };
 
   const handleRemoveFilter = (filterType: 'status' | 'category' | 'zone' | 'department', value?: string) => {
@@ -517,12 +575,15 @@ export default function ComplaintsScreen() {
         break;
       case 'category':
         setSelectedCategory('');
+        setSelectedCategoryId(null);
         break;
       case 'zone':
         setSelectedZone('');
+        setSelectedZoneId(null);
         break;
       case 'department':
         setSelectedDepartment('');
+        setSelectedDepartmentId(null);
         break;
     }
   };

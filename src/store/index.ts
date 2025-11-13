@@ -5,6 +5,8 @@ import authReducer from './authSlice';
 import statsReducer from './statsSlice';
 import complaintsReducer from './complaintsSlice';
 import complaintDetailsReducer from './complaintDetailsSlice';
+import assignmentReducer from './assignmentSlice';
+import selectionReducer from './selectionSlice';
 
 // Persist the root reducer and only whitelist the `auth` slice for persistence.
 const persistConfig = {
@@ -18,6 +20,8 @@ const rootReducer = combineReducers({
   stats: statsReducer,
   complaints: complaintsReducer,
   complaintDetails: complaintDetailsReducer,
+  assignment: assignmentReducer,
+  selection: selectionReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

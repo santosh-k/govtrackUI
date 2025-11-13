@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { selectFilterOptions } from '@/src/store/complaintsSlice';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -38,25 +40,37 @@ export default function SelectZoneScreen() {
   const params = useLocalSearchParams();
   const selectedValue = params.selected as string;
   const [searchQuery, setSearchQuery] = React.useState('');
+  
+  // Get filter options from Redux
+  const filterOptions = useSelector(selectFilterOptions);
+
+  // Build zones list from Redux data (objects)
+  const zones = React.useMemo(() => {
+    if (filterOptions && filterOptions.zones && filterOptions.zones.length > 0) {
+      return filterOptions.zones.map((z) => ({ id: z.id, name: z.name }));
+    }
+    // Fallback to hardcoded if API data not available
+    return ZONES.map((name, idx) => ({ id: String(idx), name }));
+  }, [filterOptions]);
 
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery.trim()) {
-      return ZONES;
+      return zones;
     }
     const query = searchQuery.toLowerCase();
-    return ZONES.filter((option) => option.toLowerCase().includes(query));
-  }, [searchQuery]);
+    return zones.filter((option) => option.name.toLowerCase().includes(query));
+  }, [searchQuery, zones]);
 
-  const handleSelectOption = (option: string) => {
+  const handleSelectOption = (option: { id: string | number; name: string }) => {
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('zone', option);
+      global.filterSelectionCallback('zone', { id: option.id, name: option.name });
     }
     router.back();
   };
 
   const handleClearSelection = () => {
     if (global.filterSelectionCallback) {
-      global.filterSelectionCallback('zone', '');
+      global.filterSelectionCallback('zone', { id: null, name: '' });
     }
     router.back();
   };
@@ -130,7 +144,7 @@ export default function SelectZoneScreen() {
         </TouchableOpacity>
 
         {filteredOptions.map((option, index) => {
-          const isSelected = selectedValue === option;
+          const isSelected = selectedValue === option.name;
           return (
             <TouchableOpacity
               key={index}
@@ -147,7 +161,7 @@ export default function SelectZoneScreen() {
                   isSelected && styles.optionTextSelected,
                 ]}
               >
-                {option}
+                {option.name}
               </Text>
               {isSelected && (
                 <Ionicons name="checkmark" size={24} color={COLORS.primary} />

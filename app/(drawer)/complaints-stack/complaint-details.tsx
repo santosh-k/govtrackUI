@@ -28,6 +28,7 @@ import {
   selectComplaintDetailsError,
 } from '@/src/store/complaintDetailsSlice';
 import { AppDispatch } from '@/src/store/index';
+import moment from 'moment';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -111,6 +112,43 @@ interface ComplaintDetails {
     },
   ],
 }; */
+/*const complaintData = {
+  reportedBy: { name: 'John', contactNumber: '9999999999', address: 'Delhi' },
+  submittedAt: '2025-11-10T09:20:00Z',
+  assignedAt: '2025-11-10T10:00:00Z',
+  inProgressAt: '2025-11-11T14:00:00Z',
+  completedAt: null, // Still pending
+};
+const statusSteps = [
+    {
+      key: 'submitted',
+      label: 'Submitted',
+      date: complaintData.submittedAt,
+    },
+    {
+      key: 'assigned',
+      label: 'Assigned',
+      date: complaintData.assignedAt,
+    },
+    {
+      key: 'inProgress',
+      label: 'In Progress',
+      date: complaintData.inProgressAt,
+    },
+    {
+      key: 'completed',
+      label: 'Completed',
+      date: complaintData.completedAt,
+    },
+  ];
+
+  // Determine current active status
+  const currentStatusIndex = statusSteps.findIndex(
+    s => !s.date || s.date === null
+  ) === -1
+    ? statusSteps.length - 1
+    : statusSteps.findIndex(s => !s.date || s.date === null) - 1; */
+
 
 interface GridItemProps {
   label: string;
@@ -334,7 +372,7 @@ export default function ComplaintDetailsScreen() {
   const handleAssignTask = () => {
     if (!complaintData) return;
     router.push({
-      pathname: '/assign-complaint',
+      pathname: '/complaints-stack/assign-complaint',
       params: {
         complaintId: complaintData.complaintNumber,
       },
@@ -546,7 +584,58 @@ export default function ComplaintDetailsScreen() {
             </ScrollView>
           </View>
         )}
+     {/*  <View style={styles.card}>
+          <Text style={styles.title}>History</Text>
+          {statusSteps.map((step, index) => {
+            const isActive = index <= currentStatusIndex;
+            const isLast = index === statusSteps.length - 1;
 
+            return (
+              <View key={step.key} style={styles.stepContainer}>
+                <View style={styles.iconContainer}>
+                  <View
+                    style={[
+                      styles.circle,
+                      { backgroundColor: isActive ? '#007bff' : '#ccc' },
+                    ]}
+                  >
+                    <Ionicons
+                      name={isActive ? 'checkmark' : 'ellipse-outline'}
+                      size={16}
+                      color="white"
+                    />
+                  </View>
+                  {!isLast && (
+                    <View
+                      style={[
+                        styles.line,
+                        { backgroundColor: isActive ? '#007bff' : '#ccc' },
+                      ]}
+                    />
+                  )}
+                </View>
+
+                <View style={styles.infoContainer}>
+                  <Text
+                    style={[
+                      styles.statusLabel,
+                      { color: isActive ? '#007bff' : '#999' },
+                    ]}
+                  >
+                    {step.label}
+                  </Text>
+                  {step.date ? (
+                    <Text style={styles.dateText}>
+                      {moment(step.date).format('DD MMM YYYY, hh:mm A')}
+                    </Text>
+                  ) : (
+                    <Text style={styles.pendingText}>Pending</Text>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View> */}
         {/* Card 5: Complainant Information */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Reported By</Text>
@@ -1155,5 +1244,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.cardBackground,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#222',
+  },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconContainer: {
+    alignItems: 'center',
+  },
+  circle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  line: {
+    width: 2,
+    height: 35,
+    marginTop: 2,
+  },
+  infoContainer: {
+    marginLeft: 10,
+    paddingBottom: 10,
+  },
+  statusLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dateText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  pendingText: {
+    fontSize: 13,
+    color: '#aaa',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
 });
