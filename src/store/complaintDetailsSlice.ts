@@ -54,6 +54,20 @@ interface ComplaintDetail {
   flatNo: string;
   assignedDepartment: string | null;
   permissions: Permissions;
+  history: History[]
+}
+
+interface History{
+  id: string | number;
+  status: string;
+  statusValue: string;
+  date: string;
+  time: string;
+  timestamp: string;
+  actionBy: string;
+  designation: string;
+  remark: string;
+
 }
 
 interface ComplaintDetailsState {

@@ -21,6 +21,7 @@ import { Video, ResizeMode } from 'expo-av';
 import { useDispatch, useSelector } from 'react-redux';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import Toast from '@/components/Toast';
+import MapView, { Marker } from 'react-native-maps';
 import {
   fetchComplaintDetails,
   selectComplaintDetails,
@@ -392,6 +393,17 @@ export default function ComplaintDetailsScreen() {
       },
     });
   };
+  const handleHistoryTask = () => {
+    console.log('calledHistory')
+    if (!complaintData) return;
+    console.log('calledHistory1')
+    router.push({
+      pathname: '/complaints-stack/Complaint-History',
+      params: {
+        history: JSON.stringify(complaintData.history),
+      },
+    });
+  };
 
   const handleUpdateStatus = () => {
     setUpdateSheetVisible(true);
@@ -459,14 +471,29 @@ export default function ComplaintDetailsScreen() {
             <View style={styles.headerCenter} />
 
             {/* Right: Status Badge */}
-            <View
-              style={[
-                styles.headerStatusBadge,
-                { backgroundColor: getStatusColor(complaintData.status) },
-              ]}
+           {/*  <TouchableOpacity
+              onPress={() => handleHistoryTask()}
+              activeOpacity={0.8}
             >
-              <Text style={styles.headerStatusText}>{complaintData.statusDisplay}</Text>
-            </View>
+              <View
+                style={[
+                  styles.headerStatusBadge,
+                  { backgroundColor: getStatusColor(complaintData.status) },
+                ]}
+              >
+                <Text style={styles.headerStatusText}>{complaintData.statusDisplay}</Text>
+              </View>
+            </TouchableOpacity> */}
+            <TouchableOpacity
+              style={[styles.headerStatusButton, { backgroundColor: getStatusColor(complaintData.status)}]}
+              onPress={() => handleHistoryTask()}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.headerStatusText, { color: COLORS.text }]}>
+                {complaintData.statusDisplay}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color={COLORS.text} style={styles.headerChevronIcon} />
+            </TouchableOpacity>
           </View>
 
           {/* Scrollable Content */}
@@ -534,34 +561,48 @@ export default function ComplaintDetailsScreen() {
               </View>
             </View>
 
-        {/* Card 2: Interactive Map Card */}
+       {/* Card 2: Interactive Map Card */}
         <TouchableOpacity
-          style={styles.mapCard}
-          onPress={handleNavigateToLocation}
-          activeOpacity={0.85}
+        style={styles.mapCard}
+        onPress={handleNavigateToLocation}
+        activeOpacity={0.85}
         >
-          {/* Map Background Image - Using placeholder for demo */}
-          <Image
-            source={require('@/assets/images/map-placeholder.png')}
-            style={styles.mapImage}
-            resizeMode="cover"
+        {/* Actual Interactive Map */}
+        <MapView
+          style={styles.mapImage}
+          initialRegion={{
+            latitude: Number(complaintData?.latitude) || 28.6139,
+            longitude: Number(complaintData?.longitude) || 77.2090,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          pointerEvents="none" // prevents map dragging inside card
+        >
+          <Marker
+            coordinate={{
+              latitude: Number(complaintData?.latitude) || 28.6139,
+              longitude: Number(complaintData?.longitude) || 77.2090,
+            }}
+            title="Complaint Location"
           />
+        </MapView>
 
-          {/* Address Overlay */}
-          <View style={styles.mapAddressOverlay}>
-            <View style={styles.mapAddressContent}>
-              <Ionicons name="location-sharp" size={18} color="#FFFFFF" />
-              <Text style={styles.mapAddressText} numberOfLines={2}>
-                {complaintData.location}
-              </Text>
-            </View>
+        {/* Address Overlay */}
+        <View style={styles.mapAddressOverlay}>
+          <View style={styles.mapAddressContent}>
+            <Ionicons name="location-sharp" size={18} color="#FFFFFF" />
+            <Text style={styles.mapAddressText} numberOfLines={2}>
+              {complaintData.location}
+            </Text>
           </View>
+        </View>
 
-          {/* Directions Button */}
-          <View style={styles.directionsButton}>
-            <Ionicons name="navigate" size={24} color="#FFFFFF" />
-          </View>
+        {/* Directions Button */}
+        <View style={styles.directionsButton}>
+          <Ionicons name="navigate" size={24} color="#FFFFFF" />
+        </View>
         </TouchableOpacity>
+
 
         {/* Card 3: Additional Information */}
         <View style={styles.card}>
@@ -1309,5 +1350,27 @@ const styles = StyleSheet.create({
     color: '#aaa',
     marginTop: 2,
     fontStyle: 'italic',
+  },
+  headerStatusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+ /* headerStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginRight: 4,
+  }, */
+  headerChevronIcon: {
+    marginLeft: 2,
   },
 });

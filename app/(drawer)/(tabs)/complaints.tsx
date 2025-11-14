@@ -377,7 +377,17 @@ export default function ComplaintDashboardScreen() {
           <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
         </TouchableOpacity>
       </ScrollView>
-
+       {/* Search Entry Point */}
+        <TouchableOpacity
+          style={styles.searchBar}
+          onPress={() => router.push('/(drawer)/advanced-project-search')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+          <Text style={styles.searchPlaceholder}>
+            Search by Complaint Name, ID, or Location...
+          </Text>
+        </TouchableOpacity>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -809,5 +819,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.cardBackground,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 8,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchPlaceholder: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    marginLeft: 12,
+    flex: 1,
   },
 });
