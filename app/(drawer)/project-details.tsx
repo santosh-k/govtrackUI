@@ -2296,11 +2296,11 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     alignItems: 'center',
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
-    marginHorizontal: 4,
+    marginHorizontal: 2,
   },
   activeTab: {
     borderBottomColor: COLORS.primary,
