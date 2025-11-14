@@ -90,7 +90,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
           {actions.map((action, index) => {
             const translateY = animation.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, -(70 * (actions.length - index))],
+              outputRange: [0, -(56 * (actions.length - index))],
             });
 
             const scale = animation.interpolate({
@@ -121,7 +121,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
                 >
                   <View style={styles.actionContent}>
                     <View style={styles.actionIconContainer}>
-                      <Ionicons name={action.icon} size={24} color={COLORS.primary} />
+                      <Ionicons name={action.icon} size={20} color={COLORS.primary} />
                     </View>
                     <Text style={styles.actionLabel}>{action.label}</Text>
                   </View>
@@ -139,7 +139,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
         activeOpacity={0.8}
       >
         <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Ionicons name="add" size={28} color={COLORS.white} />
+          <Ionicons name="add" size={24} color={COLORS.white} />
         </Animated.View>
       </TouchableOpacity>
     </>
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   actionButton: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   actionButtonTouchable: {
     flexDirection: 'row',
@@ -174,9 +174,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -184,16 +184,16 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255, 152, 0, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   actionLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
     marginRight: 4,
@@ -202,9 +202,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
