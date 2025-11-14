@@ -1458,34 +1458,19 @@ export default function ProjectDetailsScreen() {
 
                 {/* Activity Card */}
                 <View style={styles.activityCard}>
-                  {/* Header */}
+                  {/* 1. Status Change Header */}
                   <View style={styles.activityHeader}>
                     <Text style={[styles.activityStatusText, { color: statusColors.text }]}>
                       Status changed to {item.status}
                     </Text>
                   </View>
 
-                  {/* Author and Date */}
-                  <Text style={styles.activityMeta}>
-                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
-                  </Text>
-
-                  {/* Remarks */}
+                  {/* 2. Remarks */}
                   {item.remarks && (
                     <Text style={styles.activityRemarks}>{item.remarks}</Text>
                   )}
 
-                  {/* Location */}
-                  {item.location && (
-                    <View style={styles.activityLocationContainer}>
-                      <Ionicons name="location" size={16} color={COLORS.primary} />
-                      <Text style={styles.activityLocationText}>
-                        {item.location.latitude.toFixed(4)}, {item.location.longitude.toFixed(4)}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Attachments */}
+                  {/* 3. Attached Media */}
                   {item.attachments.length > 0 && (
                     <View style={styles.activityAttachmentsContainer}>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -1507,6 +1492,14 @@ export default function ProjectDetailsScreen() {
                       </ScrollView>
                     </View>
                   )}
+
+                  {/* Separator Line */}
+                  <View style={styles.activityFooterSeparator} />
+
+                  {/* 4. "Updated By" Information Footer */}
+                  <Text style={styles.activityMeta}>
+                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
+                  </Text>
                 </View>
               </View>
             );
@@ -3598,8 +3591,8 @@ const styles = StyleSheet.create({
   activityMeta: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginBottom: 12,
     lineHeight: 18,
+    marginTop: 12,
   },
   activityAuthor: {
     fontWeight: '700',
@@ -3610,6 +3603,11 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  activityFooterSeparator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 12,
   },
   activityLocationContainer: {
     flexDirection: 'row',
