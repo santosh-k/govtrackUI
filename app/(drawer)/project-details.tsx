@@ -417,7 +417,7 @@ export default function ProjectDetailsScreen() {
   const bottlenecks: Bottleneck[] = [
     {
       id: '1',
-      title: 'Material Delivery Delayed',
+      title: 'Material Shortage Crisis',
       reportedBy: 'Vikram Singh',
       reporterPosition: 'Site Manager',
       reporterDepartment: 'Central Department',
@@ -432,7 +432,7 @@ export default function ProjectDetailsScreen() {
     },
     {
       id: '2',
-      title: 'Weather Conditions Affecting Progress',
+      title: 'Adverse Weather Conditions',
       reportedBy: 'Ramesh Kumar',
       reporterPosition: 'Lead Contractor',
       reporterDepartment: 'Operations Division',
@@ -446,7 +446,7 @@ export default function ProjectDetailsScreen() {
     },
     {
       id: '3',
-      title: 'Equipment Maintenance Required',
+      title: 'Equipment Maintenance Due',
       reportedBy: 'Suresh Patel',
       reporterPosition: 'Senior Engineer',
       reporterDepartment: 'Mechanical Wing',
@@ -457,7 +457,7 @@ export default function ProjectDetailsScreen() {
     },
     {
       id: '4',
-      title: 'Labor Shortage - Skilled Workers',
+      title: 'Skilled Labor Shortage',
       reportedBy: 'Anjali Sharma',
       reporterPosition: 'HR Manager',
       reporterDepartment: 'Human Resources',
@@ -471,7 +471,7 @@ export default function ProjectDetailsScreen() {
     },
     {
       id: '5',
-      title: 'Permit Approval Pending',
+      title: 'Permit Approval Delayed',
       reportedBy: 'Priya Menon',
       reporterPosition: 'Compliance Officer',
       reporterDepartment: 'Legal & Compliance',
@@ -484,7 +484,7 @@ export default function ProjectDetailsScreen() {
     },
     {
       id: '6',
-      title: 'Quality Control Issues - Batch 204',
+      title: 'Concrete Quality Failure',
       reportedBy: 'Dr Anil Verma',
       reporterPosition: 'Quality Control Manager',
       reporterDepartment: 'Quality Assurance',
@@ -1327,6 +1327,9 @@ export default function ProjectDetailsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Title/Heading */}
+        <Text style={styles.bottleneckTitle}>{item.title}</Text>
 
         {/* Reporter Details */}
         <View style={styles.reporterSection}>
@@ -2855,6 +2858,13 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  bottleneckTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+    marginTop: 2,
   },
   reporterSection: {
     marginBottom: 12,
