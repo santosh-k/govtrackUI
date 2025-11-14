@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import Toast from '@/components/Toast';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAssignmentOptions, selectAssignment } from '@/src/store/assignmentSlice';
+import { fetchAssignmentOptions, selectAssignment, assignComplaint } from '@/src/store/assignmentSlice';
 import { clearSelection } from '@/src/store/selectionSlice';
 import { AppDispatch, RootState } from '@/src/store';
 
@@ -206,7 +206,7 @@ function DropdownField({ label, value, placeholder, onPress, disabled = false }:
 export default function AssignComplaintScreen() {
   const params = useLocalSearchParams();
   const complaintId = params.complaintId as string;
-
+  console.log('ComplaintId===',complaintId)
   // Group assignment states
   const [division, setDivision] = useState<Selection | null>(null);
   const [subDivision, setSubDivision] = useState<Selection | null>(null);
@@ -470,85 +470,64 @@ export default function AssignComplaintScreen() {
   };
 
   const handleAssign = async () => {
-    setIsSubmitting(true);
-
-    // Log attachments for API submission
-    console.log('Assignment data:', {
-      division,
-      subDivision,
-      department,
-      designation,
-      user,
-      comment,
-      attachments,
-    });
-
-    // Simulate assignment process
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsSubmitting(false);
-
-    // Determine the most specific assignment target
-    let assignedTo = '';
-    let assignedDesignation = '';
-
-    // Priority: User > Designation > Department > Sub-Division > Division
-    if (user) {
-      assignedTo = user.name;
-      assignedDesignation = user.designation || '';
-      setToastMessage(`Assigned to ${user.name}!`);
-    } else if (designation) {
-      assignedTo = designation.name;
-      assignedDesignation = 'Group';
-      setToastMessage(`Assigned to ${designation.name}!`);
-    } else if (department) {
-      assignedTo = department.name;
-      assignedDesignation = 'Department';
-      setToastMessage(`Assigned to ${department.name}!`);
-    } else if (subDivision) {
-      assignedTo = subDivision.name;
-      assignedDesignation = 'Sub-Division';
-      setToastMessage(`Assigned to ${subDivision.name}!`);
-    } else if (division) {
-      assignedTo = division.name;
-      assignedDesignation = 'Division';
-      setToastMessage(`Assigned to ${division.name}!`);
+    // Ensure complaintId is available and valid
+    const numericComplaintId = Number(complaintId);
+    console.log(numericComplaintId)
+    if (!complaintId || Number.isNaN(numericComplaintId) || numericComplaintId <= 0) {
+      setToastMessage('Complaint id is required');
+      setToastVisible(true);
+      return;
     }
 
-    // Reset form after successful assignment
-    setDivision(null);
-    setSubDivision(null);
-    setDepartment(null);
-    setDesignation(null);
-    setUser(null);
-    setComment('');
-    setAttachments([]);
+    // prepare payload (priority: user > designation > department > subdivision > division)
+    const payload = {
+      complaintId: numericComplaintId,
+      user_id: user?.id ? Number(user.id) : undefined,
+      designation_id: designation?.id ? Number(designation.id) : undefined,
+      department_id: department?.id ? Number(department.id) : undefined,
+      subdivision_id: subDivision?.id ? Number(subDivision.id) : undefined,
+      division_id: division?.id ? Number(division.id) : undefined,
+      comment: comment?.trim() || undefined,
+      attachments: [], // leave empty for now
+    };
 
-    // Show success toast
-    setToastVisible(true);
+    if (!payload.user_id && !payload.designation_id && !payload.department_id && !payload.subdivision_id && !payload.division_id) {
+      setToastMessage('Please select a target (user/designation/department/subdivision/division)');
+      setToastVisible(true);
+      return;
+    }
 
-    // Navigate back to complaint details after a brief delay
-    setTimeout(() => {
-      router.replace({
-        pathname: '/(drawer)/complaints-stack/complaint-details',
-        params: {
-          complaintId: complaintId,
-          assignedUser: assignedTo,
-          assignedDesignation: assignedDesignation,
-          showAssignmentToast: 'true',
-        },
-      });
-    }, 1500);
+    try {
+      setIsSubmitting(true);
+      const result = await dispatch(assignComplaint(payload) as any).unwrap();
+      // result = { message, data }
+      setToastMessage(result.message || 'Assigned successfully');
+      setToastVisible(true);
+
+      // reset local selections (keep UI behavior)
+      setDivision(null);
+      setSubDivision(null);
+      setDepartment(null);
+      setDesignation(null);
+      setUser(null);
+      setComment('');
+      setAttachments([]);
+
+      // go back and rely on Redux lastAssignment for consuming screen
+      //setToastMessage('Complaint Assigned Successfully');
+      //setToastVisible(true);
+      router.back();
+    } catch (err: any) {
+      setToastMessage(err || err?.message || 'Failed to assign');
+      setToastVisible(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackPress = () => {
-    // Navigate back to complaint details
-    router.replace({
-      pathname: '/(drawer)/complaints-stack/complaint-details',
-      params: {
-        complaintId: complaintId,
-      },
-    });
+    // Navigate back to complaint details (use router.back; assignment result is in Redux)
+    router.back();
   };
 
   return (

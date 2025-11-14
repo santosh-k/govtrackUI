@@ -28,6 +28,7 @@ import {
   selectComplaintDetailsError,
 } from '@/src/store/complaintDetailsSlice';
 import { AppDispatch } from '@/src/store/index';
+import { selectAssignment, clearLastAssignment } from '@/src/store/assignmentSlice';
 import moment from 'moment';
 
 const COLORS = {
@@ -283,7 +284,7 @@ export default function ComplaintDetailsScreen() {
     }
   }, [params.id, dispatch]);
 
-  // Handle assignment return
+  // Handle assignment return (legacy: via router params)
   useEffect(() => {
     if (params.assignedUser && params.showAssignmentToast === 'true') {
       // Show success toast
@@ -294,6 +295,19 @@ export default function ComplaintDetailsScreen() {
       router.setParams({ assignedUser: undefined, assignedDesignation: undefined, showAssignmentToast: undefined });
     }
   }, [params.assignedUser, params.assignedDesignation, params.showAssignmentToast]);
+
+  // Handle assignment return (Redux): listen for assignment result in store
+  const assignmentState = useSelector(selectAssignment);
+  useEffect(() => {
+    if (assignmentState && assignmentState.lastAssignment) {
+      // Show success toast when lastAssignment is present
+      setToastMessage('Complaint assigned successfully!');
+      setToastVisible(true);
+
+      // Clear lastAssignment in store so toast doesn't reappear
+      dispatch(clearLastAssignment());
+    }
+  }, [assignmentState && assignmentState.lastAssignment, dispatch]);
 
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
@@ -374,7 +388,7 @@ export default function ComplaintDetailsScreen() {
     router.push({
       pathname: '/complaints-stack/assign-complaint',
       params: {
-        complaintId: complaintData.complaintNumber,
+        complaintId: params.id,
       },
     });
   };
@@ -501,7 +515,14 @@ export default function ComplaintDetailsScreen() {
                   <View style={styles.assignedPersonContainer}>
                     <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
                     <View style={styles.assignedPersonDetails}>
-                      <Text style={styles.assignedPersonName}>{complaintData.assignedTo}</Text>
+                      <Text style={styles.assignedPersonName}>
+                        {typeof complaintData.assignedTo === 'string' 
+                          ? complaintData.assignedTo 
+                          : complaintData.assignedTo?.name || 'Unknown'}
+                      </Text>
+                      {typeof complaintData.assignedTo === 'object' && complaintData.assignedTo?.designation && (
+                        <Text style={styles.assignedPersonDesignation}>{complaintData.assignedTo.designation}</Text>
+                      )}
                     </View>
                   </View>
                 ) : (

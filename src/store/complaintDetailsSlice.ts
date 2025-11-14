@@ -15,6 +15,14 @@ interface ReportedBy {
   address: string;
 }
 
+interface AssignedUser {
+  id: string | number;
+  name: string;
+  designation?: string;
+  email?: string;
+  phone?: string;
+}
+
 interface Permissions {
   can_edit: boolean;
   can_assign: boolean;
@@ -33,7 +41,7 @@ interface ComplaintDetail {
   pollNumber: string;
   category: string;
   description: string;
-  assignedTo: string | null;
+  assignedTo: string | AssignedUser | null;
   priority: number;
   priorityDisplay: string;
   source: string;
