@@ -1426,12 +1426,6 @@ export default function ProjectDetailsScreen() {
     </View>
   );
 
-  const handleActivityMediaPress = (attachments: MediaItem[], index: number) => {
-    setViewerMediaItems(attachments);
-    setSelectedMediaIndex(index);
-    setShowMediaViewer(true);
-  };
-
   const renderActivityTab = () => (
     <View style={styles.tabContent}>
       {activityHistory.length === 0 ? (
@@ -1470,33 +1464,10 @@ export default function ProjectDetailsScreen() {
                     <Text style={styles.activityRemarks}>{item.remarks}</Text>
                   )}
 
-                  {/* 3. Attached Media */}
-                  {item.attachments.length > 0 && (
-                    <View style={styles.activityAttachmentsContainer}>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {item.attachments.map((attachment, idx) => (
-                          <TouchableOpacity
-                            key={attachment.id}
-                            style={styles.activityAttachmentThumb}
-                            onPress={() => handleActivityMediaPress(item.attachments, idx)}
-                            activeOpacity={0.8}
-                          >
-                            <Image source={{ uri: attachment.uri }} style={styles.activityThumbImage} />
-                            {attachment.type === 'video' && (
-                              <View style={styles.activityVideoOverlay}>
-                                <Ionicons name="play-circle" size={24} color="white" />
-                              </View>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-
                   {/* Separator Line */}
                   <View style={styles.activityFooterSeparator} />
 
-                  {/* 4. "Updated By" Information Footer */}
+                  {/* 3. "Updated By" Information Footer */}
                   <Text style={styles.activityMeta}>
                     by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
                   </Text>
