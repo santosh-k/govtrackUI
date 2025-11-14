@@ -1390,13 +1390,14 @@ export default function ProjectDetailsScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB for Add Bottleneck */}
+      {/* Extended FAB for Add Bottleneck */}
       <TouchableOpacity
-        style={styles.fab}
+        style={styles.extendedFab}
         onPress={() => setShowAddBottleneckModal(true)}
         activeOpacity={0.8}
       >
-        <Ionicons name="warning" size={24} color="white" />
+        <Ionicons name="add-circle" size={24} color="white" />
+        <Text style={styles.extendedFabText}>Add Bottleneck</Text>
       </TouchableOpacity>
     </View>
   );
@@ -2762,6 +2763,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  extendedFab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 28,
+    backgroundColor: COLORS.saffron,
+    shadowColor: COLORS.saffron,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  extendedFabText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: 'white',
+    marginLeft: 10,
   },
   listContent: {
     padding: 16,
