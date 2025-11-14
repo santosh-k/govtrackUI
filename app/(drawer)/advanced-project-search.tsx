@@ -8,6 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -99,11 +101,17 @@ export default function SearchProjectScreen() {
         <Text style={styles.headerTitle}>Search Project</Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Filter Form Section */}
         <View style={styles.formSection}>
           <Text style={styles.formTitle}>Select Filters</Text>
@@ -245,17 +253,18 @@ export default function SearchProjectScreen() {
         </View>
       </ScrollView>
 
-      {/* Find Project Button */}
-      <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity
-          style={styles.findButton}
-          onPress={handleFindProjects}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="search" size={20} color="#FFFFFF" />
-          <Text style={styles.findButtonText}>Find Project</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Find Project Button */}
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity
+            style={styles.findButton}
+            onPress={handleFindProjects}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="search" size={20} color="#FFFFFF" />
+            <Text style={styles.findButtonText}>Find Project</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -264,6 +273,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
