@@ -1305,12 +1305,15 @@ export default function ProjectDetailsScreen() {
 
   const renderBottleneckCard = ({ item }: { item: Bottleneck }) => {
     const priorityColors = getPriorityColor(item.priority);
-    const hasPhotos = item.media.some(m => m.type === 'image');
-    const hasVideos = item.media.some(m => m.type === 'video');
-    const hasDocuments = item.media.some(m => m.type === 'document');
     const descriptionPreview = item.description.length > 80
       ? item.description.substring(0, 80) + '...'
       : item.description;
+
+    // Filter only visual media (images and videos) for thumbnail preview
+    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
+    const hasMedia = visualMedia.length > 0;
+    const displayMedia = visualMedia.slice(0, 3);
+    const remainingCount = visualMedia.length - 3;
 
     return (
       <TouchableOpacity
@@ -1334,25 +1337,35 @@ export default function ProjectDetailsScreen() {
         {/* Description Preview */}
         <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
 
-        {/* Media Indicators */}
-        {(hasPhotos || hasVideos || hasDocuments) && (
-          <View style={styles.mediaIndicators}>
-            {hasPhotos && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="camera" size={16} color={COLORS.textLight} />
+        {/* Media Thumbnail Preview Gallery */}
+        {hasMedia && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.bottleneckMediaPreview}
+            contentContainerStyle={styles.bottleneckMediaPreviewContent}
+          >
+            {displayMedia.map((media, index) => (
+              <View key={media.id} style={styles.bottleneckThumbnailWrapper}>
+                <Image
+                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  style={styles.bottleneckThumbnail}
+                />
+                {media.type === 'video' && (
+                  <View style={styles.thumbnailPlayIcon}>
+                    <Ionicons name="play-circle" size={24} color="white" />
+                  </View>
+                )}
+              </View>
+            ))}
+            {remainingCount > 0 && (
+              <View style={styles.bottleneckThumbnailWrapper}>
+                <View style={styles.remainingCountOverlay}>
+                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                </View>
               </View>
             )}
-            {hasVideos && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="videocam" size={16} color={COLORS.textLight} />
-              </View>
-            )}
-            {hasDocuments && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="document-attach" size={16} color={COLORS.textLight} />
-              </View>
-            )}
-          </View>
+          </ScrollView>
         )}
 
         {/* Reporter Details */}
@@ -2891,6 +2904,47 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  bottleneckMediaPreview: {
+    marginBottom: 12,
+  },
+  bottleneckMediaPreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bottleneckThumbnailWrapper: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  bottleneckThumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  thumbnailPlayIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
+  },
+  remainingCountOverlay: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  remainingCountText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
   },
   modalOverlay: {
     flex: 1,
