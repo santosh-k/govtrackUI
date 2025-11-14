@@ -2589,6 +2589,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   documentThumbnail: {
     width: '100%',
