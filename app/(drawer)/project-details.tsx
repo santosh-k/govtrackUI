@@ -1527,7 +1527,10 @@ export default function ProjectDetailsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.inspectionDetailsContent}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
               {selectedInspection && (
                 <>
                   {/* Summary Section */}
@@ -2897,10 +2900,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     paddingTop: 12,
-    maxHeight: '85%',
-  },
-  inspectionDetailsContent: {
-    flex: 1,
+    height: '85%',
   },
   inspectionDetailsSummary: {
     paddingBottom: 16,
