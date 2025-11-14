@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import SpeedDialFAB from '@/components/SpeedDialFAB';
 
 const { width, height } = Dimensions.get('window');
 
@@ -1167,15 +1168,6 @@ export default function ProjectDetailsScreen() {
             ))}
           </View>
         </View>
-
-        {/* FAB for Upload Media */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleUploadMedia}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={28} color="white" />
-        </TouchableOpacity>
       </View>
     );
   };
@@ -1314,16 +1306,6 @@ export default function ProjectDetailsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* Extended FAB for Add Inspection */}
-      <TouchableOpacity
-        style={styles.extendedFabBlue}
-        onPress={() => router.push('/create-inspection')}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add-circle" size={24} color="white" />
-        <Text style={styles.extendedFabText}>New Inspection</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -1413,16 +1395,6 @@ export default function ProjectDetailsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* Extended FAB for Add Bottleneck */}
-      <TouchableOpacity
-        style={styles.extendedFab}
-        onPress={() => setShowAddBottleneckModal(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add-circle" size={24} color="white" />
-        <Text style={styles.extendedFabText}>Add Bottleneck</Text>
-      </TouchableOpacity>
     </View>
   );
 
@@ -1540,6 +1512,39 @@ export default function ProjectDetailsScreen() {
       {activeTab === 'Inspections' && renderInspectionsTab()}
       {activeTab === 'Bottlenecks' && renderBottlenecksTab()}
       {activeTab === 'Activity' && renderActivityTab()}
+
+      {/* Speed Dial FAB - Show only on Media, Inspections, and Bottlenecks tabs */}
+      {(activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (
+        <SpeedDialFAB
+          actions={[
+            {
+              icon: 'images-outline',
+              label: 'Add Media',
+              onPress: handleUploadMedia,
+            },
+            {
+              icon: 'warning-outline',
+              label: 'Add Bottleneck',
+              onPress: () => setShowAddBottleneckModal(true),
+            },
+            {
+              icon: 'checkmark-circle-outline',
+              label: 'Create Task',
+              onPress: () => router.push('/(drawer)/create-task'),
+            },
+            {
+              icon: 'document-text-outline',
+              label: 'Create Complaint',
+              onPress: () => router.push('/(drawer)/create-complaint'),
+            },
+            {
+              icon: 'clipboard-outline',
+              label: 'New Inspection',
+              onPress: () => router.push('/create-inspection'),
+            },
+          ]}
+        />
+      )}
 
       {/* Status Update Modal */}
       <Modal
@@ -2734,60 +2739,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.textSecondary,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.fabBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  extendedFab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 28,
-    backgroundColor: COLORS.saffron,
-    shadowColor: COLORS.saffron,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  extendedFabText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: 'white',
-    marginLeft: 10,
-  },
-  extendedFabBlue: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
   listContent: {
     padding: 16,
