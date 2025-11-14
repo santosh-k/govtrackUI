@@ -1829,14 +1829,6 @@ export default function ProjectDetailsScreen() {
                     </View>
                   </View>
 
-                  {/* Reporter Section */}
-                  <View style={styles.bottleneckDetailsSection}>
-                    <Text style={styles.bottleneckDetailsSectionTitle}>Reported By</Text>
-                    <Text style={styles.bottleneckDetailsReporterName}>{selectedBottleneck.reportedBy}</Text>
-                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterPosition}</Text>
-                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterDepartment}</Text>
-                  </View>
-
                   {/* Description Section */}
                   <View style={styles.bottleneckDetailsSection}>
                     <Text style={styles.bottleneckDetailsSectionTitle}>Description</Text>
@@ -1884,6 +1876,14 @@ export default function ProjectDetailsScreen() {
                       </ScrollView>
                     </View>
                   )}
+
+                  {/* Reporter Section */}
+                  <View style={styles.bottleneckDetailsSection}>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>Reported By</Text>
+                    <Text style={styles.bottleneckDetailsReporterName}>{selectedBottleneck.reportedBy}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterPosition}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterDepartment}</Text>
+                  </View>
                 </>
               )}
             </ScrollView>
