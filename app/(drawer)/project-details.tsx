@@ -148,7 +148,11 @@ interface Inspection {
   id: string;
   date: string;
   inspector: string;
+  inspectorPosition: string;
+  inspectorDepartment: string;
   status: InspectionStatus;
+  description: string;
+  media: MediaItem[];
 }
 
 interface Bottleneck {
@@ -264,6 +268,8 @@ export default function ProjectDetailsScreen() {
   const [newProgress, setNewProgress] = useState(75);
   const [progressRemarks, setProgressRemarks] = useState('');
   const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [showInspectionDetails, setShowInspectionDetails] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -321,10 +327,85 @@ export default function ProjectDetailsScreen() {
   }, []);
 
   const inspections: Inspection[] = [
-    { id: '1', date: '15-Dec-24', inspector: 'John Smith', status: 'Passed' },
-    { id: '2', date: '01-Dec-24', inspector: 'Sarah Johnson', status: 'Passed' },
-    { id: '3', date: '15-Nov-24', inspector: 'Mike Wilson', status: 'Failed' },
-    { id: '4', date: '01-Nov-24', inspector: 'Emily Davis', status: 'Passed' },
+    {
+      id: '1',
+      date: '15-Dec-24',
+      inspector: 'Er Sabir Ali',
+      inspectorPosition: 'Senior Civil Engineer',
+      inspectorDepartment: 'Quality Assurance Department',
+      status: 'Passed',
+      description: 'Structural integrity assessment completed. All load-bearing elements inspected and found compliant with approved drawings. Concrete strength test results satisfactory. Foundation work meets specifications with proper reinforcement placement.',
+      media: [
+        { id: 'm1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Foundation+Check' },
+        { id: 'm2', type: 'image', uri: 'https://via.placeholder.com/400x300/8BC34A/FFFFFF?text=Reinforcement' },
+        { id: 'm3', type: 'video', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video', thumbnail: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video' },
+      ],
+    },
+    {
+      id: '2',
+      date: '08-Dec-24',
+      inspector: 'Dr Priya Sharma',
+      inspectorPosition: 'Chief Safety Officer',
+      inspectorDepartment: 'Safety & Compliance Division',
+      status: 'Pending',
+      description: 'Safety equipment inspection in progress. Awaiting certification documents for new scaffolding installation. Worker safety gear compliance check scheduled for completion by end of week...',
+      media: [
+        { id: 'm4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Safety+Gear' },
+        { id: 'm5', type: 'document', uri: 'https://example.com/safety-checklist.pdf', filename: 'Safety_Checklist.pdf' },
+      ],
+    },
+    {
+      id: '3',
+      date: '01-Dec-24',
+      inspector: 'Ar Rajesh Kumar',
+      inspectorPosition: 'Lead Architect',
+      inspectorDepartment: 'Design & Planning',
+      status: 'Passed',
+      description: 'Architectural finish inspection completed successfully. All interior plastering work meets quality standards. Paint application uniform and defect-free. Door and window installations aligned with specifications.',
+      media: [
+        { id: 'm6', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Interior+Work' },
+        { id: 'm7', type: 'image', uri: 'https://via.placeholder.com/400x300/03A9F4/FFFFFF?text=Plastering' },
+        { id: 'm8', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Finishing' },
+        { id: 'm9', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough' },
+      ],
+    },
+    {
+      id: '4',
+      date: '22-Nov-24',
+      inspector: 'Er Anil Mehta',
+      inspectorPosition: 'Structural Engineer',
+      inspectorDepartment: 'Structural Engineering Wing',
+      status: 'Failed',
+      description: 'Critical defects identified in column alignment on third floor. Reinforcement spacing does not comply with structural drawings. Immediate corrective action required. Recommend re-inspection after remedial work completion...',
+      media: [
+        { id: 'm10', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Defect+1' },
+        { id: 'm11', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Defect+2' },
+        { id: 'm12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video' },
+        { id: 'm13', type: 'document', uri: 'https://example.com/defect-report.pdf', filename: 'Defect_Report_Nov22.pdf' },
+      ],
+    },
+    {
+      id: '5',
+      date: '15-Nov-24',
+      inspector: 'Er Sarah Johnson',
+      inspectorPosition: 'Electrical Engineer',
+      inspectorDepartment: 'MEP Services',
+      status: 'Passed',
+      description: 'Electrical installation inspection completed. All wiring properly insulated and compliant with electrical codes. Distribution boards correctly labeled and earthing system verified.',
+      media: [],
+    },
+    {
+      id: '6',
+      date: '08-Nov-24',
+      inspector: 'Er Mohammed Ali',
+      inspectorPosition: 'Plumbing Engineer',
+      inspectorDepartment: 'MEP Services',
+      status: 'Passed',
+      description: 'Plumbing and drainage system inspection successful. All pipes pressure tested without leakage. Sanitary fittings properly installed and functional. Water supply lines meet specifications.',
+      media: [
+        { id: 'm14', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Plumbing' },
+      ],
+    },
   ];
 
   const bottlenecks: Bottleneck[] = [
@@ -1006,34 +1087,97 @@ export default function ProjectDetailsScreen() {
     );
   };
 
+  const getInspectionStatusColor = (status: InspectionStatus) => {
+    switch (status) {
+      case 'Passed':
+        return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'Failed':
+        return { bg: '#FFEBEE', text: '#C62828' };
+      case 'Pending':
+        return { bg: '#FFF3E0', text: '#E65100' };
+      default:
+        return { bg: '#E8F5E9', text: '#2E7D32' };
+    }
+  };
+
+  const handleInspectionPress = (inspection: Inspection) => {
+    setSelectedInspection(inspection);
+    setShowInspectionDetails(true);
+  };
+
+  const handleInspectionMediaPress = (media: MediaItem[], index: number) => {
+    setViewerMediaItems(media);
+    setSelectedMediaIndex(index);
+    setShowMediaViewer(true);
+  };
+
+  const renderInspectionCard = ({ item }: { item: Inspection }) => {
+    const statusColors = getInspectionStatusColor(item.status);
+    const hasPhotos = item.media.some(m => m.type === 'image');
+    const hasVideos = item.media.some(m => m.type === 'video');
+    const hasDocuments = item.media.some(m => m.type === 'document');
+    const descriptionPreview = item.description.length > 80
+      ? item.description.substring(0, 80) + '...'
+      : item.description;
+
+    return (
+      <TouchableOpacity
+        style={styles.inspectionCard}
+        onPress={() => handleInspectionPress(item)}
+        activeOpacity={0.7}
+      >
+        {/* Header with Date and Status */}
+        <View style={styles.inspectionCardHeader}>
+          <Text style={styles.inspectionDate}>{item.date}</Text>
+          <View style={[styles.inspectionStatusBadge, { backgroundColor: statusColors.bg }]}>
+            <Text style={[styles.inspectionStatusText, { color: statusColors.text }]}>
+              {item.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Inspector Details */}
+        <View style={styles.inspectorSection}>
+          <Text style={styles.inspectorName}>
+            by <Text style={styles.inspectorNameBold}>{item.inspector}</Text>
+          </Text>
+          <Text style={styles.inspectorMeta}>{item.inspectorPosition}</Text>
+          <Text style={styles.inspectorMeta}>{item.inspectorDepartment}</Text>
+        </View>
+
+        {/* Description Preview */}
+        <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
+
+        {/* Media Indicators */}
+        {(hasPhotos || hasVideos || hasDocuments) && (
+          <View style={styles.mediaIndicators}>
+            {hasPhotos && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="camera" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+            {hasVideos && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="videocam" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+            {hasDocuments && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="document-attach" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   const renderInspectionsTab = () => (
     <View style={styles.tabContent}>
       <FlatList
         data={inspections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.inspectionCard}
-            onPress={() => Alert.alert('Inspection Details', `Inspection by ${item.inspector}`)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inspectionHeader}>
-              <Text style={styles.inspectionDate}>{item.date}</Text>
-              <View style={[
-                styles.inspectionStatusBadge,
-                { backgroundColor: item.status === 'Passed' ? COLORS.statusOnTrackBg : item.status === 'Failed' ? COLORS.statusDelayedBg : COLORS.statusAtRiskBg }
-              ]}>
-                <Text style={[
-                  styles.inspectionStatusText,
-                  { color: item.status === 'Passed' ? COLORS.statusOnTrack : item.status === 'Failed' ? COLORS.statusDelayed : COLORS.statusAtRisk }
-                ]}>
-                  {item.status}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.inspectorName}>Inspector: {item.inspector}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={renderInspectionCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -1041,7 +1185,7 @@ export default function ProjectDetailsScreen() {
       {/* FAB for Add Inspection */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => setShowAddInspectionModal(true)}
+        onPress={() => router.push('/create-inspection')}
         activeOpacity={0.8}
       >
         <Ionicons name="clipboard" size={24} color="white" />
@@ -1360,6 +1504,108 @@ export default function ProjectDetailsScreen() {
             <TouchableOpacity style={styles.saveButton} onPress={handleSaveStatus}>
               <Text style={styles.saveButtonText}>Update</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Inspection Details Bottom Sheet */}
+      <Modal
+        visible={showInspectionDetails}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowInspectionDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.inspectionDetailsBottomSheet}>
+            {/* Grabber Handle */}
+            <View style={styles.grabberHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Inspection Details</Text>
+              <TouchableOpacity onPress={() => setShowInspectionDetails(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.inspectionDetailsContent}>
+              {selectedInspection && (
+                <>
+                  {/* Summary Section */}
+                  <View style={styles.inspectionDetailsSummary}>
+                    <View style={styles.inspectionDetailsRow}>
+                      <Text style={styles.inspectionDetailsDate}>{selectedInspection.date}</Text>
+                      <View style={[
+                        styles.inspectionStatusBadge,
+                        { backgroundColor: getInspectionStatusColor(selectedInspection.status).bg }
+                      ]}>
+                        <Text style={[
+                          styles.inspectionStatusText,
+                          { color: getInspectionStatusColor(selectedInspection.status).text }
+                        ]}>
+                          {selectedInspection.status}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Inspector Section */}
+                  <View style={styles.inspectionDetailsSection}>
+                    <Text style={styles.inspectionDetailsSectionTitle}>Inspector</Text>
+                    <Text style={styles.inspectionDetailsInspectorName}>{selectedInspection.inspector}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorPosition}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorDepartment}</Text>
+                  </View>
+
+                  {/* Description Section */}
+                  <View style={styles.inspectionDetailsSection}>
+                    <Text style={styles.inspectionDetailsSectionTitle}>Remarks & Observations</Text>
+                    <Text style={styles.inspectionDetailsDescription}>{selectedInspection.description}</Text>
+                  </View>
+
+                  {/* Media Gallery Section */}
+                  {selectedInspection.media.length > 0 && (
+                    <View style={styles.inspectionDetailsSection}>
+                      <Text style={styles.inspectionDetailsSectionTitle}>Attached Media</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.inspectionMediaGallery}
+                      >
+                        {selectedInspection.media.map((media, index) => (
+                          <TouchableOpacity
+                            key={media.id}
+                            style={styles.inspectionMediaThumbnail}
+                            onPress={() => handleInspectionMediaPress(selectedInspection.media, index)}
+                            activeOpacity={0.7}
+                          >
+                            {media.type === 'document' ? (
+                              <View style={styles.documentThumbnail}>
+                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
+                                <Text style={styles.documentFilename} numberOfLines={2}>
+                                  {media.filename || 'Document'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <>
+                                <Image
+                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  style={styles.inspectionMediaThumbnailImage}
+                                />
+                                {media.type === 'video' && (
+                                  <View style={styles.videoPlayIcon}>
+                                    <Ionicons name="play-circle" size={32} color="white" />
+                                  </View>
+                                )}
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2241,7 +2487,7 @@ const styles = StyleSheet.create({
   },
   inspectionCard: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -2249,6 +2495,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  inspectionCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   inspectionHeader: {
     flexDirection: 'row',
@@ -2270,10 +2522,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  inspectorSection: {
+    marginBottom: 12,
+  },
   inspectorName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.textSecondary,
+  },
+  inspectorNameBold: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  inspectorMeta: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+  inspectionDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  mediaIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  mediaIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   bottleneckCard: {
     backgroundColor: COLORS.cardBackground,
@@ -2605,6 +2890,87 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 24,
     maxHeight: '90%',
+  },
+  inspectionDetailsBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingTop: 12,
+    maxHeight: '85%',
+  },
+  inspectionDetailsContent: {
+    flex: 1,
+  },
+  inspectionDetailsSummary: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  inspectionDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inspectionDetailsDate: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  inspectionDetailsSection: {
+    marginBottom: 20,
+  },
+  inspectionDetailsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  inspectionDetailsInspectorName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  inspectionDetailsMeta: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  inspectionDetailsDescription: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  inspectionMediaGallery: {
+    marginTop: 8,
+  },
+  inspectionMediaThumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
+  },
+  inspectionMediaThumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlayIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   locationButton: {
     flexDirection: 'row',
