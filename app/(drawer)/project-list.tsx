@@ -12,7 +12,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -48,6 +48,10 @@ interface Project {
   expenditure: string;
   expectedCompletionDate: string;
   financialExpenditure: string;
+  zone?: string;
+  department?: string;
+  division?: string;
+  subDivision?: string;
 }
 
 // Helper function to get status colors
@@ -164,6 +168,10 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹3.8 Cr',
       expectedCompletionDate: '31-Mar-25',
       financialExpenditure: '76%',
+      zone: 'North Zone',
+      department: 'Road Department',
+      division: 'NH Division',
+      subDivision: 'NH-44 Sub-Division',
     },
     {
       id: 'PRJ-2024-002',
@@ -177,6 +185,10 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹4.1 Cr',
       expectedCompletionDate: '15-Jan-25',
       financialExpenditure: '50%',
+      zone: 'Central Zone',
+      department: 'Bridge Department',
+      division: 'City Bridge Division',
+      subDivision: 'Central Sub-Division',
     },
     {
       id: 'PRJ-2024-003',
@@ -190,6 +202,10 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹2.5 Cr',
       expectedCompletionDate: '30-Jun-24',
       financialExpenditure: '100%',
+      zone: 'South Zone',
+      department: 'Electrical Department',
+      division: 'Street Lighting Division',
+      subDivision: 'South Sub-Division',
     },
     {
       id: 'PRJ-2024-004',
@@ -285,7 +301,16 @@ const ALL_PROJECTS: Project[] = [
   ];
 
 export default function ProjectListScreen() {
+  const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Get filter params from advanced search
+  const filterZone = params.zone as string || '';
+  const filterDepartment = params.department as string || '';
+  const filterDivision = params.division as string || '';
+  const filterSubDivision = params.subDivision as string || '';
+  const filterProjectType = params.projectType as string || '';
+  const filterSearchText = params.searchText as string || '';
 
   const navigateBack = () => {
     router.push('/(drawer)/(tabs)/projects');
@@ -302,19 +327,47 @@ export default function ProjectListScreen() {
     setSearchQuery('');
   };
 
-  // Filter projects based on search query
+  // Filter projects based on search query and advanced search filters
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return ALL_PROJECTS;
+    let projects = ALL_PROJECTS;
+
+    // Apply advanced search filters
+    if (filterZone) {
+      projects = projects.filter((project) => project.zone === filterZone);
+    }
+    if (filterDepartment) {
+      projects = projects.filter((project) => project.department === filterDepartment);
+    }
+    if (filterDivision) {
+      projects = projects.filter((project) => project.division === filterDivision);
+    }
+    if (filterSubDivision) {
+      projects = projects.filter((project) => project.subDivision === filterSubDivision);
+    }
+    if (filterProjectType) {
+      projects = projects.filter((project) => project.projectType === filterProjectType);
+    }
+    if (filterSearchText) {
+      const searchTextLower = filterSearchText.toLowerCase().trim();
+      projects = projects.filter((project) => {
+        const nameMatch = project.name.toLowerCase().includes(searchTextLower);
+        const idMatch = project.id.toLowerCase().includes(searchTextLower);
+        return nameMatch || idMatch;
+      });
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    return ALL_PROJECTS.filter((project) => {
-      const nameMatch = project.name.toLowerCase().includes(query);
-      const idMatch = project.id.toLowerCase().includes(query);
-      return nameMatch || idMatch;
-    });
-  }, [searchQuery]);
+    // Apply local search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      projects = projects.filter((project) => {
+        const nameMatch = project.name.toLowerCase().includes(query);
+        const idMatch = project.id.toLowerCase().includes(query);
+        return nameMatch || idMatch;
+      });
+    }
+
+    return projects;
+  }, [searchQuery, filterZone, filterDepartment, filterDivision, filterSubDivision, filterProjectType, filterSearchText]);
 
   const renderProjectItem = ({ item }: { item: Project }) => (
     <ProjectCard

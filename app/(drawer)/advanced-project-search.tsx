@@ -7,6 +7,7 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,6 +31,7 @@ export default function SearchProjectScreen() {
   const [selectedSubDivision, setSelectedSubDivision] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>('');
 
   // Update state when returning from selection screen
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function SearchProjectScreen() {
     if (selectedSubDivision) filterParts.push(selectedSubDivision);
     if (selectedDepartment) filterParts.push(selectedDepartment);
     if (selectedZone) filterParts.push(selectedZone);
+    if (searchText) filterParts.push(searchText);
 
     const filterDisplay = filterParts.length > 0
       ? `Search Results - ${filterParts.join(', ')}`
@@ -63,12 +66,19 @@ export default function SearchProjectScreen() {
     setSelectedSubDivision('');
     setSelectedDepartment('');
     setSelectedZone('');
+    setSearchText('');
 
     // Navigate to project list with filters
     router.push({
       pathname: '/(drawer)/project-list',
       params: {
         filter: filterDisplay,
+        projectType: selectedProjectType,
+        division: selectedDivision,
+        subDivision: selectedSubDivision,
+        department: selectedDepartment,
+        zone: selectedZone,
+        searchText: searchText,
       },
     });
   };
@@ -220,6 +230,18 @@ export default function SearchProjectScreen() {
               <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
+
+          {/* Free-Text Search Box */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Project Name or ID (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter project name or ID..."
+              placeholderTextColor={COLORS.textPlaceholder}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -323,6 +345,17 @@ const styles = StyleSheet.create({
   dropdownTextPlaceholder: {
     color: COLORS.textPlaceholder,
     fontWeight: '400',
+  },
+  textInput: {
+    backgroundColor: COLORS.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.text,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    minHeight: 52,
   },
   bottomButtonContainer: {
     position: 'absolute',
