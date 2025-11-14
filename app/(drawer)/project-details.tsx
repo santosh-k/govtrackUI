@@ -1331,6 +1331,9 @@ export default function ProjectDetailsScreen() {
         {/* Title/Heading */}
         <Text style={styles.bottleneckTitle}>{item.title}</Text>
 
+        {/* Description Preview */}
+        <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
+
         {/* Reporter Details */}
         <View style={styles.reporterSection}>
           <Text style={styles.reporterName}>
@@ -1339,9 +1342,6 @@ export default function ProjectDetailsScreen() {
           <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
           <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
         </View>
-
-        {/* Description Preview */}
-        <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
 
         {/* Media Indicators */}
         {(hasPhotos || hasVideos || hasDocuments) && (
