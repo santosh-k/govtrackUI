@@ -147,6 +147,7 @@ interface ProgressUpdate {
 interface Inspection {
   id: string;
   date: string;
+  title: string;
   inspector: string;
   inspectorPosition: string;
   inspectorDepartment: string;
@@ -336,6 +337,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '1',
       date: '15-Dec-24',
+      title: 'Structural Integrity Check',
       inspector: 'Er Sabir Ali',
       inspectorPosition: 'Senior Civil Engineer',
       inspectorDepartment: 'Quality Assurance Department',
@@ -350,6 +352,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '2',
       date: '08-Dec-24',
+      title: 'Safety Equipment Review',
       inspector: 'Dr Priya Sharma',
       inspectorPosition: 'Chief Safety Officer',
       inspectorDepartment: 'Safety & Compliance Division',
@@ -363,6 +366,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '3',
       date: '01-Dec-24',
+      title: 'Architectural Finish Assessment',
       inspector: 'Ar Rajesh Kumar',
       inspectorPosition: 'Lead Architect',
       inspectorDepartment: 'Design & Planning',
@@ -378,6 +382,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '4',
       date: '22-Nov-24',
+      title: 'Column Alignment Inspection',
       inspector: 'Er Anil Mehta',
       inspectorPosition: 'Structural Engineer',
       inspectorDepartment: 'Structural Engineering Wing',
@@ -393,6 +398,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '5',
       date: '15-Nov-24',
+      title: 'Electrical Systems Audit',
       inspector: 'Er Sarah Johnson',
       inspectorPosition: 'Electrical Engineer',
       inspectorDepartment: 'MEP Services',
@@ -403,6 +409,7 @@ export default function ProjectDetailsScreen() {
     {
       id: '6',
       date: '08-Nov-24',
+      title: 'Plumbing & Drainage Test',
       inspector: 'Er Mohammed Ali',
       inspectorPosition: 'Plumbing Engineer',
       inspectorDepartment: 'MEP Services',
@@ -1223,12 +1230,15 @@ export default function ProjectDetailsScreen() {
 
   const renderInspectionCard = ({ item }: { item: Inspection }) => {
     const statusColors = getInspectionStatusColor(item.status);
-    const hasPhotos = item.media.some(m => m.type === 'image');
-    const hasVideos = item.media.some(m => m.type === 'video');
-    const hasDocuments = item.media.some(m => m.type === 'document');
     const descriptionPreview = item.description.length > 80
       ? item.description.substring(0, 80) + '...'
       : item.description;
+
+    // Filter only visual media (images and videos) for thumbnail preview
+    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
+    const hasMedia = visualMedia.length > 0;
+    const displayMedia = visualMedia.slice(0, 3);
+    const remainingCount = visualMedia.length - 3;
 
     return (
       <TouchableOpacity
@@ -1246,6 +1256,43 @@ export default function ProjectDetailsScreen() {
           </View>
         </View>
 
+        {/* Title/Heading */}
+        <Text style={styles.inspectionTitle}>{item.title}</Text>
+
+        {/* Description Preview */}
+        <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
+
+        {/* Media Thumbnail Preview Gallery */}
+        {hasMedia && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.inspectionMediaPreview}
+            contentContainerStyle={styles.inspectionMediaPreviewContent}
+          >
+            {displayMedia.map((media, index) => (
+              <View key={media.id} style={styles.inspectionThumbnailWrapper}>
+                <Image
+                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  style={styles.inspectionThumbnail}
+                />
+                {media.type === 'video' && (
+                  <View style={styles.thumbnailPlayIcon}>
+                    <Ionicons name="play-circle" size={24} color="white" />
+                  </View>
+                )}
+              </View>
+            ))}
+            {remainingCount > 0 && (
+              <View style={styles.inspectionThumbnailWrapper}>
+                <View style={styles.remainingCountOverlay}>
+                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
         {/* Inspector Details */}
         <View style={styles.inspectorSection}>
           <Text style={styles.inspectorName}>
@@ -1254,30 +1301,6 @@ export default function ProjectDetailsScreen() {
           <Text style={styles.inspectorMeta}>{item.inspectorPosition}</Text>
           <Text style={styles.inspectorMeta}>{item.inspectorDepartment}</Text>
         </View>
-
-        {/* Description Preview */}
-        <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
-
-        {/* Media Indicators */}
-        {(hasPhotos || hasVideos || hasDocuments) && (
-          <View style={styles.mediaIndicators}>
-            {hasPhotos && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="camera" size={16} color={COLORS.textLight} />
-              </View>
-            )}
-            {hasVideos && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="videocam" size={16} color={COLORS.textLight} />
-              </View>
-            )}
-            {hasDocuments && (
-              <View style={styles.mediaIndicator}>
-                <Ionicons name="document-attach" size={16} color={COLORS.textLight} />
-              </View>
-            )}
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -1292,13 +1315,14 @@ export default function ProjectDetailsScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB for Add Inspection */}
+      {/* Extended FAB for Add Inspection */}
       <TouchableOpacity
-        style={styles.fab}
+        style={styles.extendedFabBlue}
         onPress={() => router.push('/create-inspection')}
         activeOpacity={0.8}
       >
-        <Ionicons name="clipboard" size={24} color="white" />
+        <Ionicons name="add-circle" size={24} color="white" />
+        <Text style={styles.extendedFabText}>New Inspection</Text>
       </TouchableOpacity>
     </View>
   );
@@ -1725,14 +1749,6 @@ export default function ProjectDetailsScreen() {
                     </View>
                   </View>
 
-                  {/* Inspector Section */}
-                  <View style={styles.inspectionDetailsSection}>
-                    <Text style={styles.inspectionDetailsSectionTitle}>Inspector</Text>
-                    <Text style={styles.inspectionDetailsInspectorName}>{selectedInspection.inspector}</Text>
-                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorPosition}</Text>
-                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorDepartment}</Text>
-                  </View>
-
                   {/* Description Section */}
                   <View style={styles.inspectionDetailsSection}>
                     <Text style={styles.inspectionDetailsSectionTitle}>Remarks & Observations</Text>
@@ -1780,6 +1796,14 @@ export default function ProjectDetailsScreen() {
                       </ScrollView>
                     </View>
                   )}
+
+                  {/* Inspector Section */}
+                  <View style={styles.inspectionDetailsSection}>
+                    <Text style={styles.inspectionDetailsSectionTitle}>Inspector</Text>
+                    <Text style={styles.inspectionDetailsInspectorName}>{selectedInspection.inspector}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorPosition}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorDepartment}</Text>
+                  </View>
                 </>
               )}
             </ScrollView>
@@ -2786,6 +2810,22 @@ const styles = StyleSheet.create({
     color: 'white',
     marginLeft: 10,
   },
+  extendedFabBlue: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   listContent: {
     padding: 16,
   },
@@ -2825,6 +2865,30 @@ const styles = StyleSheet.create({
   inspectionStatusText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  inspectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  inspectionMediaPreview: {
+    marginBottom: 12,
+  },
+  inspectionMediaPreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inspectionThumbnailWrapper: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  inspectionThumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
   },
   inspectorSection: {
     marginBottom: 12,
