@@ -1334,15 +1334,6 @@ export default function ProjectDetailsScreen() {
         {/* Description Preview */}
         <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
 
-        {/* Reporter Details */}
-        <View style={styles.reporterSection}>
-          <Text style={styles.reporterName}>
-            by <Text style={styles.reporterNameBold}>{item.reportedBy}</Text>
-          </Text>
-          <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
-          <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
-        </View>
-
         {/* Media Indicators */}
         {(hasPhotos || hasVideos || hasDocuments) && (
           <View style={styles.mediaIndicators}>
@@ -1363,6 +1354,15 @@ export default function ProjectDetailsScreen() {
             )}
           </View>
         )}
+
+        {/* Reporter Details */}
+        <View style={styles.reporterSection}>
+          <Text style={styles.reporterName}>
+            by <Text style={styles.reporterNameBold}>{item.reportedBy}</Text>
+          </Text>
+          <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
+          <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
+        </View>
       </TouchableOpacity>
     );
   };
