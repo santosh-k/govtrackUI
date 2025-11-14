@@ -1464,9 +1464,6 @@ export default function ProjectDetailsScreen() {
                     <Text style={styles.activityRemarks}>{item.remarks}</Text>
                   )}
 
-                  {/* Separator Line */}
-                  <View style={styles.activityFooterSeparator} />
-
                   {/* 3. "Updated By" Information Footer */}
                   <Text style={styles.activityMeta}>
                     by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
@@ -3563,7 +3560,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     lineHeight: 18,
-    marginTop: 12,
+    marginTop: 8,
   },
   activityAuthor: {
     fontWeight: '700',
