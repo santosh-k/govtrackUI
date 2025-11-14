@@ -159,8 +159,12 @@ interface Bottleneck {
   id: string;
   title: string;
   reportedBy: string;
+  reporterPosition: string;
+  reporterDepartment: string;
   date: string;
   priority: Priority;
+  description: string;
+  media: MediaItem[];
 }
 
 // Helper function to get status colors
@@ -270,6 +274,8 @@ export default function ProjectDetailsScreen() {
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [showInspectionDetails, setShowInspectionDetails] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [showBottleneckDetails, setShowBottleneckDetails] = useState(false);
+  const [selectedBottleneck, setSelectedBottleneck] = useState<Bottleneck | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -409,9 +415,89 @@ export default function ProjectDetailsScreen() {
   ];
 
   const bottlenecks: Bottleneck[] = [
-    { id: '1', title: 'Material Delivery Delayed', reportedBy: 'Site Manager', date: '10-Dec-24', priority: 'High' },
-    { id: '2', title: 'Weather Conditions', reportedBy: 'Contractor', date: '05-Dec-24', priority: 'Medium' },
-    { id: '3', title: 'Equipment Maintenance', reportedBy: 'Engineer', date: '01-Dec-24', priority: 'Low' },
+    {
+      id: '1',
+      title: 'Material Delivery Delayed',
+      reportedBy: 'Vikram Singh',
+      reporterPosition: 'Site Manager',
+      reporterDepartment: 'Central Department',
+      date: '10-Dec-24',
+      priority: 'High',
+      description: 'Critical delay in cement delivery affecting foundation work. Supplier has confirmed a 2-week delay due to transportation issues. This will impact the project timeline significantly. Need immediate alternative supplier arrangements.',
+      media: [
+        { id: 'bn1', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Delayed+Materials' },
+        { id: 'bn2', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Stock+Empty' },
+        { id: 'bn3', type: 'document', uri: 'https://example.com/supplier-letter.pdf', filename: 'Supplier_Delay_Notice.pdf' },
+      ],
+    },
+    {
+      id: '2',
+      title: 'Weather Conditions Affecting Progress',
+      reportedBy: 'Ramesh Kumar',
+      reporterPosition: 'Lead Contractor',
+      reporterDepartment: 'Operations Division',
+      date: '05-Dec-24',
+      priority: 'Medium',
+      description: 'Heavy rainfall for the past week has halted outdoor construction activities. Ground conditions are not suitable for concrete pouring. Weather forecast shows continued rain for next 3-4 days. Work schedule needs to be revised.',
+      media: [
+        { id: 'bn4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Rain+Impact' },
+        { id: 'bn5', type: 'video', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded', thumbnail: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded' },
+      ],
+    },
+    {
+      id: '3',
+      title: 'Equipment Maintenance Required',
+      reportedBy: 'Suresh Patel',
+      reporterPosition: 'Senior Engineer',
+      reporterDepartment: 'Mechanical Wing',
+      date: '01-Dec-24',
+      priority: 'Low',
+      description: 'Routine maintenance required for excavator and crane equipment. Scheduled maintenance will take 2 days. Impact on overall timeline is minimal as this can be done during off-peak hours.',
+      media: [],
+    },
+    {
+      id: '4',
+      title: 'Labor Shortage - Skilled Workers',
+      reportedBy: 'Anjali Sharma',
+      reporterPosition: 'HR Manager',
+      reporterDepartment: 'Human Resources',
+      date: '28-Nov-24',
+      priority: 'High',
+      description: 'Shortage of skilled masons and welders impacting construction speed. Current team is overworked. Need to hire 10 additional skilled workers urgently to maintain project schedule.',
+      media: [
+        { id: 'bn6', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Understaffed' },
+        { id: 'bn7', type: 'document', uri: 'https://example.com/staffing-report.pdf', filename: 'Staffing_Analysis_Nov.pdf' },
+      ],
+    },
+    {
+      id: '5',
+      title: 'Permit Approval Pending',
+      reportedBy: 'Priya Menon',
+      reporterPosition: 'Compliance Officer',
+      reporterDepartment: 'Legal & Compliance',
+      date: '22-Nov-24',
+      priority: 'Medium',
+      description: 'Environmental clearance permit for next phase is pending with municipal authorities. Application submitted 3 weeks ago. Follow-up meetings scheduled. May cause delay if not approved within next 10 days.',
+      media: [
+        { id: 'bn8', type: 'document', uri: 'https://example.com/permit-application.pdf', filename: 'Permit_Application.pdf' },
+      ],
+    },
+    {
+      id: '6',
+      title: 'Quality Control Issues - Batch 204',
+      reportedBy: 'Dr Anil Verma',
+      reporterPosition: 'Quality Control Manager',
+      reporterDepartment: 'Quality Assurance',
+      date: '15-Nov-24',
+      priority: 'High',
+      description: 'Recent concrete batch (Batch 204) failed strength tests. Approximately 200 cubic meters affected. Need to investigate root cause and potentially remove and replace affected concrete. Major cost and time implications.',
+      media: [
+        { id: 'bn9', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Failed+Test' },
+        { id: 'bn10', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Sample+Analysis' },
+        { id: 'bn11', type: 'document', uri: 'https://example.com/test-report.pdf', filename: 'Concrete_Test_Report_Batch204.pdf' },
+        { id: 'bn12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection' },
+      ],
+    },
   ];
 
   // Initialize progress history with placeholder data
@@ -1111,6 +1197,30 @@ export default function ProjectDetailsScreen() {
     setShowMediaViewer(true);
   };
 
+  const getPriorityColor = (priority: Priority) => {
+    switch (priority) {
+      case 'High':
+        return { bg: COLORS.priorityHigh, text: '#FFFFFF' };
+      case 'Medium':
+        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+      case 'Low':
+        return { bg: COLORS.priorityLow, text: '#FFFFFF' };
+      default:
+        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+    }
+  };
+
+  const handleBottleneckPress = (bottleneck: Bottleneck) => {
+    setSelectedBottleneck(bottleneck);
+    setShowBottleneckDetails(true);
+  };
+
+  const handleBottleneckMediaPress = (media: MediaItem[], index: number) => {
+    setViewerMediaItems(media);
+    setSelectedMediaIndex(index);
+    setShowMediaViewer(true);
+  };
+
   const renderInspectionCard = ({ item }: { item: Inspection }) => {
     const statusColors = getInspectionStatusColor(item.status);
     const hasPhotos = item.media.some(m => m.type === 'image');
@@ -1193,26 +1303,73 @@ export default function ProjectDetailsScreen() {
     </View>
   );
 
+  const renderBottleneckCard = ({ item }: { item: Bottleneck }) => {
+    const priorityColors = getPriorityColor(item.priority);
+    const hasPhotos = item.media.some(m => m.type === 'image');
+    const hasVideos = item.media.some(m => m.type === 'video');
+    const hasDocuments = item.media.some(m => m.type === 'document');
+    const descriptionPreview = item.description.length > 80
+      ? item.description.substring(0, 80) + '...'
+      : item.description;
+
+    return (
+      <TouchableOpacity
+        style={styles.bottleneckCard}
+        onPress={() => handleBottleneckPress(item)}
+        activeOpacity={0.7}
+      >
+        {/* Header with Date and Priority */}
+        <View style={styles.bottleneckCardHeader}>
+          <Text style={styles.bottleneckDate}>{item.date}</Text>
+          <View style={[styles.priorityBadge, { backgroundColor: priorityColors.bg }]}>
+            <Text style={[styles.priorityText, { color: priorityColors.text }]}>
+              {item.priority}
+            </Text>
+          </View>
+        </View>
+
+        {/* Reporter Details */}
+        <View style={styles.reporterSection}>
+          <Text style={styles.reporterName}>
+            by <Text style={styles.reporterNameBold}>{item.reportedBy}</Text>
+          </Text>
+          <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
+          <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
+        </View>
+
+        {/* Description Preview */}
+        <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
+
+        {/* Media Indicators */}
+        {(hasPhotos || hasVideos || hasDocuments) && (
+          <View style={styles.mediaIndicators}>
+            {hasPhotos && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="camera" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+            {hasVideos && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="videocam" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+            {hasDocuments && (
+              <View style={styles.mediaIndicator}>
+                <Ionicons name="document-attach" size={16} color={COLORS.textLight} />
+              </View>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   const renderBottlenecksTab = () => (
     <View style={styles.tabContent}>
       <FlatList
         data={bottlenecks}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.bottleneckCard}>
-            <View style={styles.bottleneckHeader}>
-              <Text style={styles.bottleneckTitle}>{item.title}</Text>
-              <View style={[
-                styles.priorityBadge,
-                { backgroundColor: item.priority === 'High' ? COLORS.priorityHigh : item.priority === 'Medium' ? COLORS.priorityMedium : COLORS.priorityLow }
-              ]}>
-                <Text style={styles.priorityText}>{item.priority}</Text>
-              </View>
-            </View>
-            <Text style={styles.bottleneckMeta}>Reported by: {item.reportedBy}</Text>
-            <Text style={styles.bottleneckDate}>{item.date}</Text>
-          </View>
-        )}
+        renderItem={renderBottleneckCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -1593,6 +1750,111 @@ export default function ProjectDetailsScreen() {
                                 <Image
                                   source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
                                   style={styles.inspectionMediaThumbnailImage}
+                                />
+                                {media.type === 'video' && (
+                                  <View style={styles.videoPlayIcon}>
+                                    <Ionicons name="play-circle" size={32} color="white" />
+                                  </View>
+                                )}
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bottleneck Details Bottom Sheet */}
+      <Modal
+        visible={showBottleneckDetails}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBottleneckDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottleneckDetailsBottomSheet}>
+            {/* Grabber Handle */}
+            <View style={styles.grabberHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Bottleneck Details</Text>
+              <TouchableOpacity onPress={() => setShowBottleneckDetails(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {selectedBottleneck && (
+                <>
+                  {/* Summary Section */}
+                  <View style={styles.bottleneckDetailsSummary}>
+                    <View style={styles.bottleneckDetailsRow}>
+                      <Text style={styles.bottleneckDetailsDate}>{selectedBottleneck.date}</Text>
+                      <View style={[
+                        styles.priorityBadge,
+                        { backgroundColor: getPriorityColor(selectedBottleneck.priority).bg }
+                      ]}>
+                        <Text style={[
+                          styles.priorityText,
+                          { color: getPriorityColor(selectedBottleneck.priority).text }
+                        ]}>
+                          {selectedBottleneck.priority}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Reporter Section */}
+                  <View style={styles.bottleneckDetailsSection}>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>Reported By</Text>
+                    <Text style={styles.bottleneckDetailsReporterName}>{selectedBottleneck.reportedBy}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterPosition}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterDepartment}</Text>
+                  </View>
+
+                  {/* Description Section */}
+                  <View style={styles.bottleneckDetailsSection}>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>Description</Text>
+                    <Text style={styles.bottleneckDetailsDescription}>{selectedBottleneck.description}</Text>
+                  </View>
+
+                  {/* Media Gallery Section */}
+                  {selectedBottleneck.media.length > 0 && (
+                    <View style={styles.bottleneckDetailsSection}>
+                      <Text style={styles.bottleneckDetailsSectionTitle}>Attached Media</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.bottleneckMediaGallery}
+                      >
+                        {selectedBottleneck.media.map((media, index) => (
+                          <TouchableOpacity
+                            key={media.id}
+                            style={styles.bottleneckMediaThumbnail}
+                            onPress={() => handleBottleneckMediaPress(selectedBottleneck.media, index)}
+                            activeOpacity={0.7}
+                          >
+                            {media.type === 'document' ? (
+                              <View style={styles.documentThumbnail}>
+                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
+                                <Text style={styles.documentFilename} numberOfLines={2}>
+                                  {media.filename || 'Document'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <>
+                                <Image
+                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  style={styles.bottleneckMediaThumbnailImage}
                                 />
                                 {media.type === 'video' && (
                                   <View style={styles.videoPlayIcon}>
@@ -2565,48 +2827,60 @@ const styles = StyleSheet.create({
   },
   bottleneckCard: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  bottleneckHeader: {
+  bottleneckCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  bottleneckTitle: {
-    fontSize: 16,
+  bottleneckDate: {
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,
-    flex: 1,
-    marginRight: 8,
   },
   priorityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   priorityText: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'white',
   },
-  bottleneckMeta: {
+  reporterSection: {
+    marginBottom: 12,
+  },
+  reporterName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  bottleneckDate: {
+  reporterNameBold: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  reporterMeta: {
     fontSize: 13,
     fontWeight: '400',
     color: COLORS.textLight,
+    marginTop: 2,
+  },
+  bottleneckDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -2971,6 +3245,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  bottleneckDetailsBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingTop: 12,
+    height: '85%',
+  },
+  bottleneckDetailsSummary: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  bottleneckDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bottleneckDetailsDate: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  bottleneckDetailsSection: {
+    marginBottom: 20,
+  },
+  bottleneckDetailsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  bottleneckDetailsReporterName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  bottleneckDetailsMeta: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  bottleneckDetailsDescription: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  bottleneckMediaGallery: {
+    marginTop: 8,
+  },
+  bottleneckMediaThumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
+  },
+  bottleneckMediaThumbnailImage: {
+    width: '100%',
+    height: '100%',
   },
   locationButton: {
     flexDirection: 'row',
