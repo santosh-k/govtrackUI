@@ -24,6 +24,7 @@ import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
 import SpeedDialFAB from '@/components/SpeedDialFAB';
+import AddMediaSheet from '@/components/AddMediaSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -879,25 +880,18 @@ export default function ProjectDetailsScreen() {
     setShowMediaViewer(true);
   };
 
+  /**
+   * Opens the Add Media sheet
+   */
   const handleUploadMedia = () => {
     setShowUploadSheet(true);
   };
 
-  const takePhotoOrVideo = async () => {
-    setShowUploadSheet(false);
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
+  /**
+   * Handles photo/video capture from AddMediaSheet
+   */
+  const handlePhotoTaken = (result: ImagePicker.ImagePickerResult) => {
+    if (result.assets && result.assets[0]) {
       const newMedia: MediaItem = {
         id: `media-${Date.now()}`,
         type: result.assets[0].type === 'video' ? 'video' : 'image',
@@ -905,25 +899,15 @@ export default function ProjectDetailsScreen() {
         thumbnail: result.assets[0].uri,
       };
       setAllMediaItems([newMedia, ...allMediaItems]);
-      Alert.alert('Success', 'Media uploaded successfully');
+      Alert.alert('Success', 'Media captured successfully');
     }
   };
 
-  const pickFromGallery = async () => {
-    setShowUploadSheet(false);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Gallery permission is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
+  /**
+   * Handles media selection from gallery via AddMediaSheet
+   */
+  const handleMediaSelected = (result: ImagePicker.ImagePickerResult) => {
+    if (result.assets && result.assets[0]) {
       const newMedia: MediaItem = {
         id: `media-${Date.now()}`,
         type: result.assets[0].type === 'video' ? 'video' : 'image',
@@ -931,12 +915,14 @@ export default function ProjectDetailsScreen() {
         thumbnail: result.assets[0].uri,
       };
       setAllMediaItems([newMedia, ...allMediaItems]);
-      Alert.alert('Success', 'Media uploaded successfully');
+      Alert.alert('Success', 'Media added successfully');
     }
   };
 
-  const pickDocument = async () => {
-    setShowUploadSheet(false);
+  /**
+   * Handles document selection via AddMediaSheet
+   */
+  const handleDocumentSelected = () => {
     // Simulate document picker
     const newDocument: MediaItem = {
       id: `doc-${Date.now()}`,
@@ -2139,78 +2125,14 @@ export default function ProjectDetailsScreen() {
         </View>
       </Modal>
 
-      {/* Upload Action Sheet */}
-      <Modal
+      {/* Add Media Sheet - Reusable Component */}
+      <AddMediaSheet
         visible={showUploadSheet}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowUploadSheet(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.overlayTouchable}
-            activeOpacity={1}
-            onPress={() => setShowUploadSheet(false)}
-          />
-          <View style={styles.uploadSheet}>
-            <View style={styles.uploadSheetHandle} />
-            <Text style={styles.uploadSheetTitle}>Upload Media</Text>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={takePhotoOrVideo}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="camera" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Take Photo or Video</Text>
-                <Text style={styles.uploadOptionSubtitle}>Use your camera</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={pickFromGallery}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="images" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Choose from Gallery</Text>
-                <Text style={styles.uploadOptionSubtitle}>Select photos or videos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={pickDocument}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="document-text" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Choose File</Text>
-                <Text style={styles.uploadOptionSubtitle}>Upload documents</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadCancelButton}
-              onPress={() => setShowUploadSheet(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.uploadCancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowUploadSheet(false)}
+        onPhotoTaken={handlePhotoTaken}
+        onMediaSelected={handleMediaSelected}
+        onDocumentSelected={handleDocumentSelected}
+      />
 
       {/* Success Toast */}
       {showSuccessToast && (
@@ -2680,74 +2602,6 @@ const styles = StyleSheet.create({
   segmentedControlTextActive: {
     color: '#1A1A1A',
     fontWeight: '700',
-  },
-  // Upload Action Sheet Styles
-  overlayTouchable: {
-    flex: 1,
-  },
-  uploadSheet: {
-    backgroundColor: COLORS.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 8,
-  },
-  uploadSheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  uploadSheetTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  uploadOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  uploadOptionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  uploadOptionTextContainer: {
-    flex: 1,
-  },
-  uploadOptionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  uploadOptionSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  uploadCancelButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  uploadCancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   listContent: {
     padding: 16,

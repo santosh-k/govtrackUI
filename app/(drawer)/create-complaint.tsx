@@ -1,3 +1,14 @@
+/**
+ * Create Complaint Screen
+ *
+ * This screen allows users to create a new complaint for a project.
+ * Currently displays a placeholder UI indicating the feature is coming soon.
+ * When navigated from the Speed Dial FAB, it receives the projectId as a parameter
+ * and navigates back to the Project Details screen when the back button is pressed.
+ *
+ * @screen
+ */
+
 import React from 'react';
 import {
   View,
@@ -10,6 +21,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
+// Color constants for consistent styling
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
@@ -19,11 +31,23 @@ const COLORS = {
   primary: '#FF9800',
 };
 
+/**
+ * CreateComplaintScreen Component
+ *
+ * Renders the create complaint interface with a back button
+ * and placeholder content for the upcoming feature.
+ */
 export default function CreateComplaintScreen() {
+  // Extract route parameters
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
 
-  const goBack = () => {
+  /**
+   * Handles back navigation
+   * If projectId is present, navigates back to the Project Details screen
+   * Otherwise, uses standard back navigation
+   */
+  const handleGoBack = () => {
     if (projectId) {
       // Navigate back to project details with the project ID
       router.push({
@@ -40,11 +64,11 @@ export default function CreateComplaintScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Header */}
+      {/* Header with back button and title */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={goBack}
+          onPress={handleGoBack}
           activeOpacity={0.6}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -52,7 +76,7 @@ export default function CreateComplaintScreen() {
         <Text style={styles.headerTitle}>Create Complaint</Text>
       </View>
 
-      {/* Coming Soon Content */}
+      {/* Placeholder content */}
       <View style={styles.contentContainer}>
         <Ionicons name="document-text-outline" size={80} color={COLORS.primary} />
         <Text style={styles.title}>Coming Soon</Text>

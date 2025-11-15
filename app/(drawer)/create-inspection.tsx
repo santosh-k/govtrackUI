@@ -1,3 +1,14 @@
+/**
+ * Create Inspection Screen
+ *
+ * This screen allows users to create a new inspection for a project.
+ * Currently displays a placeholder UI indicating the feature is coming soon.
+ * When navigated from the Speed Dial FAB, it receives the projectId as a parameter
+ * and navigates back to the Project Details screen when the back button is pressed.
+ *
+ * @screen
+ */
+
 import React from 'react';
 import {
   View,
@@ -10,6 +21,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
+// Color constants for consistent styling
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
@@ -19,11 +31,23 @@ const COLORS = {
   primary: '#2196F3',
 };
 
+/**
+ * CreateInspectionScreen Component
+ *
+ * Renders the create inspection interface with a back button
+ * and placeholder content for the upcoming feature.
+ */
 export default function CreateInspectionScreen() {
+  // Extract route parameters
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
 
-  const goBack = () => {
+  /**
+   * Handles back navigation
+   * If projectId is present, navigates back to the Project Details screen
+   * Otherwise, uses standard back navigation
+   */
+  const handleGoBack = () => {
     if (projectId) {
       // Navigate back to project details with the project ID
       router.push({
@@ -40,11 +64,11 @@ export default function CreateInspectionScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
-      {/* Header */}
+      {/* Header with back button and title */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={goBack}
+          onPress={handleGoBack}
           activeOpacity={0.6}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -53,7 +77,7 @@ export default function CreateInspectionScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      {/* Content */}
+      {/* Placeholder content */}
       <View style={styles.content}>
         <View style={styles.placeholderContainer}>
           <Ionicons name="clipboard-outline" size={80} color={COLORS.textSecondary} />
