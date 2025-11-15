@@ -43,6 +43,7 @@ interface Attachment {
 export default function CreateBottleneckScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
+  const returnTab = params.returnTab as string;
 
   // State
   const [selectedIssueType, setSelectedIssueType] = useState('');
@@ -66,7 +67,10 @@ export default function CreateBottleneckScreen() {
     if (projectId) {
       router.push({
         pathname: '/(drawer)/project-details',
-        params: { projectId },
+        params: {
+          projectId,
+          ...(returnTab && { activeTab: returnTab }),
+        },
       });
     } else {
       router.back();
@@ -228,6 +232,7 @@ export default function CreateBottleneckScreen() {
                     returnTo: 'create-bottleneck',
                     returnField: 'selectedIssueType',
                     projectId: projectId || '',
+                    returnTab: returnTab || '',
                   },
                 });
               }}

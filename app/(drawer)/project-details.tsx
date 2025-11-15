@@ -270,7 +270,6 @@ export default function ProjectDetailsScreen() {
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showAddInspectionModal, setShowAddInspectionModal] = useState(false);
-  const [showAddBottleneckModal, setShowAddBottleneckModal] = useState(false);
   const [showAddProgressModal, setShowAddProgressModal] = useState(false);
   const [newProgress, setNewProgress] = useState(75);
   const [progressRemarks, setProgressRemarks] = useState('');
@@ -1497,7 +1496,10 @@ export default function ProjectDetailsScreen() {
             {
               icon: 'warning-outline',
               label: 'Add Bottleneck',
-              onPress: () => setShowAddBottleneckModal(true),
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-bottleneck',
+                params: { projectId, returnTab: activeTab },
+              }),
             },
             {
               icon: 'checkmark-circle-outline',
@@ -1940,37 +1942,6 @@ export default function ProjectDetailsScreen() {
               }}
             >
               <Text style={styles.saveButtonText}>Save Inspection</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Bottleneck Modal */}
-      <Modal
-        visible={showAddBottleneckModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddBottleneckModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Add New Bottleneck</Text>
-              <TouchableOpacity onPress={() => setShowAddBottleneckModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.placeholderFormText}>
-              Form to add new bottleneck would go here with fields for title, description, and priority.
-            </Text>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={() => {
-                setShowAddBottleneckModal(false);
-                Alert.alert('Success', 'Bottleneck added successfully');
-              }}
-            >
-              <Text style={styles.saveButtonText}>Save Bottleneck</Text>
             </TouchableOpacity>
           </View>
         </View>
