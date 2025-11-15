@@ -90,7 +90,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
           {actions.map((action, index) => {
             const translateY = animation.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, -(55 * (actions.length - index))],
+              outputRange: [0, -(52 * (actions.length - index))],
             });
 
             const scale = animation.interpolate({
