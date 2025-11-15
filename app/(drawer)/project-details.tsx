@@ -1530,17 +1530,26 @@ export default function ProjectDetailsScreen() {
             {
               icon: 'checkmark-circle-outline',
               label: 'Create Task',
-              onPress: () => router.push('/(drawer)/create-task'),
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-task',
+                params: { projectId, returnTab: activeTab },
+              }),
             },
             {
               icon: 'document-text-outline',
               label: 'Create Complaint',
-              onPress: () => router.push('/(drawer)/create-complaint'),
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-complaint',
+                params: { projectId, returnTab: activeTab },
+              }),
             },
             {
               icon: 'clipboard-outline',
               label: 'New Inspection',
-              onPress: () => router.push('/(drawer)/create-inspection'),
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-inspection',
+                params: { projectId, returnTab: activeTab },
+              }),
             },
           ]}
         />

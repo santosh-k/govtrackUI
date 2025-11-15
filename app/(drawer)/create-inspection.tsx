@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -20,8 +20,20 @@ const COLORS = {
 };
 
 export default function CreateInspectionScreen() {
+  const params = useLocalSearchParams();
+  const projectId = params.projectId as string;
+
   const goBack = () => {
-    router.back();
+    if (projectId) {
+      // Navigate back to project details with the project ID
+      router.push({
+        pathname: '/(drawer)/project-details',
+        params: { projectId },
+      });
+    } else {
+      // Fallback to standard back navigation
+      router.back();
+    }
   };
 
   return (
