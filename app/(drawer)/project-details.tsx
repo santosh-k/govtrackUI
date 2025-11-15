@@ -1540,7 +1540,7 @@ export default function ProjectDetailsScreen() {
             {
               icon: 'clipboard-outline',
               label: 'New Inspection',
-              onPress: () => router.push('/create-inspection'),
+              onPress: () => router.push('/(drawer)/create-inspection'),
             },
           ]}
         />
