@@ -722,16 +722,16 @@ const styles = StyleSheet.create({
   },
   // Gallery-Style Attachment Styles
   initialAddTile: {
-    height: 140,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderStyle: 'dashed',
     backgroundColor: COLORS.background,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginTop: SPACING.md,
-    gap: SPACING.sm,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   initialAddTileText: {
     fontSize: 15,
