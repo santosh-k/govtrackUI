@@ -30,7 +30,7 @@ interface SelectionItem {
   name: string;
 }
 
-type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes';
+type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories';
 
 export default function SelectionScreen() {
   const params = useLocalSearchParams();
@@ -38,6 +38,7 @@ export default function SelectionScreen() {
   const dataKey = params.dataKey as DataKey;
   const currentValue = params.currentValue as string;
   const returnField = params.returnField as string;
+  const returnTo = params.returnTo as string;
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -61,10 +62,18 @@ export default function SelectionScreen() {
   };
 
   const handleSelectItem = (item: SelectionItem) => {
-    // Navigate back to search screen with the selected value
+    // Navigate back to the calling screen with the selected value
+    const pathname = returnTo
+      ? (`/(drawer)/${returnTo}` as any)
+      : '/(drawer)/advanced-project-search';
+
+    // Preserve all params except the selection-specific ones
+    const { title: _title, dataKey: _dataKey, currentValue: _currentValue, returnField: _returnField, returnTo: _returnTo, ...restParams } = params;
+
     router.push({
-      pathname: '/(drawer)/advanced-project-search',
+      pathname,
       params: {
+        ...restParams,
         [returnField]: item.name,
       },
     });
