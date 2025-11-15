@@ -711,6 +711,8 @@ const styles = StyleSheet.create({
   adjustLocationLink: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginTop: 10,
     marginBottom: SPACING.md,
     paddingVertical: SPACING.sm,
     gap: 6,
