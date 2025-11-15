@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   actionButton: {
-    marginBottom: 10,
+    marginBottom: 0,
   },
   actionButtonTouchable: {
     flexDirection: 'row',
