@@ -301,79 +301,75 @@ export default function CreateComplaintScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Merged Card: Location & Evidence */}
+        {/* Card 1: Complaint Location */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Location & Evidence</Text>
+          <Text style={styles.cardTitle}>Complaint Location</Text>
 
-          {/* Location Section - Horizontal Layout */}
-          <View style={styles.locationEvidenceContainer}>
-            {/* Left: Small Square Map Preview */}
-            {isLoadingLocation ? (
-              <View style={styles.compactMapPreview}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              </View>
-            ) : location ? (
-              <TouchableOpacity
-                style={styles.compactMapPreview}
-                onPress={() => {
-                  setTempLocation(location);
-                  setShowMapModal(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.compactLocationPreview}>
-                  <Ionicons name="location" size={40} color={COLORS.primary} />
-                </View>
-                <View style={styles.editLocationIcon}>
-                  <Ionicons name="pencil" size={14} color={COLORS.white} />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.compactMapPreview}>
-                <Ionicons name="location-outline" size={32} color={COLORS.textSecondary} />
-              </View>
-            )}
-
-            {/* Right: Address Fields Stacked Vertically */}
-            <View style={styles.addressFieldsContainer}>
-              <View style={styles.compactFieldContainer}>
-                <Text style={styles.compactFieldLabel}>Address</Text>
-                <TextInput
-                  style={styles.compactTextInput}
-                  value={location?.address || ''}
-                  editable={false}
-                  placeholder="Address will appear here"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
-
-              <View style={styles.compactFieldContainer}>
-                <Text style={styles.compactFieldLabel}>Landmark (Optional)</Text>
-                <TextInput
-                  style={styles.compactTextInput}
-                  value={landmark}
-                  onChangeText={setLandmark}
-                  placeholder="e.g., Opposite the main gate"
-                  placeholderTextColor={COLORS.textSecondary}
-                />
-              </View>
+          {/* Full-Width Map Preview */}
+          {isLoadingLocation ? (
+            <View style={styles.mapPreviewContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.mapLoadingText}>Getting your location...</Text>
             </View>
-          </View>
-
-          {/* Separator Line */}
-          <View style={styles.sectionDivider} />
-
-          {/* Attachments Section - Compact Row */}
-          <View style={styles.attachmentsHeader}>
-            <Text style={styles.attachmentsLabel}>Attachments</Text>
+          ) : location ? (
             <TouchableOpacity
-              style={styles.addAttachmentButton}
-              onPress={handleAddAttachment}
-              activeOpacity={0.7}
+              style={styles.mapPreviewContainer}
+              onPress={() => {
+                setTempLocation(location);
+                setShowMapModal(true);
+              }}
+              activeOpacity={0.8}
             >
-              <Ionicons name="add" size={20} color={COLORS.white} />
+              <View style={styles.locationPreview}>
+                <Ionicons name="location" size={64} color={COLORS.primary} />
+                <Text style={styles.locationCoords}>
+                  Lat: {location.latitude.toFixed(6)}, Long: {location.longitude.toFixed(6)}
+                </Text>
+                <Text style={styles.tapToAdjustHint}>Tap to adjust location</Text>
+              </View>
             </TouchableOpacity>
+          ) : (
+            <View style={styles.mapPreviewContainer}>
+              <Ionicons name="location-outline" size={64} color={COLORS.textSecondary} />
+              <Text style={styles.mapErrorText}>Location unavailable</Text>
+            </View>
+          )}
+
+          {/* Location/Address Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Location / Address</Text>
+            <TextInput
+              style={styles.textInput}
+              value={location?.address || ''}
+              editable={false}
+              placeholder="Address will appear here"
+              placeholderTextColor={COLORS.textSecondary}
+            />
           </View>
+
+          {/* Landmark Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={landmark}
+              onChangeText={setLandmark}
+              placeholder="e.g., Opposite the main gate"
+              placeholderTextColor={COLORS.textSecondary}
+            />
+          </View>
+        </View>
+
+        {/* Card 2: Add Attachments */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Add Attachments</Text>
+
+          {/* Large Tappable Attachment Tile */}
+          <TouchableOpacity style={styles.attachmentTile} onPress={handleAddAttachment}>
+            <Ionicons name="camera-outline" size={48} color={COLORS.primary} />
+            <Text style={styles.attachmentTileText}>Add Photo or Video</Text>
+            <Text style={styles.attachmentTileSubtext}>Tap to choose from camera or gallery</Text>
+          </TouchableOpacity>
 
           {/* Thumbnail Gallery */}
           {attachments.length > 0 && (
@@ -678,85 +674,64 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
-  // Location & Evidence Card Styles
-  locationEvidenceContainer: {
-    flexDirection: 'row',
-    gap: SPACING.md,
+  // Location Card Styles
+  mapPreviewContainer: {
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.md,
-  },
-  compactMapPreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    position: 'relative',
-    overflow: 'hidden',
   },
-  compactLocationPreview: {
+  locationPreview: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editLocationIcon: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    backgroundColor: COLORS.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addressFieldsContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  compactFieldContainer: {
-    marginBottom: SPACING.sm,
-  },
-  compactFieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  compactTextInput: {
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: 8,
+  locationCoords: {
     fontSize: 13,
-    color: COLORS.text,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: SPACING.md,
-  },
-  attachmentsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
-  },
-  attachmentsLabel: {
+  tapToAdjustHint: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.primary,
+    marginTop: SPACING.sm,
   },
-  addAttachmentButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
+  mapLoadingText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+  },
+  mapErrorText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+  },
+  // Attachment Card Styles
+  attachmentTile: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    paddingVertical: SPACING.xl + SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    marginBottom: SPACING.md,
+  },
+  attachmentTileText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: SPACING.md,
+  },
+  attachmentTileSubtext: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
   },
   attachmentsScrollView: {
     marginTop: SPACING.sm,
