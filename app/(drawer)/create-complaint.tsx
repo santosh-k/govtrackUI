@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    marginTop: 10,
+    marginTop: 0,
     marginBottom: SPACING.md,
     paddingVertical: SPACING.sm,
     gap: 6,
