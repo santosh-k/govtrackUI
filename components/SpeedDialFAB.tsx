@@ -8,13 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const COLORS = {
-  primary: '#FF9800', // Saffron/Orange
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  white: '#FFFFFF',
-  text: '#1A1A1A',
-};
+import { COLORS } from '@/theme';
 
 interface SpeedDialAction {
   icon: keyof typeof Ionicons.glyphMap;

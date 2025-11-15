@@ -21,17 +21,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-
-// Color constants for consistent styling
-const COLORS = {
-  background: '#F5F5F5',
-  cardBackground: '#FFFFFF',
-  text: '#1A1A1A',
-  textSecondary: '#666666',
-  border: '#E0E0E0',
-  primary: '#FF9800',
-  overlay: 'rgba(0, 0, 0, 0.5)',
-};
+import { COLORS } from '@/theme';
 
 interface AddMediaSheetProps {
   /** Controls visibility of the sheet */
