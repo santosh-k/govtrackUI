@@ -301,60 +301,7 @@ export default function CreateComplaintScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Card 1: Complaint Location */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Complaint Location</Text>
-
-          {/* Location/Address Field */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Address</Text>
-            {isLoadingLocation ? (
-              <View style={styles.loadingAddressContainer}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingAddressText}>Getting your location...</Text>
-              </View>
-            ) : (
-              <TextInput
-                style={styles.textInput}
-                value={location?.address || ''}
-                editable={false}
-                placeholder="Address will appear here"
-                placeholderTextColor={COLORS.textSecondary}
-              />
-            )}
-          </View>
-
-          {/* Tappable Link to Adjust Location */}
-          <TouchableOpacity
-            style={styles.adjustLocationLink}
-            onPress={() => {
-              if (location) {
-                setTempLocation(location);
-                setShowMapModal(true);
-              } else {
-                Alert.alert('Location Unavailable', 'Please wait for location to be detected');
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="location" size={18} color={COLORS.primary} />
-            <Text style={styles.adjustLocationText}>Tap to adjust location on map</Text>
-          </TouchableOpacity>
-
-          {/* Landmark Field */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={landmark}
-              onChangeText={setLandmark}
-              placeholder="e.g., Opposite the main gate"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-          </View>
-        </View>
-
-        {/* Card 2: Complaint Details */}
+        {/* Card 1: Complaint Details (WHAT) */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select Complaint Type</Text>
 
@@ -430,7 +377,60 @@ export default function CreateComplaintScreen() {
           )}
         </View>
 
-        {/* Card 3: Assign Department */}
+        {/* Card 2: Complaint Location (WHERE) */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Complaint Location</Text>
+
+          {/* Location/Address Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Address</Text>
+            {isLoadingLocation ? (
+              <View style={styles.loadingAddressContainer}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.loadingAddressText}>Getting your location...</Text>
+              </View>
+            ) : (
+              <TextInput
+                style={styles.textInput}
+                value={location?.address || ''}
+                editable={false}
+                placeholder="Address will appear here"
+                placeholderTextColor={COLORS.textSecondary}
+              />
+            )}
+          </View>
+
+          {/* Tappable Link to Adjust Location */}
+          <TouchableOpacity
+            style={styles.adjustLocationLink}
+            onPress={() => {
+              if (location) {
+                setTempLocation(location);
+                setShowMapModal(true);
+              } else {
+                Alert.alert('Location Unavailable', 'Please wait for location to be detected');
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="location" size={18} color={COLORS.primary} />
+            <Text style={styles.adjustLocationText}>Tap to adjust location on map</Text>
+          </TouchableOpacity>
+
+          {/* Landmark Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={landmark}
+              onChangeText={setLandmark}
+              placeholder="e.g., Opposite the main gate"
+              placeholderTextColor={COLORS.textSecondary}
+            />
+          </View>
+        </View>
+
+        {/* Card 3: Assign Department (WHO) */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Assign to Department</Text>
           <TouchableOpacity
