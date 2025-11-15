@@ -69,13 +69,12 @@ const COMPLAINT_TYPES: ComplaintType[] = [
 ];
 
 const DEPARTMENTS = [
-  'Engineering',
-  'Quality Control',
-  'Safety',
-  'Procurement',
-  'Construction',
-  'Project Management',
-  'Administration',
+  'Civil Engineering',
+  'Electrical Engineering',
+  'Mechanical Engineering',
+  'Planning & Development',
+  'Quality Assurance',
+  'Safety & Security',
 ];
 
 export default function CreateComplaintScreen() {
@@ -92,9 +91,21 @@ export default function CreateComplaintScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [tempLocation, setTempLocation] = useState<LocationData | null>(null);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [departmentSearch, setDepartmentSearch] = useState('');
-  const [tempLocation, setTempLocation] = useState<LocationData | null>(null);
+
+  /**
+   * Get filtered departments based on search query
+   */
+  const getFilteredDepartments = () => {
+    if (departmentSearch.trim() === '') {
+      return DEPARTMENTS;
+    }
+    return DEPARTMENTS.filter((dept) =>
+      dept.toLowerCase().includes(departmentSearch.toLowerCase())
+    );
+  };
 
   /**
    * Request location permissions and get current location on mount
@@ -235,16 +246,6 @@ export default function CreateComplaintScreen() {
   };
 
   /**
-   * Filters departments based on search query
-   */
-  const getFilteredDepartments = () => {
-    if (!departmentSearch.trim()) return DEPARTMENTS;
-    return DEPARTMENTS.filter((dept) =>
-      dept.toLowerCase().includes(departmentSearch.toLowerCase())
-    );
-  };
-
-  /**
    * Validates and submits the complaint
    */
   const handleSubmit = async () => {
@@ -337,29 +338,28 @@ export default function CreateComplaintScreen() {
             />
           </View>
 
-          {/* Compact Attachment Row */}
-          <View style={styles.compactAttachmentRow}>
-            <Text style={styles.compactAttachmentLabel}>Add Photo or Video (Optional)</Text>
+          {/* Gallery-Style Attachments */}
+          {attachments.length === 0 ? (
+            /* Initial State: Large "Add Photo/Video" Tile */
             <TouchableOpacity
-              style={styles.compactAddButton}
+              style={styles.initialAddTile}
               onPress={handleAddAttachment}
               activeOpacity={0.7}
             >
-              <Ionicons name="add" size={20} color={COLORS.white} />
+              <Ionicons name="camera-outline" size={40} color={COLORS.primary} />
+              <Text style={styles.initialAddTileText}>Add Photo/Video</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Dynamic Thumbnail Gallery */}
-          {attachments.length > 0 && (
+          ) : (
+            /* Gallery View: Thumbnails + Add More Button */
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              style={styles.compactAttachmentsScrollView}
-              contentContainerStyle={styles.compactAttachmentsScrollContent}
+              style={styles.galleryScrollView}
+              contentContainerStyle={styles.galleryScrollContent}
             >
               {attachments.map((att) => (
-                <View key={att.id} style={styles.attachmentItem}>
-                  <Image source={{ uri: att.uri }} style={styles.attachmentThumb} />
+                <View key={att.id} style={styles.galleryThumbnail}>
+                  <Image source={{ uri: att.uri }} style={styles.galleryThumbImage} />
                   {att.type === 'video' && (
                     <View style={styles.videoIndicator}>
                       <Ionicons name="play-circle" size={20} color={COLORS.white} />
@@ -373,6 +373,15 @@ export default function CreateComplaintScreen() {
                   </TouchableOpacity>
                 </View>
               ))}
+
+              {/* Permanent "Add More" Button */}
+              <TouchableOpacity
+                style={styles.addMoreTile}
+                onPress={handleAddAttachment}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={32} color={COLORS.primary} />
+              </TouchableOpacity>
             </ScrollView>
           )}
         </View>
@@ -546,54 +555,69 @@ export default function CreateComplaintScreen() {
       {/* Department Selection Modal */}
       <Modal
         visible={showDepartmentModal}
-        transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowDepartmentModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.departmentModal}>
-            {/* Modal Header */}
-            <View style={styles.departmentModalHeader}>
-              <Text style={styles.departmentModalTitle}>Select Department</Text>
-              <TouchableOpacity onPress={() => setShowDepartmentModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Input */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-              <TextInput
-                style={styles.searchInput}
-                value={departmentSearch}
-                onChangeText={setDepartmentSearch}
-                placeholder="Search departments..."
-                placeholderTextColor={COLORS.textSecondary}
-              />
-            </View>
-
-            {/* Department List */}
-            <ScrollView style={styles.departmentList}>
-              {getFilteredDepartments().map((dept) => (
-                <TouchableOpacity
-                  key={dept}
-                  style={styles.departmentOption}
-                  onPress={() => {
-                    setSelectedDepartment(dept);
-                    setShowDepartmentModal(false);
-                    setDepartmentSearch('');
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.departmentOptionText}>{dept}</Text>
-                  {selectedDepartment === dept && (
-                    <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+        <SafeAreaView style={styles.departmentModalContainer}>
+          {/* Modal Header */}
+          <View style={styles.departmentModalHeader}>
+            <TouchableOpacity onPress={() => setShowDepartmentModal(false)} activeOpacity={0.7}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+            <Text style={styles.departmentModalTitle}>Select Department</Text>
+            <View style={{ width: 24 }} />
           </View>
-        </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search departments..."
+              placeholderTextColor={COLORS.textSecondary}
+              value={departmentSearch}
+              onChangeText={setDepartmentSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {departmentSearch !== '' && (
+              <TouchableOpacity onPress={() => setDepartmentSearch('')}>
+                <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Department List */}
+          <ScrollView style={styles.departmentList}>
+            {getFilteredDepartments().map((dept) => (
+              <TouchableOpacity
+                key={dept}
+                style={[
+                  styles.departmentOption,
+                  selectedDepartment === dept && styles.departmentOptionSelected,
+                ]}
+                onPress={() => {
+                  setSelectedDepartment(dept);
+                  setShowDepartmentModal(false);
+                  setDepartmentSearch('');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.departmentOptionText,
+                    selectedDepartment === dept && styles.departmentOptionTextSelected,
+                  ]}
+                >
+                  {dept}
+                </Text>
+                {selectedDepartment === dept && (
+                  <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -696,45 +720,51 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '500',
   },
-  // Compact Attachment Styles
-  compactAttachmentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  compactAttachmentLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  compactAddButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
+  // Gallery-Style Attachment Styles
+  initialAddTile: {
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  compactAttachmentsScrollView: {
     marginTop: SPACING.md,
-  },
-  compactAttachmentsScrollContent: {
     gap: SPACING.sm,
   },
-  attachmentItem: {
+  initialAddTileText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  galleryScrollView: {
+    marginTop: SPACING.md,
+  },
+  galleryScrollContent: {
+    gap: SPACING.sm,
+  },
+  galleryThumbnail: {
     position: 'relative',
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+    width: 120,
+    height: 120,
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  attachmentThumb: {
+  galleryThumbImage: {
     width: '100%',
     height: '100%',
+  },
+  addMoreTile: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   videoIndicator: {
     position: 'absolute',
@@ -1005,5 +1035,16 @@ const styles = StyleSheet.create({
   departmentOptionText: {
     fontSize: 15,
     color: COLORS.text,
+  },
+  departmentOptionSelected: {
+    backgroundColor: COLORS.background,
+  },
+  departmentOptionTextSelected: {
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  departmentModalContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
 });
