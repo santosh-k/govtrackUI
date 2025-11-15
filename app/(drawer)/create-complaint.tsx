@@ -305,47 +305,41 @@ export default function CreateComplaintScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Complaint Location</Text>
 
-          {/* Full-Width Map Preview */}
-          {isLoadingLocation ? (
-            <View style={styles.mapPreviewContainer}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.mapLoadingText}>Getting your location...</Text>
-            </View>
-          ) : location ? (
-            <TouchableOpacity
-              style={styles.mapPreviewContainer}
-              onPress={() => {
-                setTempLocation(location);
-                setShowMapModal(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={styles.locationPreview}>
-                <Ionicons name="location" size={64} color={COLORS.primary} />
-                <Text style={styles.locationCoords}>
-                  Lat: {location.latitude.toFixed(6)}, Long: {location.longitude.toFixed(6)}
-                </Text>
-                <Text style={styles.tapToAdjustHint}>Tap to adjust location</Text>
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.mapPreviewContainer}>
-              <Ionicons name="location-outline" size={64} color={COLORS.textSecondary} />
-              <Text style={styles.mapErrorText}>Location unavailable</Text>
-            </View>
-          )}
-
           {/* Location/Address Field */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location / Address</Text>
-            <TextInput
-              style={styles.textInput}
-              value={location?.address || ''}
-              editable={false}
-              placeholder="Address will appear here"
-              placeholderTextColor={COLORS.textSecondary}
-            />
+            <Text style={styles.fieldLabel}>Address</Text>
+            {isLoadingLocation ? (
+              <View style={styles.loadingAddressContainer}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.loadingAddressText}>Getting your location...</Text>
+              </View>
+            ) : (
+              <TextInput
+                style={styles.textInput}
+                value={location?.address || ''}
+                editable={false}
+                placeholder="Address will appear here"
+                placeholderTextColor={COLORS.textSecondary}
+              />
+            )}
           </View>
+
+          {/* Tappable Link to Adjust Location */}
+          <TouchableOpacity
+            style={styles.adjustLocationLink}
+            onPress={() => {
+              if (location) {
+                setTempLocation(location);
+                setShowMapModal(true);
+              } else {
+                Alert.alert('Location Unavailable', 'Please wait for location to be detected');
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="location" size={18} color={COLORS.primary} />
+            <Text style={styles.adjustLocationText}>Tap to adjust location on map</Text>
+          </TouchableOpacity>
 
           {/* Landmark Field */}
           <View style={styles.fieldContainer}>
@@ -675,40 +669,32 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   // Location Card Styles
-  mapPreviewContainer: {
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
+  loadingAddressContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    gap: SPACING.sm,
   },
-  locationPreview: {
+  loadingAddressText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+  },
+  adjustLocationLink: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: 6,
   },
-  locationCoords: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-  },
-  tapToAdjustHint: {
+  adjustLocationText: {
     fontSize: 14,
-    fontWeight: '600',
     color: COLORS.primary,
-    marginTop: SPACING.sm,
-  },
-  mapLoadingText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-  },
-  mapErrorText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
+    fontWeight: '500',
   },
   // Attachment Card Styles
   attachmentTile: {
