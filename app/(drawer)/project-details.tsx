@@ -1046,7 +1046,10 @@ export default function ProjectDetailsScreen() {
             </View>
             <TouchableOpacity
               style={styles.inspectionButton}
-              onPress={() => router.push('/(drawer)/create-inspection')}
+              onPress={() => router.push({
+                pathname: '/(drawer)/create-inspection',
+                params: { projectId },
+              })}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>New Inspection</Text>
@@ -1069,7 +1072,7 @@ export default function ProjectDetailsScreen() {
             </View>
             <TouchableOpacity
               style={styles.bottleneckButton}
-              onPress={() => router.push('/(drawer)/create-bottleneck')}
+              onPress={() => setShowAddBottleneckModal(true)}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>Add Bottleneck</Text>
