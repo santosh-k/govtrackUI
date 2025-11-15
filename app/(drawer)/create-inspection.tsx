@@ -399,12 +399,10 @@ export default function CreateInspectionScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Static Inspection Type */}
-        <View style={styles.staticField}>
-          <Text style={styles.staticFieldLabel}>Inspection Type</Text>
-          <View style={styles.staticFieldValue}>
-            <Text style={styles.staticFieldText}>Project Inspection</Text>
-          </View>
+        {/* Static Inspection Type - Simple Text Display */}
+        <View style={styles.inspectionTypeContainer}>
+          <Text style={styles.inspectionTypeLabel}>Inspection Type: </Text>
+          <Text style={styles.inspectionTypeValue}>Project Inspection</Text>
         </View>
 
         {/* Inspection Mode Switcher */}
@@ -499,29 +497,20 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  staticField: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    marginTop: SPACING.md,
+  inspectionTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginHorizontal: SPACING.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  staticFieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
     marginBottom: SPACING.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  staticFieldValue: {
-    paddingVertical: SPACING.sm,
+  inspectionTypeLabel: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
   },
-  staticFieldText: {
-    fontSize: 16,
+  inspectionTypeValue: {
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.text,
   },
