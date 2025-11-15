@@ -354,46 +354,7 @@ export default function CreateComplaintScreen() {
           </View>
         </View>
 
-        {/* Card 2: Add Attachments */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Add Attachments</Text>
-
-          {/* Large Tappable Attachment Tile */}
-          <TouchableOpacity style={styles.attachmentTile} onPress={handleAddAttachment}>
-            <Ionicons name="camera-outline" size={48} color={COLORS.primary} />
-            <Text style={styles.attachmentTileText}>Add Photo or Video</Text>
-            <Text style={styles.attachmentTileSubtext}>Tap to choose from camera or gallery</Text>
-          </TouchableOpacity>
-
-          {/* Thumbnail Gallery */}
-          {attachments.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.attachmentsScrollView}
-              contentContainerStyle={styles.attachmentsScrollContent}
-            >
-              {attachments.map((att) => (
-                <View key={att.id} style={styles.attachmentItem}>
-                  <Image source={{ uri: att.uri }} style={styles.attachmentThumb} />
-                  {att.type === 'video' && (
-                    <View style={styles.videoIndicator}>
-                      <Ionicons name="play-circle" size={20} color={COLORS.white} />
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeAttachment(att.id)}
-                  >
-                    <Ionicons name="close-circle" size={24} color={COLORS.error} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Card 3: Complaint Details */}
+        {/* Card 2: Complaint Details */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select Complaint Type</Text>
 
@@ -428,9 +389,48 @@ export default function CreateComplaintScreen() {
               textAlignVertical="top"
             />
           </View>
+
+          {/* Compact Attachment Row */}
+          <View style={styles.compactAttachmentRow}>
+            <Text style={styles.compactAttachmentLabel}>Add Photo or Video (Optional)</Text>
+            <TouchableOpacity
+              style={styles.compactAddButton}
+              onPress={handleAddAttachment}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={20} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Dynamic Thumbnail Gallery */}
+          {attachments.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.compactAttachmentsScrollView}
+              contentContainerStyle={styles.compactAttachmentsScrollContent}
+            >
+              {attachments.map((att) => (
+                <View key={att.id} style={styles.attachmentItem}>
+                  <Image source={{ uri: att.uri }} style={styles.attachmentThumb} />
+                  {att.type === 'video' && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play-circle" size={20} color={COLORS.white} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeAttachment(att.id)}
+                  >
+                    <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
-        {/* Card 4: Assign Department */}
+        {/* Card 3: Assign Department */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Assign to Department</Text>
           <TouchableOpacity
@@ -696,33 +696,33 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '500',
   },
-  // Attachment Card Styles
-  attachmentTile: {
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    paddingVertical: SPACING.xl + SPACING.md,
+  // Compact Attachment Styles
+  compactAttachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  compactAttachmentLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  compactAddButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.background,
-    marginBottom: SPACING.md,
   },
-  attachmentTileText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+  compactAttachmentsScrollView: {
     marginTop: SPACING.md,
   },
-  attachmentTileSubtext: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.sm,
-  },
-  attachmentsScrollView: {
-    marginTop: SPACING.sm,
-  },
-  attachmentsScrollContent: {
+  compactAttachmentsScrollContent: {
     gap: SPACING.sm,
   },
   attachmentItem: {
