@@ -1030,7 +1030,7 @@ export default function ProjectDetailsScreen() {
         </View>
       </View>
 
-      {/* Status & Actions Card */}
+      {/* Status & Actions Card - Now Purely Informational */}
       <View style={styles.card}>
         <View style={styles.statusActionsContainer}>
           {/* Left Section: Inspections Overview */}
@@ -1044,16 +1044,6 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateText}>Last Update: 24-Jul-24, 10:30 AM</Text>
               <Text style={styles.statusLastUpdateByText}>By: Er Sabir Ali</Text>
             </View>
-            <TouchableOpacity
-              style={styles.inspectionButton}
-              onPress={() => router.push({
-                pathname: '/(drawer)/create-inspection',
-                params: { projectId },
-              })}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>New Inspection</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Vertical Divider */}
@@ -1070,13 +1060,6 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateText}>Last Update: 23-Jul-24, 05:15 PM</Text>
               <Text style={styles.statusLastUpdateByText}>By: Test User</Text>
             </View>
-            <TouchableOpacity
-              style={styles.bottleneckButton}
-              onPress={() => setShowAddBottleneckModal(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Add Bottleneck</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -1502,8 +1485,8 @@ export default function ProjectDetailsScreen() {
       {activeTab === 'Bottlenecks' && renderBottlenecksTab()}
       {activeTab === 'Activity' && renderActivityTab()}
 
-      {/* Speed Dial FAB - Show only on Media, Inspections, and Bottlenecks tabs */}
-      {(activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (
+      {/* Speed Dial FAB - Show on Overview, Media, Inspections, and Bottlenecks tabs */}
+      {(activeTab === 'Overview' || activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (
         <SpeedDialFAB
           actions={[
             {
