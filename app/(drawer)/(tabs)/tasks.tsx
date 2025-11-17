@@ -32,6 +32,7 @@ interface Task {
   category: string;
   assignedBy: string;
   office: string;
+  department: string;
   date: string;
   time: string;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Overdue';
@@ -48,6 +49,7 @@ const MOCK_TASKS: Task[] = [
     date: '15 Jan 2024',
     time: '10:30 AM',
     status: 'In Progress',
+    department: 'Roads Dept.',
   },
   {
     id: '2',
@@ -58,6 +60,7 @@ const MOCK_TASKS: Task[] = [
     date: '14 Jan 2024',
     time: '02:15 PM',
     status: 'Pending',
+    department: 'Safety Dept.',
   },
   {
     id: '3',
@@ -68,6 +71,7 @@ const MOCK_TASKS: Task[] = [
     date: '13 Jan 2024',
     time: '09:00 AM',
     status: 'Completed',
+    department: 'Quality Dept.',
   },
   {
     id: '4',
@@ -78,6 +82,7 @@ const MOCK_TASKS: Task[] = [
     date: '10 Jan 2024',
     time: '11:45 AM',
     status: 'Overdue',
+    department: 'Admin Dept.',
   },
   {
     id: '5',
@@ -88,6 +93,7 @@ const MOCK_TASKS: Task[] = [
     date: '12 Jan 2024',
     time: '03:30 PM',
     status: 'In Progress',
+    department: 'Mechanical Dept.',
   },
   {
     id: '6',
@@ -98,6 +104,7 @@ const MOCK_TASKS: Task[] = [
     date: '11 Jan 2024',
     time: '01:00 PM',
     status: 'Pending',
+    department: 'Structural Dept.',
   },
 ];
 
@@ -143,25 +150,35 @@ function TaskCard({ task, onPress }: TaskCardProps) {
       {/* Main Body: Category Title */}
       <Text style={styles.categoryTitle}>{task.category}</Text>
 
-      {/* Assigned By Info */}
+      {/* Office and Assigned By Info */}
       <View style={styles.assignedByContainer}>
-        <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>{task.assignedBy}</Text>
-        </View>
+        {/* Office - First Line */}
         <View style={styles.infoRow}>
           <Ionicons name="business-outline" size={16} color={COLORS.textSecondary} />
           <Text style={styles.infoText}>{task.office}</Text>
         </View>
+
+        {/* Assigned By with Department - Second Line */}
+        <View style={styles.infoRow}>
+          <Text style={styles.assignedByText}>
+            by <Text style={styles.assignedByName}>{task.assignedBy}</Text>
+            <Text style={styles.departmentText}> ({task.department})</Text>
+          </Text>
+        </View>
       </View>
 
-      {/* Footer: Date and Time */}
+      {/* Footer: Date, Time and Details Icon */}
       <View style={styles.cardFooter}>
         <View style={styles.dateTimeRow}>
           <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
           <Text style={styles.footerText}>{task.date}</Text>
           <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} style={{ marginLeft: 12 }} />
           <Text style={styles.footerText}>{task.time}</Text>
+        </View>
+
+        {/* Details Icon */}
+        <View style={styles.detailsIconContainer}>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
         </View>
       </View>
     </TouchableOpacity>
@@ -285,7 +302,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
+  assignedByText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+  },
+  assignedByName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  departmentText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+  },
   cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -294,11 +329,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   footerText: {
     fontSize: 13,
     fontWeight: '500',
     color: COLORS.textSecondary,
+  },
+  detailsIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fab: {
     position: 'absolute',
