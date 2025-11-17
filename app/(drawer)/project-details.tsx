@@ -23,6 +23,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import SpeedDialFAB from '@/components/SpeedDialFAB';
+import AddMediaSheet from '@/components/AddMediaSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -147,16 +149,25 @@ interface ProgressUpdate {
 interface Inspection {
   id: string;
   date: string;
+  title: string;
   inspector: string;
+  inspectorPosition: string;
+  inspectorDepartment: string;
   status: InspectionStatus;
+  description: string;
+  media: MediaItem[];
 }
 
 interface Bottleneck {
   id: string;
   title: string;
   reportedBy: string;
+  reporterPosition: string;
+  reporterDepartment: string;
   date: string;
   priority: Priority;
+  description: string;
+  media: MediaItem[];
 }
 
 // Helper function to get status colors
@@ -259,11 +270,14 @@ export default function ProjectDetailsScreen() {
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showAddInspectionModal, setShowAddInspectionModal] = useState(false);
-  const [showAddBottleneckModal, setShowAddBottleneckModal] = useState(false);
   const [showAddProgressModal, setShowAddProgressModal] = useState(false);
   const [newProgress, setNewProgress] = useState(75);
   const [progressRemarks, setProgressRemarks] = useState('');
   const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [showInspectionDetails, setShowInspectionDetails] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [showBottleneckDetails, setShowBottleneckDetails] = useState(false);
+  const [selectedBottleneck, setSelectedBottleneck] = useState<Bottleneck | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -321,16 +335,177 @@ export default function ProjectDetailsScreen() {
   }, []);
 
   const inspections: Inspection[] = [
-    { id: '1', date: '15-Dec-24', inspector: 'John Smith', status: 'Passed' },
-    { id: '2', date: '01-Dec-24', inspector: 'Sarah Johnson', status: 'Passed' },
-    { id: '3', date: '15-Nov-24', inspector: 'Mike Wilson', status: 'Failed' },
-    { id: '4', date: '01-Nov-24', inspector: 'Emily Davis', status: 'Passed' },
+    {
+      id: '1',
+      date: '15-Dec-24',
+      title: 'Structural Integrity Check',
+      inspector: 'Er Sabir Ali',
+      inspectorPosition: 'Senior Civil Engineer',
+      inspectorDepartment: 'Quality Assurance Department',
+      status: 'Passed',
+      description: 'Structural integrity assessment completed. All load-bearing elements inspected and found compliant with approved drawings. Concrete strength test results satisfactory. Foundation work meets specifications with proper reinforcement placement.',
+      media: [
+        { id: 'm1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Foundation+Check' },
+        { id: 'm2', type: 'image', uri: 'https://via.placeholder.com/400x300/8BC34A/FFFFFF?text=Reinforcement' },
+        { id: 'm3', type: 'video', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video', thumbnail: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video' },
+      ],
+    },
+    {
+      id: '2',
+      date: '08-Dec-24',
+      title: 'Safety Equipment Review',
+      inspector: 'Dr Priya Sharma',
+      inspectorPosition: 'Chief Safety Officer',
+      inspectorDepartment: 'Safety & Compliance Division',
+      status: 'Pending',
+      description: 'Safety equipment inspection in progress. Awaiting certification documents for new scaffolding installation. Worker safety gear compliance check scheduled for completion by end of week...',
+      media: [
+        { id: 'm4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Safety+Gear' },
+        { id: 'm5', type: 'document', uri: 'https://example.com/safety-checklist.pdf', filename: 'Safety_Checklist.pdf' },
+      ],
+    },
+    {
+      id: '3',
+      date: '01-Dec-24',
+      title: 'Architectural Finish Assessment',
+      inspector: 'Ar Rajesh Kumar',
+      inspectorPosition: 'Lead Architect',
+      inspectorDepartment: 'Design & Planning',
+      status: 'Passed',
+      description: 'Architectural finish inspection completed successfully. All interior plastering work meets quality standards. Paint application uniform and defect-free. Door and window installations aligned with specifications.',
+      media: [
+        { id: 'm6', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Interior+Work' },
+        { id: 'm7', type: 'image', uri: 'https://via.placeholder.com/400x300/03A9F4/FFFFFF?text=Plastering' },
+        { id: 'm8', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Finishing' },
+        { id: 'm9', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough' },
+      ],
+    },
+    {
+      id: '4',
+      date: '22-Nov-24',
+      title: 'Column Alignment Inspection',
+      inspector: 'Er Anil Mehta',
+      inspectorPosition: 'Structural Engineer',
+      inspectorDepartment: 'Structural Engineering Wing',
+      status: 'Failed',
+      description: 'Critical defects identified in column alignment on third floor. Reinforcement spacing does not comply with structural drawings. Immediate corrective action required. Recommend re-inspection after remedial work completion...',
+      media: [
+        { id: 'm10', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Defect+1' },
+        { id: 'm11', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Defect+2' },
+        { id: 'm12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video' },
+        { id: 'm13', type: 'document', uri: 'https://example.com/defect-report.pdf', filename: 'Defect_Report_Nov22.pdf' },
+      ],
+    },
+    {
+      id: '5',
+      date: '15-Nov-24',
+      title: 'Electrical Systems Audit',
+      inspector: 'Er Sarah Johnson',
+      inspectorPosition: 'Electrical Engineer',
+      inspectorDepartment: 'MEP Services',
+      status: 'Passed',
+      description: 'Electrical installation inspection completed. All wiring properly insulated and compliant with electrical codes. Distribution boards correctly labeled and earthing system verified.',
+      media: [],
+    },
+    {
+      id: '6',
+      date: '08-Nov-24',
+      title: 'Plumbing & Drainage Test',
+      inspector: 'Er Mohammed Ali',
+      inspectorPosition: 'Plumbing Engineer',
+      inspectorDepartment: 'MEP Services',
+      status: 'Passed',
+      description: 'Plumbing and drainage system inspection successful. All pipes pressure tested without leakage. Sanitary fittings properly installed and functional. Water supply lines meet specifications.',
+      media: [
+        { id: 'm14', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Plumbing' },
+      ],
+    },
   ];
 
   const bottlenecks: Bottleneck[] = [
-    { id: '1', title: 'Material Delivery Delayed', reportedBy: 'Site Manager', date: '10-Dec-24', priority: 'High' },
-    { id: '2', title: 'Weather Conditions', reportedBy: 'Contractor', date: '05-Dec-24', priority: 'Medium' },
-    { id: '3', title: 'Equipment Maintenance', reportedBy: 'Engineer', date: '01-Dec-24', priority: 'Low' },
+    {
+      id: '1',
+      title: 'Material Shortage Crisis',
+      reportedBy: 'Vikram Singh',
+      reporterPosition: 'Site Manager',
+      reporterDepartment: 'Central Department',
+      date: '10-Dec-24',
+      priority: 'High',
+      description: 'Critical delay in cement delivery affecting foundation work. Supplier has confirmed a 2-week delay due to transportation issues. This will impact the project timeline significantly. Need immediate alternative supplier arrangements.',
+      media: [
+        { id: 'bn1', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Delayed+Materials' },
+        { id: 'bn2', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Stock+Empty' },
+        { id: 'bn3', type: 'document', uri: 'https://example.com/supplier-letter.pdf', filename: 'Supplier_Delay_Notice.pdf' },
+      ],
+    },
+    {
+      id: '2',
+      title: 'Adverse Weather Conditions',
+      reportedBy: 'Ramesh Kumar',
+      reporterPosition: 'Lead Contractor',
+      reporterDepartment: 'Operations Division',
+      date: '05-Dec-24',
+      priority: 'Medium',
+      description: 'Heavy rainfall for the past week has halted outdoor construction activities. Ground conditions are not suitable for concrete pouring. Weather forecast shows continued rain for next 3-4 days. Work schedule needs to be revised.',
+      media: [
+        { id: 'bn4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Rain+Impact' },
+        { id: 'bn5', type: 'video', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded', thumbnail: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded' },
+      ],
+    },
+    {
+      id: '3',
+      title: 'Equipment Maintenance Due',
+      reportedBy: 'Suresh Patel',
+      reporterPosition: 'Senior Engineer',
+      reporterDepartment: 'Mechanical Wing',
+      date: '01-Dec-24',
+      priority: 'Low',
+      description: 'Routine maintenance required for excavator and crane equipment. Scheduled maintenance will take 2 days. Impact on overall timeline is minimal as this can be done during off-peak hours.',
+      media: [],
+    },
+    {
+      id: '4',
+      title: 'Skilled Labor Shortage',
+      reportedBy: 'Anjali Sharma',
+      reporterPosition: 'HR Manager',
+      reporterDepartment: 'Human Resources',
+      date: '28-Nov-24',
+      priority: 'High',
+      description: 'Shortage of skilled masons and welders impacting construction speed. Current team is overworked. Need to hire 10 additional skilled workers urgently to maintain project schedule.',
+      media: [
+        { id: 'bn6', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Understaffed' },
+        { id: 'bn7', type: 'document', uri: 'https://example.com/staffing-report.pdf', filename: 'Staffing_Analysis_Nov.pdf' },
+      ],
+    },
+    {
+      id: '5',
+      title: 'Permit Approval Delayed',
+      reportedBy: 'Priya Menon',
+      reporterPosition: 'Compliance Officer',
+      reporterDepartment: 'Legal & Compliance',
+      date: '22-Nov-24',
+      priority: 'Medium',
+      description: 'Environmental clearance permit for next phase is pending with municipal authorities. Application submitted 3 weeks ago. Follow-up meetings scheduled. May cause delay if not approved within next 10 days.',
+      media: [
+        { id: 'bn8', type: 'document', uri: 'https://example.com/permit-application.pdf', filename: 'Permit_Application.pdf' },
+      ],
+    },
+    {
+      id: '6',
+      title: 'Concrete Quality Failure',
+      reportedBy: 'Dr Anil Verma',
+      reporterPosition: 'Quality Control Manager',
+      reporterDepartment: 'Quality Assurance',
+      date: '15-Nov-24',
+      priority: 'High',
+      description: 'Recent concrete batch (Batch 204) failed strength tests. Approximately 200 cubic meters affected. Need to investigate root cause and potentially remove and replace affected concrete. Major cost and time implications.',
+      media: [
+        { id: 'bn9', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Failed+Test' },
+        { id: 'bn10', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Sample+Analysis' },
+        { id: 'bn11', type: 'document', uri: 'https://example.com/test-report.pdf', filename: 'Concrete_Test_Report_Batch204.pdf' },
+        { id: 'bn12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection' },
+      ],
+    },
   ];
 
   // Initialize progress history with placeholder data
@@ -704,25 +879,18 @@ export default function ProjectDetailsScreen() {
     setShowMediaViewer(true);
   };
 
+  /**
+   * Opens the Add Media sheet
+   */
   const handleUploadMedia = () => {
     setShowUploadSheet(true);
   };
 
-  const takePhotoOrVideo = async () => {
-    setShowUploadSheet(false);
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
+  /**
+   * Handles photo/video capture from AddMediaSheet
+   */
+  const handlePhotoTaken = (result: ImagePicker.ImagePickerResult) => {
+    if (result.assets && result.assets[0]) {
       const newMedia: MediaItem = {
         id: `media-${Date.now()}`,
         type: result.assets[0].type === 'video' ? 'video' : 'image',
@@ -730,25 +898,15 @@ export default function ProjectDetailsScreen() {
         thumbnail: result.assets[0].uri,
       };
       setAllMediaItems([newMedia, ...allMediaItems]);
-      Alert.alert('Success', 'Media uploaded successfully');
+      Alert.alert('Success', 'Media captured successfully');
     }
   };
 
-  const pickFromGallery = async () => {
-    setShowUploadSheet(false);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Gallery permission is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
+  /**
+   * Handles media selection from gallery via AddMediaSheet
+   */
+  const handleMediaSelected = (result: ImagePicker.ImagePickerResult) => {
+    if (result.assets && result.assets[0]) {
       const newMedia: MediaItem = {
         id: `media-${Date.now()}`,
         type: result.assets[0].type === 'video' ? 'video' : 'image',
@@ -756,12 +914,14 @@ export default function ProjectDetailsScreen() {
         thumbnail: result.assets[0].uri,
       };
       setAllMediaItems([newMedia, ...allMediaItems]);
-      Alert.alert('Success', 'Media uploaded successfully');
+      Alert.alert('Success', 'Media added successfully');
     }
   };
 
-  const pickDocument = async () => {
-    setShowUploadSheet(false);
+  /**
+   * Handles document selection via AddMediaSheet
+   */
+  const handleDocumentSelected = () => {
     // Simulate document picker
     const newDocument: MediaItem = {
       id: `doc-${Date.now()}`,
@@ -869,7 +1029,7 @@ export default function ProjectDetailsScreen() {
         </View>
       </View>
 
-      {/* Status & Actions Card */}
+      {/* Status & Actions Card - Now Purely Informational */}
       <View style={styles.card}>
         <View style={styles.statusActionsContainer}>
           {/* Left Section: Inspections Overview */}
@@ -883,13 +1043,6 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateText}>Last Update: 24-Jul-24, 10:30 AM</Text>
               <Text style={styles.statusLastUpdateByText}>By: Er Sabir Ali</Text>
             </View>
-            <TouchableOpacity
-              style={styles.inspectionButton}
-              onPress={() => router.push('/(drawer)/create-inspection')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>New Inspection</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Vertical Divider */}
@@ -906,13 +1059,6 @@ export default function ProjectDetailsScreen() {
               <Text style={styles.statusLastUpdateText}>Last Update: 23-Jul-24, 05:15 PM</Text>
               <Text style={styles.statusLastUpdateByText}>By: Test User</Text>
             </View>
-            <TouchableOpacity
-              style={styles.bottleneckButton}
-              onPress={() => router.push('/(drawer)/create-bottleneck')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Add Bottleneck</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -993,16 +1139,132 @@ export default function ProjectDetailsScreen() {
             ))}
           </View>
         </View>
-
-        {/* FAB for Upload Media */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleUploadMedia}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={28} color="white" />
-        </TouchableOpacity>
       </View>
+    );
+  };
+
+  const getInspectionStatusColor = (status: InspectionStatus) => {
+    switch (status) {
+      case 'Passed':
+        return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'Failed':
+        return { bg: '#FFEBEE', text: '#C62828' };
+      case 'Pending':
+        return { bg: '#FFF3E0', text: '#E65100' };
+      default:
+        return { bg: '#E8F5E9', text: '#2E7D32' };
+    }
+  };
+
+  const handleInspectionPress = (inspection: Inspection) => {
+    setSelectedInspection(inspection);
+    setShowInspectionDetails(true);
+  };
+
+  const handleInspectionMediaPress = (media: MediaItem[], index: number) => {
+    setViewerMediaItems(media);
+    setSelectedMediaIndex(index);
+    setShowMediaViewer(true);
+  };
+
+  const getPriorityColor = (priority: Priority) => {
+    switch (priority) {
+      case 'High':
+        return { bg: COLORS.priorityHigh, text: '#FFFFFF' };
+      case 'Medium':
+        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+      case 'Low':
+        return { bg: COLORS.priorityLow, text: '#FFFFFF' };
+      default:
+        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+    }
+  };
+
+  const handleBottleneckPress = (bottleneck: Bottleneck) => {
+    setSelectedBottleneck(bottleneck);
+    setShowBottleneckDetails(true);
+  };
+
+  const handleBottleneckMediaPress = (media: MediaItem[], index: number) => {
+    setViewerMediaItems(media);
+    setSelectedMediaIndex(index);
+    setShowMediaViewer(true);
+  };
+
+  const renderInspectionCard = ({ item }: { item: Inspection }) => {
+    const statusColors = getInspectionStatusColor(item.status);
+    const descriptionPreview = item.description.length > 80
+      ? item.description.substring(0, 80) + '...'
+      : item.description;
+
+    // Filter only visual media (images and videos) for thumbnail preview
+    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
+    const hasMedia = visualMedia.length > 0;
+    const displayMedia = visualMedia.slice(0, 3);
+    const remainingCount = visualMedia.length - 3;
+
+    return (
+      <TouchableOpacity
+        style={styles.inspectionCard}
+        onPress={() => handleInspectionPress(item)}
+        activeOpacity={0.7}
+      >
+        {/* Header with Date and Status */}
+        <View style={styles.inspectionCardHeader}>
+          <Text style={styles.inspectionDate}>{item.date}</Text>
+          <View style={[styles.inspectionStatusBadge, { backgroundColor: statusColors.bg }]}>
+            <Text style={[styles.inspectionStatusText, { color: statusColors.text }]}>
+              {item.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Title/Heading */}
+        <Text style={styles.inspectionTitle}>{item.title}</Text>
+
+        {/* Description Preview */}
+        <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
+
+        {/* Media Thumbnail Preview Gallery */}
+        {hasMedia && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.inspectionMediaPreview}
+            contentContainerStyle={styles.inspectionMediaPreviewContent}
+          >
+            {displayMedia.map((media, index) => (
+              <View key={media.id} style={styles.inspectionThumbnailWrapper}>
+                <Image
+                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  style={styles.inspectionThumbnail}
+                />
+                {media.type === 'video' && (
+                  <View style={styles.thumbnailPlayIcon}>
+                    <Ionicons name="play-circle" size={24} color="white" />
+                  </View>
+                )}
+              </View>
+            ))}
+            {remainingCount > 0 && (
+              <View style={styles.inspectionThumbnailWrapper}>
+                <View style={styles.remainingCountOverlay}>
+                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
+        {/* Inspector Details */}
+        <View style={styles.inspectorSection}>
+          <Text style={styles.inspectorName}>
+            by <Text style={styles.inspectorNameBold}>{item.inspector}</Text>
+          </Text>
+          <Text style={styles.inspectorMeta}>{item.inspectorPosition}</Text>
+          <Text style={styles.inspectorMeta}>{item.inspectorDepartment}</Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -1011,84 +1273,101 @@ export default function ProjectDetailsScreen() {
       <FlatList
         data={inspections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.inspectionCard}
-            onPress={() => Alert.alert('Inspection Details', `Inspection by ${item.inspector}`)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.inspectionHeader}>
-              <Text style={styles.inspectionDate}>{item.date}</Text>
-              <View style={[
-                styles.inspectionStatusBadge,
-                { backgroundColor: item.status === 'Passed' ? COLORS.statusOnTrackBg : item.status === 'Failed' ? COLORS.statusDelayedBg : COLORS.statusAtRiskBg }
-              ]}>
-                <Text style={[
-                  styles.inspectionStatusText,
-                  { color: item.status === 'Passed' ? COLORS.statusOnTrack : item.status === 'Failed' ? COLORS.statusDelayed : COLORS.statusAtRisk }
-                ]}>
-                  {item.status}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.inspectorName}>Inspector: {item.inspector}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={renderInspectionCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* FAB for Add Inspection */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowAddInspectionModal(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="clipboard" size={24} color="white" />
-      </TouchableOpacity>
     </View>
   );
+
+  const renderBottleneckCard = ({ item }: { item: Bottleneck }) => {
+    const priorityColors = getPriorityColor(item.priority);
+    const descriptionPreview = item.description.length > 80
+      ? item.description.substring(0, 80) + '...'
+      : item.description;
+
+    // Filter only visual media (images and videos) for thumbnail preview
+    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
+    const hasMedia = visualMedia.length > 0;
+    const displayMedia = visualMedia.slice(0, 3);
+    const remainingCount = visualMedia.length - 3;
+
+    return (
+      <TouchableOpacity
+        style={styles.bottleneckCard}
+        onPress={() => handleBottleneckPress(item)}
+        activeOpacity={0.7}
+      >
+        {/* Header with Date and Priority */}
+        <View style={styles.bottleneckCardHeader}>
+          <Text style={styles.bottleneckDate}>{item.date}</Text>
+          <View style={[styles.priorityBadge, { backgroundColor: priorityColors.bg }]}>
+            <Text style={[styles.priorityText, { color: priorityColors.text }]}>
+              {item.priority}
+            </Text>
+          </View>
+        </View>
+
+        {/* Title/Heading */}
+        <Text style={styles.bottleneckTitle}>{item.title}</Text>
+
+        {/* Description Preview */}
+        <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
+
+        {/* Media Thumbnail Preview Gallery */}
+        {hasMedia && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.bottleneckMediaPreview}
+            contentContainerStyle={styles.bottleneckMediaPreviewContent}
+          >
+            {displayMedia.map((media, index) => (
+              <View key={media.id} style={styles.bottleneckThumbnailWrapper}>
+                <Image
+                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  style={styles.bottleneckThumbnail}
+                />
+                {media.type === 'video' && (
+                  <View style={styles.thumbnailPlayIcon}>
+                    <Ionicons name="play-circle" size={24} color="white" />
+                  </View>
+                )}
+              </View>
+            ))}
+            {remainingCount > 0 && (
+              <View style={styles.bottleneckThumbnailWrapper}>
+                <View style={styles.remainingCountOverlay}>
+                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        )}
+
+        {/* Reporter Details */}
+        <View style={styles.reporterSection}>
+          <Text style={styles.reporterName}>
+            by <Text style={styles.reporterNameBold}>{item.reportedBy}</Text>
+          </Text>
+          <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
+          <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderBottlenecksTab = () => (
     <View style={styles.tabContent}>
       <FlatList
         data={bottlenecks}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.bottleneckCard}>
-            <View style={styles.bottleneckHeader}>
-              <Text style={styles.bottleneckTitle}>{item.title}</Text>
-              <View style={[
-                styles.priorityBadge,
-                { backgroundColor: item.priority === 'High' ? COLORS.priorityHigh : item.priority === 'Medium' ? COLORS.priorityMedium : COLORS.priorityLow }
-              ]}>
-                <Text style={styles.priorityText}>{item.priority}</Text>
-              </View>
-            </View>
-            <Text style={styles.bottleneckMeta}>Reported by: {item.reportedBy}</Text>
-            <Text style={styles.bottleneckDate}>{item.date}</Text>
-          </View>
-        )}
+        renderItem={renderBottleneckCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* FAB for Add Bottleneck */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setShowAddBottleneckModal(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="warning" size={24} color="white" />
-      </TouchableOpacity>
     </View>
   );
-
-  const handleActivityMediaPress = (attachments: MediaItem[], index: number) => {
-    setViewerMediaItems(attachments);
-    setSelectedMediaIndex(index);
-    setShowMediaViewer(true);
-  };
 
   const renderActivityTab = () => (
     <View style={styles.tabContent}>
@@ -1116,55 +1395,22 @@ export default function ProjectDetailsScreen() {
 
                 {/* Activity Card */}
                 <View style={styles.activityCard}>
-                  {/* Header */}
+                  {/* 1. Status Change Header */}
                   <View style={styles.activityHeader}>
                     <Text style={[styles.activityStatusText, { color: statusColors.text }]}>
                       Status changed to {item.status}
                     </Text>
                   </View>
 
-                  {/* Author and Date */}
-                  <Text style={styles.activityMeta}>
-                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
-                  </Text>
-
-                  {/* Remarks */}
+                  {/* 2. Remarks */}
                   {item.remarks && (
                     <Text style={styles.activityRemarks}>{item.remarks}</Text>
                   )}
 
-                  {/* Location */}
-                  {item.location && (
-                    <View style={styles.activityLocationContainer}>
-                      <Ionicons name="location" size={16} color={COLORS.primary} />
-                      <Text style={styles.activityLocationText}>
-                        {item.location.latitude.toFixed(4)}, {item.location.longitude.toFixed(4)}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Attachments */}
-                  {item.attachments.length > 0 && (
-                    <View style={styles.activityAttachmentsContainer}>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {item.attachments.map((attachment, idx) => (
-                          <TouchableOpacity
-                            key={attachment.id}
-                            style={styles.activityAttachmentThumb}
-                            onPress={() => handleActivityMediaPress(item.attachments, idx)}
-                            activeOpacity={0.8}
-                          >
-                            <Image source={{ uri: attachment.uri }} style={styles.activityThumbImage} />
-                            {attachment.type === 'video' && (
-                              <View style={styles.activityVideoOverlay}>
-                                <Ionicons name="play-circle" size={24} color="white" />
-                              </View>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                  {/* 3. "Updated By" Information Footer */}
+                  <Text style={styles.activityMeta}>
+                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
+                  </Text>
                 </View>
               </View>
             );
@@ -1237,6 +1483,51 @@ export default function ProjectDetailsScreen() {
       {activeTab === 'Inspections' && renderInspectionsTab()}
       {activeTab === 'Bottlenecks' && renderBottlenecksTab()}
       {activeTab === 'Activity' && renderActivityTab()}
+
+      {/* Speed Dial FAB - Show on Overview, Media, Inspections, and Bottlenecks tabs */}
+      {(activeTab === 'Overview' || activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (
+        <SpeedDialFAB
+          actions={[
+            {
+              icon: 'images-outline',
+              label: 'Add Media',
+              onPress: handleUploadMedia,
+            },
+            {
+              icon: 'warning-outline',
+              label: 'Add Bottleneck',
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-bottleneck',
+                params: { projectId, returnTab: activeTab },
+              }),
+            },
+            {
+              icon: 'checkmark-circle-outline',
+              label: 'Create Task',
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-task',
+                params: { projectId, returnTab: activeTab },
+              }),
+            },
+            {
+              icon: 'document-text-outline',
+              label: 'Create Complaint',
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-complaint',
+                params: { projectId, returnTab: activeTab },
+              }),
+            },
+            {
+              icon: 'clipboard-outline',
+              label: 'New Inspection',
+              onPress: () => router.push({
+                pathname: '/(drawer)/create-inspection',
+                params: { projectId, returnTab: activeTab },
+              }),
+            },
+          ]}
+        />
+      )}
 
       {/* Status Update Modal */}
       <Modal
@@ -1364,6 +1655,216 @@ export default function ProjectDetailsScreen() {
         </View>
       </Modal>
 
+      {/* Inspection Details Bottom Sheet */}
+      <Modal
+        visible={showInspectionDetails}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowInspectionDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.inspectionDetailsBottomSheet}>
+            {/* Grabber Handle */}
+            <View style={styles.grabberHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Inspection Details</Text>
+              <TouchableOpacity onPress={() => setShowInspectionDetails(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {selectedInspection && (
+                <>
+                  {/* Summary Section */}
+                  <View style={styles.inspectionDetailsSummary}>
+                    <View style={styles.inspectionDetailsRow}>
+                      <Text style={styles.inspectionDetailsDate}>{selectedInspection.date}</Text>
+                      <View style={[
+                        styles.inspectionStatusBadge,
+                        { backgroundColor: getInspectionStatusColor(selectedInspection.status).bg }
+                      ]}>
+                        <Text style={[
+                          styles.inspectionStatusText,
+                          { color: getInspectionStatusColor(selectedInspection.status).text }
+                        ]}>
+                          {selectedInspection.status}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Description Section */}
+                  <View style={styles.inspectionDetailsSection}>
+                    <Text style={styles.inspectionDetailsSectionTitle}>Remarks & Observations</Text>
+                    <Text style={styles.inspectionDetailsDescription}>{selectedInspection.description}</Text>
+                  </View>
+
+                  {/* Media Gallery Section */}
+                  {selectedInspection.media.length > 0 && (
+                    <View style={styles.inspectionDetailsSection}>
+                      <Text style={styles.inspectionDetailsSectionTitle}>Attached Media</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.inspectionMediaGallery}
+                      >
+                        {selectedInspection.media.map((media, index) => (
+                          <TouchableOpacity
+                            key={media.id}
+                            style={styles.inspectionMediaThumbnail}
+                            onPress={() => handleInspectionMediaPress(selectedInspection.media, index)}
+                            activeOpacity={0.7}
+                          >
+                            {media.type === 'document' ? (
+                              <View style={styles.documentThumbnail}>
+                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
+                                <Text style={styles.documentFilename} numberOfLines={2}>
+                                  {media.filename || 'Document'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <>
+                                <Image
+                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  style={styles.inspectionMediaThumbnailImage}
+                                />
+                                {media.type === 'video' && (
+                                  <View style={styles.videoPlayIcon}>
+                                    <Ionicons name="play-circle" size={32} color="white" />
+                                  </View>
+                                )}
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Inspector Section */}
+                  <View style={styles.inspectionDetailsSection}>
+                    <Text style={styles.inspectionDetailsSectionTitle}>Inspector</Text>
+                    <Text style={styles.inspectionDetailsInspectorName}>{selectedInspection.inspector}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorPosition}</Text>
+                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorDepartment}</Text>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bottleneck Details Bottom Sheet */}
+      <Modal
+        visible={showBottleneckDetails}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBottleneckDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottleneckDetailsBottomSheet}>
+            {/* Grabber Handle */}
+            <View style={styles.grabberHandle} />
+
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Bottleneck Details</Text>
+              <TouchableOpacity onPress={() => setShowBottleneckDetails(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {selectedBottleneck && (
+                <>
+                  {/* Summary Section */}
+                  <View style={styles.bottleneckDetailsSummary}>
+                    <View style={styles.bottleneckDetailsRow}>
+                      <Text style={styles.bottleneckDetailsDate}>{selectedBottleneck.date}</Text>
+                      <View style={[
+                        styles.priorityBadge,
+                        { backgroundColor: getPriorityColor(selectedBottleneck.priority).bg }
+                      ]}>
+                        <Text style={[
+                          styles.priorityText,
+                          { color: getPriorityColor(selectedBottleneck.priority).text }
+                        ]}>
+                          {selectedBottleneck.priority}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Description Section */}
+                  <View style={styles.bottleneckDetailsSection}>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>Description</Text>
+                    <Text style={styles.bottleneckDetailsDescription}>{selectedBottleneck.description}</Text>
+                  </View>
+
+                  {/* Media Gallery Section */}
+                  {selectedBottleneck.media.length > 0 && (
+                    <View style={styles.bottleneckDetailsSection}>
+                      <Text style={styles.bottleneckDetailsSectionTitle}>Attached Media</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.bottleneckMediaGallery}
+                      >
+                        {selectedBottleneck.media.map((media, index) => (
+                          <TouchableOpacity
+                            key={media.id}
+                            style={styles.bottleneckMediaThumbnail}
+                            onPress={() => handleBottleneckMediaPress(selectedBottleneck.media, index)}
+                            activeOpacity={0.7}
+                          >
+                            {media.type === 'document' ? (
+                              <View style={styles.documentThumbnail}>
+                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
+                                <Text style={styles.documentFilename} numberOfLines={2}>
+                                  {media.filename || 'Document'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <>
+                                <Image
+                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  style={styles.bottleneckMediaThumbnailImage}
+                                />
+                                {media.type === 'video' && (
+                                  <View style={styles.videoPlayIcon}>
+                                    <Ionicons name="play-circle" size={32} color="white" />
+                                  </View>
+                                )}
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Reporter Section */}
+                  <View style={styles.bottleneckDetailsSection}>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>Reported By</Text>
+                    <Text style={styles.bottleneckDetailsReporterName}>{selectedBottleneck.reportedBy}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterPosition}</Text>
+                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterDepartment}</Text>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Media Viewer Modal */}
       <Modal
         visible={showMediaViewer}
@@ -1441,37 +1942,6 @@ export default function ProjectDetailsScreen() {
               }}
             >
               <Text style={styles.saveButtonText}>Save Inspection</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Bottleneck Modal */}
-      <Modal
-        visible={showAddBottleneckModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAddBottleneckModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Add New Bottleneck</Text>
-              <TouchableOpacity onPress={() => setShowAddBottleneckModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.placeholderFormText}>
-              Form to add new bottleneck would go here with fields for title, description, and priority.
-            </Text>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={() => {
-                setShowAddBottleneckModal(false);
-                Alert.alert('Success', 'Bottleneck added successfully');
-              }}
-            >
-              <Text style={styles.saveButtonText}>Save Bottleneck</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1612,78 +2082,14 @@ export default function ProjectDetailsScreen() {
         </View>
       </Modal>
 
-      {/* Upload Action Sheet */}
-      <Modal
+      {/* Add Media Sheet - Reusable Component */}
+      <AddMediaSheet
         visible={showUploadSheet}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowUploadSheet(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.overlayTouchable}
-            activeOpacity={1}
-            onPress={() => setShowUploadSheet(false)}
-          />
-          <View style={styles.uploadSheet}>
-            <View style={styles.uploadSheetHandle} />
-            <Text style={styles.uploadSheetTitle}>Upload Media</Text>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={takePhotoOrVideo}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="camera" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Take Photo or Video</Text>
-                <Text style={styles.uploadOptionSubtitle}>Use your camera</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={pickFromGallery}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="images" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Choose from Gallery</Text>
-                <Text style={styles.uploadOptionSubtitle}>Select photos or videos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadOption}
-              onPress={pickDocument}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadOptionIconContainer}>
-                <Ionicons name="document-text" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.uploadOptionTextContainer}>
-                <Text style={styles.uploadOptionTitle}>Choose File</Text>
-                <Text style={styles.uploadOptionSubtitle}>Upload documents</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.uploadCancelButton}
-              onPress={() => setShowUploadSheet(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.uploadCancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowUploadSheet(false)}
+        onPhotoTaken={handlePhotoTaken}
+        onMediaSelected={handleMediaSelected}
+        onDocumentSelected={handleDocumentSelected}
+      />
 
       {/* Success Toast */}
       {showSuccessToast && (
@@ -1783,11 +2189,11 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     alignItems: 'center',
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
-    marginHorizontal: 4,
+    marginHorizontal: 2,
   },
   activeTab: {
     borderBottomColor: COLORS.primary,
@@ -2076,6 +2482,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   documentThumbnail: {
     width: '100%',
@@ -2115,133 +2523,49 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 28,
-    padding: 4,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    padding: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   segmentedControlSegment: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    minWidth: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    minWidth: 80,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   segmentedControlSegmentActive: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    backgroundColor: '#D0D0D0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   segmentedControlText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: '#666666',
   },
   segmentedControlTextActive: {
-    color: 'white',
+    color: '#1A1A1A',
     fontWeight: '700',
-  },
-  // Upload Action Sheet Styles
-  overlayTouchable: {
-    flex: 1,
-  },
-  uploadSheet: {
-    backgroundColor: COLORS.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-    paddingTop: 8,
-  },
-  uploadSheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  uploadSheetTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  uploadOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  uploadOptionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  uploadOptionTextContainer: {
-    flex: 1,
-  },
-  uploadOptionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  uploadOptionSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  uploadCancelButton: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  uploadCancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.fabBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   listContent: {
     padding: 16,
   },
   inspectionCard: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -2249,6 +2573,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+  },
+  inspectionCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   inspectionHeader: {
     flexDirection: 'row',
@@ -2270,55 +2600,172 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  inspectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  inspectionMediaPreview: {
+    marginBottom: 12,
+  },
+  inspectionMediaPreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inspectionThumbnailWrapper: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  inspectionThumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  inspectorSection: {
+    marginBottom: 12,
+  },
   inspectorName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.textSecondary,
+  },
+  inspectorNameBold: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  inspectorMeta: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+  inspectionDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  mediaIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  mediaIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   bottleneckCard: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  bottleneckHeader: {
+  bottleneckCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  bottleneckTitle: {
-    fontSize: 16,
+  bottleneckDate: {
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,
-    flex: 1,
-    marginRight: 8,
   },
   priorityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   priorityText: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'white',
   },
-  bottleneckMeta: {
+  bottleneckTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  reporterSection: {
+    marginBottom: 12,
+  },
+  reporterName: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  bottleneckDate: {
+  reporterNameBold: {
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  reporterMeta: {
     fontSize: 13,
     fontWeight: '400',
     color: COLORS.textLight,
+    marginTop: 2,
+  },
+  bottleneckDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  bottleneckMediaPreview: {
+    marginBottom: 12,
+  },
+  bottleneckMediaPreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bottleneckThumbnailWrapper: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  bottleneckThumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  thumbnailPlayIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 8,
+  },
+  remainingCountOverlay: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  remainingCountText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
   },
   modalOverlay: {
     flex: 1,
@@ -2606,6 +3053,152 @@ const styles = StyleSheet.create({
     padding: 24,
     maxHeight: '90%',
   },
+  inspectionDetailsBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingTop: 12,
+    height: '85%',
+  },
+  inspectionDetailsSummary: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  inspectionDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inspectionDetailsDate: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  inspectionDetailsSection: {
+    marginBottom: 20,
+  },
+  inspectionDetailsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  inspectionDetailsInspectorName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  inspectionDetailsMeta: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  inspectionDetailsDescription: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  inspectionMediaGallery: {
+    marginTop: 8,
+  },
+  inspectionMediaThumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
+  },
+  inspectionMediaThumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoPlayIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  bottleneckDetailsBottomSheet: {
+    backgroundColor: COLORS.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingTop: 12,
+    height: '85%',
+  },
+  bottleneckDetailsSummary: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: 16,
+  },
+  bottleneckDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bottleneckDetailsDate: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  bottleneckDetailsSection: {
+    marginBottom: 20,
+  },
+  bottleneckDetailsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  bottleneckDetailsReporterName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  bottleneckDetailsMeta: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  bottleneckDetailsDescription: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  bottleneckMediaGallery: {
+    marginTop: 8,
+  },
+  bottleneckMediaThumbnail: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.background,
+  },
+  bottleneckMediaThumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
   locationButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2739,8 +3332,8 @@ const styles = StyleSheet.create({
   activityMeta: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginBottom: 12,
     lineHeight: 18,
+    marginTop: 8,
   },
   activityAuthor: {
     fontWeight: '700',
@@ -2751,6 +3344,11 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 20,
     marginBottom: 12,
+  },
+  activityFooterSeparator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 12,
   },
   activityLocationContainer: {
     flexDirection: 'row',
