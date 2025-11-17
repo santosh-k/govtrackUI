@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { useDispatch, useSelector } from 'react-redux';
+import Toast from './Toast';
+import {
+  updateComplaintStatus,
+  clearUpdateState,
+  selectUpdateComplaintLoading,
+  selectUpdateComplaintError,
+  selectUpdateComplaintSuccess,
+} from '@/src/store/updateComplaintSlice';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,10 +43,8 @@ const COLORS = {
 };
 
 const STATUS_OPTIONS = [
-  'Submitted',
   'Assigned',
   'In Progress',
-  'Resolved',
   'Closed',
   'Reopened',
 ];
@@ -50,28 +57,38 @@ interface Attachment {
 
 interface UpdateActivityBottomSheetProps {
   visible: boolean;
+  complaintId: number | string;
   currentStatus: string;
   onClose: () => void;
-  onSubmit: (status: string, description: string, attachments: Attachment[]) => void;
+  onSubmit?: (status: string, description: string, attachments: Attachment[]) => void;
+  onStatusUpdated?: () => void; // Callback after successful status update
 }
 
 export default function UpdateActivityBottomSheet({
   visible,
+  complaintId,
   currentStatus,
   onClose,
   onSubmit,
+  onStatusUpdated,
 }: UpdateActivityBottomSheetProps) {
+  const dispatch = useDispatch();
+  const isLoading = useSelector(selectUpdateComplaintLoading);
+  const error = useSelector(selectUpdateComplaintError);
+  const successMessage = useSelector(selectUpdateComplaintSuccess);
+
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   const handleReset = () => {
     setSelectedStatus(currentStatus);
     setDescription('');
     setAttachments([]);
-    setIsSubmitting(false);
   };
 
   const handleClose = () => {
@@ -181,19 +198,96 @@ export default function UpdateActivityBottomSheet({
     }
   };
 
-  const handleSubmit = async () => {
-    if (!selectedStatus) {
-      Alert.alert('Required', 'Please select a status');
-      return;
-    }
+    const handleSubmit = useCallback(async () => {
+      if (!selectedStatus) {
+        setToastMessage("Please select a status");
+        setToastType("error");
+        setToastVisible(true);
+        return;
+      }
 
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
-    onSubmit(selectedStatus, description, attachments);
-    setIsSubmitting(false);
-    handleReset();
-  };
+      try {
+        // 💠 Convert UI label → API value
+        const statusMap: Record<string, string> = {
+          Assigned: "assigned",
+          "In Progress": "in_progress",
+          Closed: "closed",
+          Reopened: "reopened",
+        };
 
+        const apiStatus =
+          statusMap[selectedStatus] ||
+          selectedStatus.toLowerCase().replace(/\s+/g, "_");
+
+        console.log("Submitting status update:", {
+          complaintId,
+          selectedStatus,
+          apiStatus,
+          description,
+        });
+
+        // 💠 Dispatch Redux API
+        const resultAction = await dispatch(
+          updateComplaintStatus({
+            complaint_id: complaintId,
+            status: apiStatus,
+            comment: description,
+            attachments: attachments.map((att) => ({
+              uri: att.uri,
+              type: att.type,
+              name: att.name,
+            })),
+          }) as any
+        );
+
+        // 💠 SUCCESS
+        if (resultAction.type.includes("fulfilled")) {
+         // setToastMessage("Complaint status updated successfully");
+          //setToastType("success");
+          //setToastVisible(true);
+
+          // Reset internal fields
+          handleReset();
+
+          // 👇 IMPORTANT: Close bottom sheet *after small delay*
+          // This avoids auto-reopen issue
+          setTimeout(() => {
+            onStatusUpdated?.();
+            dispatch(clearUpdateState());
+            setToastVisible(false);
+          }, 400);
+
+          return;
+        }
+
+        // 💠 FAILURE (API rejected)
+        if (resultAction.type.includes("rejected")) {
+          setToastMessage(
+            resultAction.payload || "Failed to update status"
+          );
+          setToastType("error");
+          setToastVisible(true);
+
+          setTimeout(() => setToastVisible(false), 2000);
+        }
+      } catch (e) {
+        console.error("Unexpected error:", e);
+
+        setToastMessage("Something went wrong!");
+        setToastType("error");
+        setToastVisible(true);
+
+        setTimeout(() => setToastVisible(false), 2000);
+      }
+    }, [
+      selectedStatus,
+      complaintId,
+      description,
+      attachments,
+      dispatch,
+      handleReset,
+      onStatusUpdated,
+    ]);
   return (
     <Modal
       visible={visible}
@@ -349,11 +443,11 @@ export default function UpdateActivityBottomSheet({
           {/* Submit Button */}
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+              style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isLoading}
             >
-              {isSubmitting ? (
+              {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.submitButtonText}>Update</Text>
@@ -363,6 +457,14 @@ export default function UpdateActivityBottomSheet({
           </View>
         </View>
       </View>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </Modal>
   );
 }

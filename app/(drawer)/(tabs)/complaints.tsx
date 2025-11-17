@@ -2,7 +2,7 @@
  * Complaint Dashboard - Pastel Grid Design v3.0
  * Two-column grid with vertically centered, pastel-colored cards
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,11 @@ import {
   ScrollView,
   Platform,
   Modal,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { DrawerActions, useNavigation,useIsFocused } from '@react-navigation/native';
 
 const COLORS = {
   background: '#F8F9FA',
@@ -54,10 +55,11 @@ interface StatCardProps {
   backgroundColor: string;
   iconColor: string;
   filterType: string;
+  datFilter: string;
   onPress: () => void;
 }
 
-function StatCard({ title, value, icon, backgroundColor, iconColor, onPress }: StatCardProps) {
+function StatCard({ title, value, icon, backgroundColor, iconColor, datFilter, onPress }: StatCardProps) {
   return (
     <TouchableOpacity
       style={[styles.statCard, { backgroundColor }]}
@@ -90,6 +92,13 @@ export default function ComplaintDashboardScreen() {
   const [compStats, setStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [disableSearch, setDisableSearch] = useState(false);
+  const [readyForPress, setReadyForPress] = useState(true);
+  const [navigationLock, setNavigationLock] = useState(false);
+   const isFocused = useIsFocused();
+   const [navigationLocked, setNavigationLocked] = useState(false);
+   const [searchActive, setSearchActive] = useState(false);
 
   // Map fetched stats or use defaults
   const stats = compStats ? {
@@ -146,6 +155,12 @@ export default function ComplaintDashboardScreen() {
     fetchStats('today');
   }, []);
 
+  useEffect(() => {
+  const task = InteractionManager.runAfterInteractions(() => {
+    // clears lingering touches
+  });
+  return () => task.cancel();
+}, []);
   const handleFilterChange = (filter: QuickFilter) => {
     if (filter === 'custom') {
       handleCustomDateRange();
@@ -180,17 +195,39 @@ export default function ComplaintDashboardScreen() {
     }
   };
 
-  const handleStatCardPress = (filterType: string, title: string) => {
-    // Navigate to complaints list with pre-applied filter and title
-    router.push({
-      pathname: '/complaints-stack/complaints-list',
-      params: {
-        filter: filterType,
-        title: title,
-        fromDashboard: 'true',
-      },
-    });
+  const handleStatCardPress = useCallback((filterType: string, title: string) => {
+  if (navigationLocked) return; // prevent if another navigation is in progress
+  setNavigationLocked(true);
+
+  let dateFilter: string;
+  if (selectedFilter === 'month') dateFilter = 'this_month';
+  else if (selectedFilter === 'week') dateFilter = 'this_week';
+  else if (selectedFilter === 'today') dateFilter = 'today';
+  else dateFilter = 'custom';
+
+  const params: any = {
+    filter: filterType,
+    title,
+    fromDashboard: 'true',
+    dateFilter,
   };
+
+  if (selectedStartDate && selectedEndDate) {
+    params.startDate = formatDateForApi(selectedStartDate);
+    params.endDate = formatDateForApi(selectedEndDate);
+  }
+
+  router.push({
+    pathname: '/complaints-stack/complaints-list',
+    params,
+  });
+
+  console.log("Pushed to Listing Screen");
+
+  setTimeout(() => setNavigationLocked(false), 500);
+}, [selectedFilter, selectedStartDate, selectedEndDate, navigationLocked]);
+
+
 
   const handleCustomDateRange = () => {
     setShowCalendarModal(true);
@@ -224,6 +261,7 @@ export default function ComplaintDashboardScreen() {
       const endStr = selectedEndDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
       const startStrApi = formatDateForApi(selectedStartDate);
       const endStrApi = formatDateForApi(selectedEndDate);
+      
       setDateRange(`${startStr} - ${endStr}`);
       setSelectedFilter('custom');
       setShowCalendarModal(false);
@@ -380,8 +418,17 @@ export default function ComplaintDashboardScreen() {
        {/* Search Entry Point */}
         <TouchableOpacity
           style={styles.searchBar}
-          onPress={() => router.push('/(drawer)/advanced-project-search')}
           activeOpacity={0.7}
+          onPress={() => {
+            if (navigationLocked) return; // block if another navigation is in progress
+            setNavigationLocked(true);     // lock navigation
+
+            router.push('/search-stack/Complaint-Search');
+            console.log("Pushed Search Screen");
+
+            // Unlock after a small delay to allow returning from navigation
+            setTimeout(() => setNavigationLocked(false), 500);
+          }}
         >
           <Ionicons name="search" size={20} color={COLORS.textSecondary} />
           <Text style={styles.searchPlaceholder}>
@@ -414,6 +461,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelBlue}
             iconColor={COLORS.iconBlue}
             filterType="all"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('all', 'All Complaints')}
           />
 
@@ -424,6 +472,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelPeach}
             iconColor={COLORS.iconPeach}
             filterType="closed"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
           />
 
@@ -434,6 +483,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelPink}
             iconColor={COLORS.iconPink}
             filterType="pending"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('pending', 'Pending Complaints')}
           />
 
@@ -444,6 +494,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelPurple}
             iconColor={COLORS.iconPurple}
             filterType="inProgress"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('inProgress', 'In Progress Complaints')}
           />
 
@@ -454,6 +505,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelMint}
             iconColor={COLORS.iconTeal}
             filterType="completedByYou"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('completedByYou', 'Completed by You')}
           />
 
@@ -464,6 +516,7 @@ export default function ComplaintDashboardScreen() {
             backgroundColor={COLORS.pastelYellow}
             iconColor={COLORS.iconOrange}
             filterType="assignedByYou"
+            datFilter={selectedFilter}
             onPress={() => handleStatCardPress('assignedByYou', 'Assigned by You')}
           />
         </View>

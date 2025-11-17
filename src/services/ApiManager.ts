@@ -273,6 +273,7 @@ class ApiManager {
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
   public async getComplaints(
     stats_filter: string,
+    filter: string,
     status: string,
     page: number = 1,
     limit: number = 10,
@@ -280,6 +281,8 @@ class ApiManager {
     category_id?: string | number,
     zone_id?: string | number,
     department_id?: string | number,
+    startDate?: string,
+    endDate?: string
   ): Promise<any> {
     try {
       const token = this.getToken();
@@ -288,6 +291,7 @@ class ApiManager {
       // Build query parameters
       const queryParams = new URLSearchParams({
         stats_filter,
+        filter,
         status,
         page: page.toString(),
         limit: limit.toString(),
@@ -304,7 +308,11 @@ class ApiManager {
       if (department_id !== undefined && department_id !== null && department_id !== '') {
         queryParams.append('department', String(department_id));
       }
-
+      if (filter === 'custom' && startDate && endDate) {
+        queryParams.append('start_date', startDate)
+        queryParams.append('end_date',endDate) 
+      }
+      console.log(queryParams)
       const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
       console.log(url)
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
@@ -352,6 +360,24 @@ class ApiManager {
       if (!token) throw new Error('No authentication token available');
 
       const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/assign-complaint`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- UPDATE COMPLAINT STATUS (EXTERNAL ADMIN API) ---------------- */
+  public async updateComplaintStatus(payload: any): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/update-complaint-status`;
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),

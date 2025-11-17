@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { DrawerActions, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterBottomSheet from '@/components/FilterBottomSheet';
 import {
@@ -304,9 +304,18 @@ export default function ComplaintsScreen() {
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
     const status = statusFilter || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
+    const filter =  params.dateFilter as string || 'today'
+    const start_date = params.start_date as string 
+    const end_date = params.end_date as string
+    console.log('fetchComplaint Api Called')
+    console.log('Current Date Filter == ', filter)
+    console.log('Start Date == ', start_date)
+    console.log('End Date == ', end_date)
+    console.log('All Params == ', params)
     dispatch(
       fetchComplaints({
         stats_filter,
+        filter,
         status,
         page,
         limit: 10,
@@ -315,6 +324,8 @@ export default function ComplaintsScreen() {
         category_id: selectedCategoryId,
         zone_id: selectedZoneId,
         department_id: selectedDepartmentId,
+        start_date: start_date ?? undefined,
+        end_date: end_date ?? undefined,
       })
     );
   };
@@ -324,7 +335,16 @@ export default function ComplaintsScreen() {
     if (params.filter) {
       handleFetchComplaints(1, undefined, false);
     }
-  }, [params.filter]);
+  }, [params.filter, params.dateFilter, params.start_date, params.end_date]);
+
+  // Refetch complaints when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (params.filter) {
+        handleFetchComplaints(1, undefined, false);
+      }
+    }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
+  );
 
   // Handle incoming filter parameter from dashboard
   useEffect(() => {
@@ -541,9 +561,13 @@ export default function ComplaintsScreen() {
     // Fetch complaints with new filters (reset to page 1)
     // Use tempSelected*Id directly because React state updates are async
     const stats_filter = getApiStatus(params.filter as string) || 'total';
+    const filter = params.dateFilter as string || 'today'
+    const start_date = params.start_date as string 
+    const end_date = params.end_date as string
     dispatch(
       fetchComplaints({
         stats_filter,
+        filter,
         status: '',
         page: 1,
         limit: 10,
@@ -552,6 +576,8 @@ export default function ComplaintsScreen() {
         category_id: tempSelectedCategoryId ?? undefined,
         zone_id: tempSelectedZoneId ?? undefined,
         department_id: tempSelectedDepartmentId ?? undefined,
+        start_date: start_date ?? undefined,
+        end_date: end_date ?? undefined 
       })
     );
   };

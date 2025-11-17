@@ -34,6 +34,7 @@ export const fetchComplaints = createAsyncThunk(
   'complaints/fetchComplaints',
   async (
     { stats_filter,
+      filter,
       status,
       page = 1,
       limit = 10,
@@ -42,8 +43,11 @@ export const fetchComplaints = createAsyncThunk(
       category_id,
       zone_id,
       department_id,
+      start_date,
+      end_date,
     }: {
       stats_filter: string
+      filter: string;
       status: string;
       page?: number;
       limit?: number;
@@ -52,6 +56,8 @@ export const fetchComplaints = createAsyncThunk(
       category_id?: string | number | null;
       zone_id?: string | number | null;
       department_id?: string | number | null;
+      start_date?: string | null;
+      end_date?: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -60,6 +66,7 @@ export const fetchComplaints = createAsyncThunk(
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getComplaints(
         stats_filter,
+        filter,
         status,
         page,
         limit,
@@ -67,6 +74,8 @@ export const fetchComplaints = createAsyncThunk(
         category_id ?? undefined,
         zone_id ?? undefined,
         department_id ?? undefined,
+        start_date ?? undefined,
+        end_date ?? undefined,
       );
       console.log('Complaint List API Response:', response);
       if (response?.success && response?.data) {

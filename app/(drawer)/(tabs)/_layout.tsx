@@ -52,6 +52,7 @@ export default function TabLayout() {
             <Ionicons name="document-text-outline" size={size} color={color} />
           ),
         }}
+        key={Date.now()}
       />
       <Tabs.Screen
         name="projects"

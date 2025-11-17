@@ -32,6 +32,13 @@ export default function DrawerLayout() {
           headerShown: false,
         }}
       />
+      <Drawer.Screen
+        name="search-stack"
+        options={{
+          drawerLabel: 'Search',
+          headerShown: false,
+        }}
+      />
     </Drawer>
   );
 }

@@ -766,9 +766,22 @@ export default function ComplaintDetailsScreen() {
       {/* Update Activity Bottom Sheet */}
       <UpdateActivityBottomSheet
         visible={updateSheetVisible}
+        complaintId={Array.isArray(params.id) ? params.id[0] : params.id}
         currentStatus={complaintData.statusDisplay}
         onClose={() => setUpdateSheetVisible(false)}
-        onSubmit={handleUpdateSubmit}
+        onStatusUpdated={() => {
+              // 1️⃣ Close sheet
+              setUpdateSheetVisible(false);
+
+              // 2️⃣ Refresh complaint details
+              const id = Array.isArray(params.id) ? params.id[0] : params.id;
+              if (id) dispatch(fetchComplaintDetails(id) as any);
+
+              // 3️⃣ Show toast
+              setToastMessage('Complaint status updated successfully');
+              setToastVisible(true);
+        }}
+            
       />
 
       {/* Toast Notification */}
