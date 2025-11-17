@@ -7,6 +7,9 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,6 +33,7 @@ export default function SearchProjectScreen() {
   const [selectedSubDivision, setSelectedSubDivision] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedZone, setSelectedZone] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>('');
 
   // Update state when returning from selection screen
   useEffect(() => {
@@ -52,6 +56,7 @@ export default function SearchProjectScreen() {
     if (selectedSubDivision) filterParts.push(selectedSubDivision);
     if (selectedDepartment) filterParts.push(selectedDepartment);
     if (selectedZone) filterParts.push(selectedZone);
+    if (searchText) filterParts.push(searchText);
 
     const filterDisplay = filterParts.length > 0
       ? `Search Results - ${filterParts.join(', ')}`
@@ -63,12 +68,19 @@ export default function SearchProjectScreen() {
     setSelectedSubDivision('');
     setSelectedDepartment('');
     setSelectedZone('');
+    setSearchText('');
 
     // Navigate to project list with filters
     router.push({
       pathname: '/(drawer)/project-list',
       params: {
         filter: filterDisplay,
+        projectType: selectedProjectType,
+        division: selectedDivision,
+        subDivision: selectedSubDivision,
+        department: selectedDepartment,
+        zone: selectedZone,
+        searchText: searchText,
       },
     });
   };
@@ -89,11 +101,17 @@ export default function SearchProjectScreen() {
         <Text style={styles.headerTitle}>Search Project</Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Filter Form Section */}
         <View style={styles.formSection}>
           <Text style={styles.formTitle}>Select Filters</Text>
@@ -220,20 +238,33 @@ export default function SearchProjectScreen() {
               <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
+
+          {/* Free-Text Search Box */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Project Name or ID (Optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter project name or ID..."
+              placeholderTextColor={COLORS.textPlaceholder}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
         </View>
       </ScrollView>
 
-      {/* Find Project Button */}
-      <View style={styles.bottomButtonContainer}>
-        <TouchableOpacity
-          style={styles.findButton}
-          onPress={handleFindProjects}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="search" size={20} color="#FFFFFF" />
-          <Text style={styles.findButtonText}>Find Project</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Find Project Button */}
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity
+            style={styles.findButton}
+            onPress={handleFindProjects}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="search" size={20} color="#FFFFFF" />
+            <Text style={styles.findButtonText}>Find Project</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -242,6 +273,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -323,6 +357,17 @@ const styles = StyleSheet.create({
   dropdownTextPlaceholder: {
     color: COLORS.textPlaceholder,
     fontWeight: '400',
+  },
+  textInput: {
+    backgroundColor: COLORS.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.text,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    minHeight: 52,
   },
   bottomButtonContainer: {
     position: 'absolute',

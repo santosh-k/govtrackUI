@@ -50,5 +50,25 @@
     { "id": "6", "name": "Renovation Project" },
     { "id": "7", "name": "Repair Work" },
     { "id": "8", "name": "Upgrade Project" }
+  ],
+  "taskCategories": [
+    { "id": "1", "name": "Site Inspection" },
+    { "id": "2", "name": "Quality Check" },
+    { "id": "3", "name": "Safety Audit" },
+    { "id": "4", "name": "Material Verification" },
+    { "id": "5", "name": "Progress Review" },
+    { "id": "6", "name": "Documentation" },
+    { "id": "7", "name": "Measurement" },
+    { "id": "8", "name": "Supervision" }
+  ],
+  "issueTypes": [
+    { "id": "1", "name": "Material Shortage" },
+    { "id": "2", "name": "Equipment Failure" },
+    { "id": "3", "name": "Permit Delays" },
+    { "id": "4", "name": "Weather Conditions" },
+    { "id": "5", "name": "Labor Shortage" },
+    { "id": "6", "name": "Budget Constraints" },
+    { "id": "7", "name": "Design Changes" },
+    { "id": "8", "name": "Site Access Issues" }
   ]
 }
