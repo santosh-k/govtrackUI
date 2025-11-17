@@ -1,13 +1,11 @@
 /**
- * Task Details Screen - Multi-Tab Interface
+ * Task Details Screen - Redesigned
  *
- * A comprehensive task details view with:
- * - Back arrow in main header
- * - Sticky sub-header with Task Category and tappable Status Badge
- * - Tab Navigator: Details, Media, History
- * - Details Tab: Description card, Location card, People card
- * - Media Tab: Reused from Project Media (grid + FAB)
- * - History Tab: Reused from Project Activity (timeline)
+ * A streamlined task details view with:
+ * - Simple header: Back arrow + Task Category + Status Badge
+ * - Details Tab: Description with location + Replies & Activity
+ * - Media Tab: Unified grid (all media types, no filter)
+ * - History Tab: Read-only timeline (no reply input)
  */
 
 import React, { useState } from 'react';
@@ -25,6 +23,7 @@ import {
   Linking,
   Alert,
   Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,7 +35,6 @@ import { Video, ResizeMode } from 'expo-av';
 
 // Types
 type TabName = 'Details' | 'Media' | 'History';
-type MediaFilterType = 'Photos' | 'Videos' | 'Documents';
 type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'Overdue';
 
 interface MediaItem {
@@ -45,17 +43,24 @@ interface MediaItem {
   uri: string;
   thumbnail?: string;
   filename?: string;
+  timestamp: string;
 }
 
-interface ActivityItem {
+interface ReplyItem {
   id: string;
-  type: 'status_change' | 'reply';
+  user: string;
+  message: string;
+  timestamp: string;
+}
+
+interface HistoryItem {
+  id: string;
   user: string;
   designation: string;
   timestamp: string;
   statusFrom?: string;
   statusTo?: string;
-  message?: string;
+  event: string;
 }
 
 interface TaskDetails {
@@ -64,10 +69,6 @@ interface TaskDetails {
   category: string;
   description: string;
   location: string;
-  assignedBy: string;
-  assignedByOffice: string;
-  assignedTo: string;
-  assignedToPosition: string;
   status: TaskStatus;
 }
 
@@ -78,48 +79,57 @@ const MOCK_TASK: TaskDetails = {
   category: 'Road Inspection',
   description: 'Conduct a thorough inspection of the NH-44 road section between KM 15 to KM 25. Check for potholes, cracks, drainage issues, and road markings. Document all findings with photos and prepare a detailed report.',
   location: 'National Highway 44, Sector 15, New Delhi, India',
-  assignedBy: 'Er Sabir Ali',
-  assignedByOffice: 'Central Department',
-  assignedTo: 'Rajesh Kumar',
-  assignedToPosition: 'Field Inspector',
   status: 'In Progress',
 };
 
 const MOCK_MEDIA: MediaItem[] = [
-  { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Road+Photo+1' },
-  { id: '2', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Road+Photo+2' },
-  { id: '3', type: 'video', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Inspection+Video', thumbnail: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Inspection+Video' },
-  { id: '4', type: 'document', uri: 'https://example.com/report.pdf', filename: 'Inspection_Report.pdf' },
-  { id: '5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Road+Photo+3' },
-  { id: '6', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Damage+Photo' },
+  { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Road+Photo+1', timestamp: '2024-01-15T10:30:00Z' },
+  { id: '2', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Road+Photo+2', timestamp: '2024-01-15T11:00:00Z' },
+  { id: '3', type: 'video', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Inspection+Video', thumbnail: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Inspection+Video', timestamp: '2024-01-15T11:30:00Z' },
+  { id: '4', type: 'document', uri: 'https://example.com/report.pdf', filename: 'Inspection_Report.pdf', timestamp: '2024-01-15T12:00:00Z' },
+  { id: '5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Road+Photo+3', timestamp: '2024-01-15T14:00:00Z' },
+  { id: '6', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Damage+Photo', timestamp: '2024-01-15T14:30:00Z' },
 ];
 
-const MOCK_ACTIVITY: ActivityItem[] = [
+const MOCK_REPLIES: ReplyItem[] = [
   {
     id: '1',
-    type: 'status_change',
+    user: 'Rajesh Kumar',
+    message: 'Started the inspection. Initial findings show minor cracks in the road surface.',
+    timestamp: '15 Jan 2024, 10:45 AM',
+  },
+  {
+    id: '2',
+    user: 'Er Sabir Ali',
+    message: 'Good progress. Please ensure you document all findings with photos and GPS coordinates.',
+    timestamp: '15 Jan 2024, 11:30 AM',
+  },
+  {
+    id: '3',
+    user: 'Rajesh Kumar',
+    message: 'Completed section 1 inspection. Found significant drainage issues near KM 17. Photos uploaded.',
+    timestamp: '15 Jan 2024, 02:15 PM',
+  },
+];
+
+const MOCK_HISTORY: HistoryItem[] = [
+  {
+    id: '1',
     user: 'Rajesh Kumar',
     designation: 'Field Inspector',
     timestamp: '15 Jan 2024, 02:30 PM',
     statusFrom: 'Pending',
     statusTo: 'In Progress',
+    event: 'Changed status',
   },
   {
     id: '2',
-    type: 'reply',
-    user: 'Rajesh Kumar',
-    designation: 'Field Inspector',
-    timestamp: '15 Jan 2024, 10:45 AM',
-    message: 'Started the inspection. Initial findings show minor cracks in the road surface.',
-  },
-  {
-    id: '3',
-    type: 'status_change',
     user: 'Er Sabir Ali',
     designation: 'Senior Engineer',
     timestamp: '15 Jan 2024, 10:30 AM',
     statusFrom: undefined,
     statusTo: 'Pending',
+    event: 'Task created',
   },
 ];
 
@@ -237,24 +247,17 @@ export default function TaskDetailsScreen() {
   }, [taskId]);
   const [taskStatus, setTaskStatus] = useState<TaskStatus>(MOCK_TASK.status);
   const [mediaItems] = useState<MediaItem[]>(MOCK_MEDIA);
-  const [activityItems] = useState<ActivityItem[]>(MOCK_ACTIVITY);
-  const [mediaFilter, setMediaFilter] = useState<MediaFilterType>('Photos');
+  const [replies, setReplies] = useState<ReplyItem[]>(MOCK_REPLIES);
+  const [historyItems] = useState<HistoryItem[]>(MOCK_HISTORY);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showMediaSheet, setShowMediaSheet] = useState(false);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [replyText, setReplyText] = useState('');
 
   const statusColor = getStatusColor(taskStatus);
-
-  // Filter media based on type
-  const filteredMedia = mediaItems.filter((item) => {
-    if (mediaFilter === 'Photos') return item.type === 'image';
-    if (mediaFilter === 'Videos') return item.type === 'video';
-    if (mediaFilter === 'Documents') return item.type === 'document';
-    return true;
-  });
 
   const handleLocationPress = async () => {
     const address = encodeURIComponent(taskData.location);
@@ -292,55 +295,103 @@ export default function TaskDetailsScreen() {
     setShowMediaViewer(true);
   };
 
+  const handleAddReply = () => {
+    if (!replyText.trim()) {
+      Alert.alert('Required', 'Please enter a reply message');
+      return;
+    }
+
+    const newReply: ReplyItem = {
+      id: `${replies.length + 1}`,
+      user: 'You',
+      message: replyText,
+      timestamp: new Date().toLocaleString('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    setReplies([...replies, newReply]);
+    setReplyText('');
+    setToastMessage('Reply added successfully!');
+    setToastVisible(true);
+  };
+
   const renderDetailsTab = () => (
     <ScrollView style={styles.tabContent} contentContainerStyle={styles.tabContentPadding} showsVerticalScrollIndicator={false}>
-      {/* Task Description Card */}
+      {/* Task Description & Location Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Task Description</Text>
         <Text style={styles.descriptionText}>{taskData.description}</Text>
-      </View>
 
-      {/* Location Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Location</Text>
-        <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress} activeOpacity={0.7}>
-          <Ionicons name="location" size={20} color={COLORS.info} />
-          <Text style={styles.locationText}>{taskData.location}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.mapLink} onPress={handleLocationPress} activeOpacity={0.7}>
-          <Ionicons name="map-outline" size={16} color={COLORS.primary} />
-          <Text style={styles.mapLinkText}>Tap to adjust location on map</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* People Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>People</Text>
-
-        {/* Assigned By Section */}
-        <View style={styles.peopleSection}>
-          <Text style={styles.peopleSectionLabel}>Assigned By</Text>
-          <View style={styles.personInfo}>
-            <Ionicons name="person-circle-outline" size={40} color={COLORS.primary} />
-            <View style={styles.personDetails}>
-              <Text style={styles.personName}>{taskData.assignedBy}</Text>
-              <Text style={styles.personOffice}>{taskData.assignedByOffice}</Text>
-            </View>
-          </View>
+        {/* Location Section (integrated into same card) */}
+        <View style={styles.locationSection}>
+          <View style={styles.locationDivider} />
+          <Text style={styles.locationLabel}>Location</Text>
+          <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress} activeOpacity={0.7}>
+            <Ionicons name="location" size={20} color={COLORS.info} />
+            <Text style={styles.locationText}>{taskData.location}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mapLink} onPress={handleLocationPress} activeOpacity={0.7}>
+            <Ionicons name="map-outline" size={16} color={COLORS.primary} />
+            <Text style={styles.mapLinkText}>Tap to view location on map</Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <View style={styles.peopleDivider} />
+      {/* Replies & Activity Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Replies & Activity</Text>
 
-        {/* Assigned To Section */}
-        <View style={styles.peopleSection}>
-          <Text style={styles.peopleSectionLabel}>Assigned To</Text>
-          <View style={styles.personInfo}>
-            <Ionicons name="person-circle-outline" size={40} color={COLORS.info} />
-            <View style={styles.personDetails}>
-              <Text style={styles.personName}>{taskData.assignedTo}</Text>
-              <Text style={styles.personOffice}>{taskData.assignedToPosition}</Text>
-            </View>
+        {/* Reply List */}
+        {replies.length > 0 ? (
+          <View style={styles.replyList}>
+            {replies.map((reply) => (
+              <View key={reply.id} style={styles.replyItem}>
+                <View style={styles.replyHeader}>
+                  <View style={styles.replyUserContainer}>
+                    <Ionicons name="person-circle-outline" size={32} color={COLORS.primary} />
+                    <Text style={styles.replyUser}>{reply.user}</Text>
+                  </View>
+                  <Text style={styles.replyTimestamp}>{reply.timestamp}</Text>
+                </View>
+                <Text style={styles.replyMessage}>{reply.message}</Text>
+              </View>
+            ))}
           </View>
+        ) : (
+          <View style={styles.emptyReplies}>
+            <Ionicons name="chatbubbles-outline" size={48} color={COLORS.textSecondary} />
+            <Text style={styles.emptyRepliesText}>No replies yet</Text>
+          </View>
+        )}
+
+        {/* Add Reply Form */}
+        <View style={styles.addReplyForm}>
+          <View style={styles.replyFormDivider} />
+          <Text style={styles.addReplyLabel}>Add Reply</Text>
+          <TextInput
+            style={styles.replyInput}
+            placeholder="Type your reply here..."
+            placeholderTextColor={COLORS.textSecondary}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+            value={replyText}
+            onChangeText={setReplyText}
+          />
+          <TouchableOpacity
+            style={[styles.addReplyButton, !replyText.trim() && styles.addReplyButtonDisabled]}
+            onPress={handleAddReply}
+            disabled={!replyText.trim()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="send" size={18} color={COLORS.white} />
+            <Text style={styles.addReplyButtonText}>Send Reply</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -348,77 +399,75 @@ export default function TaskDetailsScreen() {
     </ScrollView>
   );
 
-  const renderMediaTab = () => (
-    <View style={styles.tabContent}>
-      {/* Media Filter Switcher */}
-      <View style={styles.mediaSwitcher}>
-        {(['Photos', 'Videos', 'Documents'] as MediaFilterType[]).map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[styles.switcherButton, mediaFilter === filter && styles.switcherButtonActive]}
-            onPress={() => setMediaFilter(filter)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.switcherText, mediaFilter === filter && styles.switcherTextActive]}>
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+  const renderMediaTab = () => {
+    // Unified media grid - no filtering
+    const sortedMedia = [...mediaItems].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
-      {/* Media Grid */}
-      <FlatList
-        data={filteredMedia}
-        keyExtractor={(item) => item.id}
-        numColumns={3}
-        contentContainerStyle={styles.mediaGrid}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.mediaThumbnail}
-            onPress={() => handleMediaPress(index)}
-            activeOpacity={0.7}
-          >
-            {item.type === 'document' ? (
-              <View style={styles.documentThumbnail}>
-                <Ionicons name="document-text" size={32} color={COLORS.textSecondary} />
-                <Text style={styles.documentName} numberOfLines={2}>
-                  {item.filename}
-                </Text>
-              </View>
-            ) : (
-              <Image source={{ uri: item.type === 'video' ? item.thumbnail : item.uri }} style={styles.thumbnailImage} />
+    return (
+      <View style={styles.tabContent}>
+        {sortedMedia.length > 0 ? (
+          <FlatList
+            data={sortedMedia}
+            keyExtractor={(item) => item.id}
+            numColumns={3}
+            contentContainerStyle={styles.mediaGrid}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={styles.mediaThumbnail}
+                onPress={() => handleMediaPress(index)}
+                activeOpacity={0.7}
+              >
+                {item.type === 'document' ? (
+                  <View style={styles.documentThumbnail}>
+                    <Ionicons name="document-text" size={32} color={COLORS.textSecondary} />
+                    <Text style={styles.documentName} numberOfLines={2}>
+                      {item.filename}
+                    </Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: item.type === 'video' ? item.thumbnail : item.uri }} style={styles.thumbnailImage} />
+                )}
+                {item.type === 'video' && (
+                  <View style={styles.playIconOverlay}>
+                    <Ionicons name="play-circle" size={36} color={COLORS.white} />
+                  </View>
+                )}
+              </TouchableOpacity>
             )}
-            {item.type === 'video' && (
-              <View style={styles.playIconOverlay}>
-                <Ionicons name="play-circle" size={36} color={COLORS.white} />
-              </View>
-            )}
-          </TouchableOpacity>
+          />
+        ) : (
+          <View style={styles.emptyMediaContainer}>
+            <Ionicons name="images-outline" size={80} color={COLORS.textSecondary} />
+            <Text style={styles.emptyMediaText}>No media has been attached to this task</Text>
+            <Text style={styles.emptyMediaSubtext}>Tap the + button below to add photos, videos, or documents</Text>
+          </View>
         )}
-      />
 
-      {/* FAB for Media Upload */}
-      <TouchableOpacity
-        style={styles.mediaFab}
-        onPress={() => setShowMediaSheet(true)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color={COLORS.white} />
-      </TouchableOpacity>
-    </View>
-  );
+        {/* FAB for Media Upload */}
+        <TouchableOpacity
+          style={styles.mediaFab}
+          onPress={() => setShowMediaSheet(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={28} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderHistoryTab = () => (
     <ScrollView style={styles.tabContent} contentContainerStyle={styles.tabContentPadding} showsVerticalScrollIndicator={false}>
-      {/* Timeline */}
+      {/* Read-only Timeline */}
       <View style={styles.timeline}>
-        {activityItems.map((item, index) => (
+        {historyItems.map((item, index) => (
           <View key={item.id} style={styles.timelineItem}>
             {/* Timeline Connector */}
             <View style={styles.timelineConnector}>
-              <View style={[styles.timelineDot, item.type === 'status_change' && styles.timelineDotStatus]} />
-              {index < activityItems.length - 1 && <View style={styles.timelineLine} />}
+              <View style={styles.timelineDot} />
+              {index < historyItems.length - 1 && <View style={styles.timelineLine} />}
             </View>
 
             {/* Activity Content */}
@@ -431,39 +480,29 @@ export default function TaskDetailsScreen() {
                 <Text style={styles.activityTimestamp}>{item.timestamp}</Text>
               </View>
 
-              {item.type === 'status_change' ? (
-                <View style={styles.statusChangeContainer}>
-                  <Text style={styles.statusChangeLabel}>Changed status</Text>
-                  {item.statusFrom && (
-                    <View style={styles.statusChangeRow}>
-                      <View style={[styles.statusChangeBadge, { backgroundColor: getStatusColor(item.statusFrom as TaskStatus) }]}>
-                        <Text style={styles.statusChangeText}>{item.statusFrom}</Text>
-                      </View>
-                      <Ionicons name="arrow-forward" size={16} color={COLORS.textSecondary} />
-                      <View style={[styles.statusChangeBadge, { backgroundColor: getStatusColor(item.statusTo as TaskStatus) }]}>
-                        <Text style={styles.statusChangeText}>{item.statusTo}</Text>
-                      </View>
+              <View style={styles.statusChangeContainer}>
+                <Text style={styles.statusChangeLabel}>{item.event}</Text>
+                {item.statusFrom && (
+                  <View style={styles.statusChangeRow}>
+                    <View style={[styles.statusChangeBadge, { backgroundColor: getStatusColor(item.statusFrom as TaskStatus) }]}>
+                      <Text style={styles.statusChangeText}>{item.statusFrom}</Text>
                     </View>
-                  )}
-                  {!item.statusFrom && (
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.textSecondary} />
                     <View style={[styles.statusChangeBadge, { backgroundColor: getStatusColor(item.statusTo as TaskStatus) }]}>
                       <Text style={styles.statusChangeText}>{item.statusTo}</Text>
                     </View>
-                  )}
-                </View>
-              ) : (
-                <Text style={styles.activityMessage}>{item.message}</Text>
-              )}
+                  </View>
+                )}
+                {!item.statusFrom && item.statusTo && (
+                  <View style={[styles.statusChangeBadge, { backgroundColor: getStatusColor(item.statusTo as TaskStatus) }]}>
+                    <Text style={styles.statusChangeText}>{item.statusTo}</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         ))}
       </View>
-
-      {/* Add Reply Button */}
-      <TouchableOpacity style={styles.addReplyButton} onPress={() => setShowStatusSheet(true)} activeOpacity={0.7}>
-        <Ionicons name="chatbox-outline" size={20} color={COLORS.primary} />
-        <Text style={styles.addReplyText}>Add Reply / Comment</Text>
-      </TouchableOpacity>
 
       <View style={{ height: 24 }} />
     </ScrollView>
@@ -473,24 +512,27 @@ export default function TaskDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
-      {/* Main Header: Only Back Arrow */}
-      <View style={styles.mainHeader}>
+      {/* Redesigned Header: Back Arrow + Task Category + Status Badge */}
+      <View style={styles.header}>
+        {/* Left: Back Arrow */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={28} color={COLORS.text} />
         </TouchableOpacity>
-      </View>
 
-      {/* Sticky Sub-Header: Task Category + Status Badge */}
-      <View style={styles.stickySubHeader}>
-        <Text style={styles.taskCategory} numberOfLines={1}>
-          {taskData.category}
-        </Text>
+        {/* Center: Task Category */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {taskData.category}
+          </Text>
+        </View>
+
+        {/* Right: Status Badge */}
         <TouchableOpacity
-          style={[styles.statusBadge, { backgroundColor: statusColor }]}
+          style={[styles.headerStatusBadge, { backgroundColor: statusColor }]}
           onPress={() => setShowStatusSheet(true)}
           activeOpacity={0.7}
         >
-          <Text style={styles.statusText}>{taskStatus}</Text>
+          <Text style={styles.headerStatusText}>{taskStatus}</Text>
         </TouchableOpacity>
       </View>
 
@@ -538,7 +580,7 @@ export default function TaskDetailsScreen() {
       {/* Media Viewer */}
       <MediaViewer
         visible={showMediaViewer}
-        media={filteredMedia}
+        media={mediaItems}
         initialIndex={selectedMediaIndex}
         onClose={() => setShowMediaViewer(false)}
       />
@@ -554,20 +596,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  mainHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  stickySubHeader: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -588,19 +617,27 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  taskCategory: {
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  headerCenter: {
     flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
-    marginRight: 12,
+    textAlign: 'center',
   },
-  statusBadge: {
+  headerStatusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
   },
-  statusText: {
+  headerStatusText: {
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.white,
@@ -668,6 +705,22 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 22,
   },
+  locationSection: {
+    marginTop: 16,
+  },
+  locationDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 12,
+  },
+  locationLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -693,68 +746,119 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.primary,
   },
-  peopleSection: {
-    marginBottom: 0,
+  replyList: {
+    gap: 12,
   },
-  peopleSectionLabel: {
+  replyItem: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+  },
+  replyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  replyUserContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  replyUser: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  replyTimestamp: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+  },
+  replyMessage: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.text,
+    lineHeight: 20,
+  },
+  emptyReplies: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  emptyRepliesText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginTop: 12,
+  },
+  addReplyForm: {
+    marginTop: 16,
+  },
+  replyFormDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginBottom: 12,
+  },
+  addReplyLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  personInfo: {
+  replyInput: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: COLORS.text,
+    minHeight: 80,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  addReplyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
   },
-  personDetails: {
+  addReplyButtonDisabled: {
+    opacity: 0.5,
+  },
+  addReplyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  emptyMediaContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
   },
-  personName: {
+  emptyMediaText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 4,
+    color: COLORS.textSecondary,
+    marginTop: 16,
+    textAlign: 'center',
   },
-  personOffice: {
+  emptyMediaSubtext: {
     fontSize: 14,
     fontWeight: '400',
     color: COLORS.textSecondary,
-  },
-  peopleDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 16,
-  },
-  mediaSwitcher: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 12,
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  switcherButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-  },
-  switcherButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  switcherText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  switcherTextActive: {
-    color: COLORS.white,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   mediaGrid: {
     padding: SPACING.sm,
@@ -831,12 +935,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.textSecondary,
-  },
-  timelineDotStatus: {
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -902,29 +1000,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.white,
     textTransform: 'uppercase',
-  },
-  activityMessage: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: COLORS.text,
-    lineHeight: 20,
-  },
-  addReplyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.cardBackground,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    gap: 8,
-  },
-  addReplyText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.primary,
   },
   // Media Viewer Styles
   mediaViewerContainer: {
