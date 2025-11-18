@@ -12,7 +12,7 @@
  * - Navigation to task details and create task screens
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Header from '@/components/Header';
 import { COLORS, SPACING } from '@/theme';
 
@@ -217,9 +217,22 @@ function TaskCard({ task, onPress }: TaskCardProps) {
 }
 
 export default function TasksScreen() {
+  const params = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<TabName>('My Tasks');
   const [myTasks] = useState<Task[]>(MY_TASKS);
   const [assignedByMeTasks] = useState<Task[]>(ASSIGNED_BY_ME_TASKS);
+
+  // Handle deep linking to specific tab via URL parameter
+  useEffect(() => {
+    if (params.tab) {
+      const tabParam = params.tab as string;
+      if (tabParam === 'my-tasks') {
+        setActiveTab('My Tasks');
+      } else if (tabParam === 'assigned-by-me') {
+        setActiveTab('Assigned by Me');
+      }
+    }
+  }, [params.tab]);
 
   // Determine which tasks to display based on active tab
   const displayedTasks = activeTab === 'My Tasks' ? myTasks : assignedByMeTasks;
