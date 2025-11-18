@@ -558,6 +558,7 @@ export default function TaskDetailsScreen() {
       {/* Update Status Bottom Sheet */}
       <UpdateActivityBottomSheet
         visible={showStatusSheet}
+        complaintId={taskId || ''}
         currentStatus={taskStatus}
         onClose={() => setShowStatusSheet(false)}
         onSubmit={handleStatusUpdate}

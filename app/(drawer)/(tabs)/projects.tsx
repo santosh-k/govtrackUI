@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import Header from '@/components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   primary: '#2196F3',
@@ -137,6 +138,7 @@ const StatCard: React.FC<StatCardProps> = ({
 };
 
 export default function ProjectsDashboardScreen() {
+  const insets = useSafeAreaInsets();
   const navigateToProjectList = (filter: string) => {
     router.push({
       pathname: '/(drawer)/project-list',
@@ -145,7 +147,10 @@ export default function ProjectsDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top,
+      paddingBottom: insets.bottom
+    }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header title="Projects" />
 

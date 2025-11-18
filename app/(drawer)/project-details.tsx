@@ -262,7 +262,7 @@ export default function ProjectDetailsScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
 
-  const [activeTab, setActiveTab] = useState<TabName>('Overview');
+  //const [activeTab, setActiveTab] = useState<TabName>('Overview');
   const [projectStatus, setProjectStatus] = useState<ProjectStatus>('On Track');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState<ProjectStatus>('On Track');
@@ -315,6 +315,36 @@ export default function ProjectDetailsScreen() {
   const remainingCost = `₹${remainingCostRaw.toFixed(1)} Cr`;
   const budgetUtilizationPercentage = Math.round((expenditureRaw / totalCostRaw) * 100);
 
+  // Tab Layout
+  const [activeTab, setActiveTab] = useState<TabName>('Overview');
+
+  const tabs: TabName[] = ['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'];
+
+  const scrollRef = useRef<ScrollView>(null);
+  const screenWidth = Dimensions.get('window').width;
+  const tabScrollRef = useRef<ScrollView>(null);
+
+  const handleTabPress = (tab: TabName) => {
+  const index = tabs.indexOf(tab);
+  scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
+  setActiveTab(tab);
+  scrollTabIntoView(index);
+  }; 
+
+  const handleSwipeEnd = (e: any) => {
+    const newIndex = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+    setActiveTab(tabs[newIndex]);
+    scrollTabIntoView(newIndex);
+  };
+const scrollTabIntoView = (index: number) => {
+  const TAB_WIDTH = 100; // adjust if your tab width is wider/narrower
+  const offset = TAB_WIDTH * index - screenWidth / 2 + TAB_WIDTH / 2;
+
+  tabScrollRef.current?.scrollTo({
+    x: Math.max(0, offset),
+    animated: true,
+  });
+};
   // Initialize media items with mixed content
   useEffect(() => {
     const initialMedia: MediaItem[] = [
@@ -1458,6 +1488,7 @@ export default function ProjectDetailsScreen() {
 
       {/* Tab Navigator */}
       <ScrollView
+        ref={tabScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.tabBarContainer}
@@ -1467,7 +1498,7 @@ export default function ProjectDetailsScreen() {
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
-            onPress={() => setActiveTab(tab)}
+            onPress={() => handleTabPress(tab)}
             activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
@@ -1478,11 +1509,29 @@ export default function ProjectDetailsScreen() {
       </ScrollView>
 
       {/* Tab Content */}
-      {activeTab === 'Overview' && renderOverviewTab()}
-      {activeTab === 'Media' && renderMediaTab()}
-      {activeTab === 'Inspections' && renderInspectionsTab()}
-      {activeTab === 'Bottlenecks' && renderBottlenecksTab()}
-      {activeTab === 'Activity' && renderActivityTab()}
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleSwipeEnd}
+      >
+        <View style={{ width: screenWidth }}>
+          {renderOverviewTab()}
+        </View>
+        <View style={{ width: screenWidth }}>
+          {renderMediaTab()}
+        </View>
+        <View style={{ width: screenWidth }}>
+          {renderInspectionsTab()}
+        </View>
+        <View style={{ width: screenWidth }}>
+          {renderBottlenecksTab()}
+        </View>
+        <View style={{ width: screenWidth }}>
+          {renderActivityTab()}
+        </View>
+      </ScrollView>
 
       {/* Speed Dial FAB - Show on Overview, Media, Inspections, and Bottlenecks tabs */}
       {(activeTab === 'Overview' || activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (

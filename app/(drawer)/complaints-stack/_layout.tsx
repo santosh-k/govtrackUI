@@ -10,6 +10,7 @@ export default function ComplaintsStackLayout() {
       <Stack.Screen name="select-department" />
       <Stack.Screen name="assign-complaint"/>
       <Stack.Screen name="Complaint-searchable-selection"/>
+      <Stack.Screen name="Complaint-Search"/>
     </Stack>
   );
 }

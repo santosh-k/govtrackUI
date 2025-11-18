@@ -22,15 +22,25 @@ const COLORS = {
   primary: '#FF9800',
   inputBackground: '#F8F8F8',
 };
+export const extractSearchData = (text?: string): string => {
+  if (!text) return "";
 
+  return [
+    text.match(/ComplaintName:\s*([^,]+)/)?.[1],
+    text.match(/Complaint No:\s*([^,]+)/)?.[1],
+    text.match(/Location:\s*([^,]+)/)?.[1],
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
 export default function SearchComplaintScreen() {
   const [complaintName, setComplaintName] = useState('');
   const [complaintNumber, setComplaintNumber] = useState('');
   const [location, setLocation] = useState('');
 
   const goBack = () => {
-    // Use replace to ensure we return to the dashboard directly
-    router.replace('/(drawer)/(tabs)/complaints');
+    // Simply go back to previous screen (dashboard)
+    router.back();
   };
 
   const handleFindComplaints = () => {
@@ -52,9 +62,12 @@ export default function SearchComplaintScreen() {
 
     // Replace the search screen with the complaints list so the stack
     // doesn't retain the search screen and cause odd back navigation.
-    router.replace({
+    console.log('Selected Serach Data ==', filterDisplay)
+    const searchText = extractSearchData(filterDisplay)
+    // Use push to navigate to complaints list
+    router.push({
       pathname: '/complaints-stack/complaints-list',
-      params: { filter: filterDisplay },
+      params: { searchData: searchText },
     });
   };
 

@@ -91,7 +91,7 @@ class ApiManager {
         const msg = data.error.message || 'Token expired';
         throw new Error(msg);
       }
-
+      console.log("Attemt Token Refresh")
       // Attempt refresh
       try {
         await this.refreshToken();
@@ -171,7 +171,7 @@ class ApiManager {
       });
 
       const data = await response.json();
-
+      console.log('Refresh Token Response = ', data)
       if (response.ok && data.success) {
         store.dispatch(
           refreshTokenSuccess({

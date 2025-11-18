@@ -108,11 +108,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
           <View
             style={[
               styles.progressBarFill,
-              { width: `${project.progress}%`, backgroundColor: statusColors.text },
+              { width: `${Math.max(0, Math.min(100, project.progress || 0))}%`, backgroundColor: statusColors.text },
             ]}
           />
         </View>
-        <Text style={styles.progressText}>{project.progress}%</Text>
+        <Text style={styles.progressText}>{Math.max(0, Math.min(100, project.progress || 0))}%</Text>
       </View>
 
       {/* Financials Section - 2x2 Grid */}
@@ -147,13 +147,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
         <Text style={styles.datesText}>
           Start: {project.startDate} | End: {project.endDate}
         </Text>
-        <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.actionButton}
             onPress={onPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
-        </TouchableOpacity>
+          <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
+
+        </TouchableOpacity>*/}
+        <View style={styles.detailsIconContainer}>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.saffron} />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -674,4 +678,12 @@ const styles = StyleSheet.create({
         },
       }),
     },
+    detailsIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
 });

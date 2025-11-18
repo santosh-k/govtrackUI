@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  ProgressBarAndroid,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -304,7 +303,7 @@ export default function ComplaintsScreen() {
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
     const status = statusFilter || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
-    const filter =  params.dateFilter as string || 'today'
+    const filter =  params.dateFilter as string || 'this_month'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
     console.log('fetchComplaint Api Called')
@@ -332,6 +331,12 @@ export default function ComplaintsScreen() {
 
   // Fetch on mount and when filter changes
   useEffect(() => {
+    const searchData = params.searchData as string || undefined
+    if (searchData) {
+    dispatch(setSearchQuery(searchData));
+    setSearchQueryLocal(searchData);   
+    handleFetchComplaints(1, undefined, false);  // <-- ensure API runs
+  }
     if (params.filter) {
       handleFetchComplaints(1, undefined, false);
     }
@@ -561,7 +566,7 @@ export default function ComplaintsScreen() {
     // Fetch complaints with new filters (reset to page 1)
     // Use tempSelected*Id directly because React state updates are async
     const stats_filter = getApiStatus(params.filter as string) || 'total';
-    const filter = params.dateFilter as string || 'today'
+    const filter = params.dateFilter as string || 'this_month'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
     dispatch(
@@ -776,7 +781,10 @@ export default function ComplaintsScreen() {
       {loading && (
         <View style={styles.loadingContainer}>
           {Platform.OS === 'android' ? (
-            <ProgressBarAndroid styleAttr="Horizontal" indeterminate={true} color={COLORS.primary} />
+            <View style={styles.loadingProgress}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Loading complaints...</Text>
+            </View>
           ) : (
             <View style={styles.loadingProgress}>
               <ActivityIndicator size="small" color={COLORS.primary} />

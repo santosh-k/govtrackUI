@@ -24,6 +24,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Header from '@/components/Header';
 import { COLORS, SPACING } from '@/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 // Types
 interface Task {
@@ -186,6 +188,7 @@ function TaskCard({ task, onPress }: TaskCardProps) {
 }
 
 export default function TasksScreen() {
+  const insets = useSafeAreaInsets()
   const [tasks] = useState<Task[]>(MOCK_TASKS);
 
   const handleTaskPress = (task: Task) => {
@@ -204,7 +207,10 @@ export default function TasksScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom
+        }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header title="My Tasks" />
 

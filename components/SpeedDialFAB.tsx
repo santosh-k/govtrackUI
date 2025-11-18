@@ -25,25 +25,32 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
   const [animation] = useState(new Animated.Value(0));
   const [rotateAnimation] = useState(new Animated.Value(0));
 
-  const toggleMenu = () => {
-    const toValue = isOpen ? 0 : 1;
+      const toggleMenu = () => {
+        const toValue = isOpen ? 0 : 1;
 
-    Animated.parallel([
-      Animated.spring(animation, {
-        toValue,
-        friction: 5,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnimation, {
-        toValue,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
+        Animated.parallel([
+          Animated.spring(animation, {
+            toValue,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnimation, {
+            toValue,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Reset rotation cleanly AFTER animation is done
+          if (!isOpen) {
+            rotateAnimation.setValue(1);
+          } else {
+            rotateAnimation.setValue(0);
+          }
+        });
 
-    setIsOpen(!isOpen);
-  };
+        setIsOpen(!isOpen);
+      };
 
   const handleActionPress = (action: SpeedDialAction) => {
     toggleMenu();
@@ -54,7 +61,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
 
   const rotation = rotateAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '45deg'],
+    outputRange: ['0deg', '90deg'],
   });
 
   const overlayOpacity = animation.interpolate({
@@ -133,7 +140,7 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
         activeOpacity={0.8}
       >
         <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Ionicons name="add" size={24} color={COLORS.white} />
+          <Ionicons name={isOpen ? "close" : "add"} size={24} color={COLORS.white} />
         </Animated.View>
       </TouchableOpacity>
     </>

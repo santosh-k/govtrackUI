@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { DrawerActions, useNavigation,useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#F8F9FA',
@@ -81,6 +82,8 @@ function StatCard({ title, value, icon, backgroundColor, iconColor, datFilter, o
 }
 
 export default function ComplaintDashboardScreen() {
+
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('today');
   const [dateRange, setDateRange] = useState('01 Jan - 31 Jan');
@@ -93,12 +96,8 @@ export default function ComplaintDashboardScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [disableSearch, setDisableSearch] = useState(false);
-  const [readyForPress, setReadyForPress] = useState(true);
-  const [navigationLock, setNavigationLock] = useState(false);
-   const isFocused = useIsFocused();
-   const [navigationLocked, setNavigationLocked] = useState(false);
-   const [searchActive, setSearchActive] = useState(false);
+  
+   
 
   // Map fetched stats or use defaults
   const stats = compStats ? {
@@ -196,9 +195,6 @@ export default function ComplaintDashboardScreen() {
   };
 
   const handleStatCardPress = useCallback((filterType: string, title: string) => {
-  if (navigationLocked) return; // prevent if another navigation is in progress
-  setNavigationLocked(true);
-
   let dateFilter: string;
   if (selectedFilter === 'month') dateFilter = 'this_month';
   else if (selectedFilter === 'week') dateFilter = 'this_week';
@@ -217,6 +213,7 @@ export default function ComplaintDashboardScreen() {
     params.endDate = formatDateForApi(selectedEndDate);
   }
 
+  // Use push to navigate to complaints list
   router.push({
     pathname: '/complaints-stack/complaints-list',
     params,
@@ -224,8 +221,8 @@ export default function ComplaintDashboardScreen() {
 
   console.log("Pushed to Listing Screen");
 
-  setTimeout(() => setNavigationLocked(false), 500);
-}, [selectedFilter, selectedStartDate, selectedEndDate, navigationLocked]);
+  
+}, [selectedFilter, selectedStartDate, selectedEndDate]);
 
 
 
@@ -326,7 +323,11 @@ export default function ComplaintDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{
+      paddingTop: insets.top,
+      paddingBottom: insets.bottom
+      
+    }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Header */}
@@ -420,14 +421,8 @@ export default function ComplaintDashboardScreen() {
           style={styles.searchBar}
           activeOpacity={0.7}
           onPress={() => {
-            if (navigationLocked) return; // block if another navigation is in progress
-            setNavigationLocked(true);     // lock navigation
-
-            router.push('/search-stack/Complaint-Search');
+            router.push('/(drawer)/Complaint-Search');
             console.log("Pushed Search Screen");
-
-            // Unlock after a small delay to allow returning from navigation
-            setTimeout(() => setNavigationLocked(false), 500);
           }}
         >
           <Ionicons name="search" size={20} color={COLORS.textSecondary} />
