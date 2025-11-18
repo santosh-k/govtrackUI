@@ -35,8 +35,8 @@ const menuItems: MenuItem[] = [
   { id: 'home', label: 'Home', icon: 'home-outline', route: '/(drawer)/(tabs)/dashboard' },
   { id: 'complaints', label: 'Complaints', icon: 'document-text-outline', route: '/(drawer)/(tabs)/complaints' },
   { id: 'projects', label: 'Projects', icon: 'folder-outline', route: '/(drawer)/(tabs)/projects' },
-  { id: 'my-task', label: 'My Task', icon: 'checkmark-done-outline', route: '/(drawer)/my-task' },
-  { id: 'assign-task', label: 'Assign Task', icon: 'add-circle-outline', route: '/(drawer)/assign-task' },
+  { id: 'my-task', label: 'My Task', icon: 'checkmark-done-outline', route: '/(drawer)/(tabs)/tasks?tab=my-tasks' },
+  { id: 'assign-task', label: 'Assign Task', icon: 'add-circle-outline', route: '/(drawer)/(tabs)/tasks?tab=assigned-by-me' },
   { id: 'my-profile', label: 'My Profile', icon: 'person-outline', route: '/(drawer)/profile' },
   { id: 'settings', label: 'Settings', icon: 'settings-outline', route: '/(drawer)/settings' },
 ];
