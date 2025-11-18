@@ -53,8 +53,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const DonutChart: React.FC<DonutChartProps> = ({ percentage, color, label }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
-  const size = 120;
-  const strokeWidth = 12;
+  const size = 96;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -125,7 +125,7 @@ const StatCard: React.FC<StatCardProps> = ({
       activeOpacity={0.7}
     >
       {/* Top: Minimalist icon with unique color */}
-      <Ionicons name={icon} size={48} color={iconColor} />
+      <Ionicons name={icon} size={40} color={iconColor} />
 
       {/* Middle: Large bold number */}
       <Text style={styles.statValue}>{value}</Text>
@@ -171,12 +171,12 @@ export default function ProjectsDashboardScreen() {
           <Text style={styles.sectionTitle}>Project Categories</Text>
           <View style={styles.gridContainer}>
             <StatCard
-              title="Construction Work"
-              value="24"
-              icon="construct-outline"
-              backgroundColor="#D8F3DC"
-              iconColor="#2E7D32"
-              onPress={() => navigateToProjectList('Construction Work')}
+              title="Total Projects"
+              value="54"
+              icon="apps-outline"
+              backgroundColor="#D4E9F7"
+              iconColor="#1976D2"
+              onPress={() => navigateToProjectList('All Projects')}
             />
             <StatCard
               title="Maintenance Work"
@@ -187,6 +187,15 @@ export default function ProjectsDashboardScreen() {
               onPress={() => navigateToProjectList('Maintenance Work')}
             />
             <StatCard
+              title="Construction Work"
+              value="24"
+              icon="construct-outline"
+              backgroundColor="#D8F3DC"
+              iconColor="#2E7D32"
+              onPress={() => navigateToProjectList('Construction Work')}
+            />
+            
+            <StatCard
               title="Other Works"
               value="12"
               icon="cube-outline"
@@ -194,14 +203,7 @@ export default function ProjectsDashboardScreen() {
               iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
             />
-            <StatCard
-              title="Total Projects"
-              value="54"
-              icon="apps-outline"
-              backgroundColor="#D4E9F7"
-              iconColor="#1976D2"
-              onPress={() => navigateToProjectList('All Projects')}
-            />
+            
           </View>
         </View>
 
@@ -282,7 +284,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
   financialCard: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
-    padding: 24,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -365,14 +367,14 @@ const styles = StyleSheet.create({
   statCard: {
     width: cardWidth,
     borderRadius: 16,
-    padding: 20,
+    padding: 12,
     marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 160,
+    minHeight: 90,
   },
   statValue: {
-    fontSize: 40,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.text,
     marginTop: 12,
@@ -385,6 +387,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomSpacer: {
-    height: 24,
+    height: 16,
   },
 });

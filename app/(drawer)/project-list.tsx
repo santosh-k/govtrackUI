@@ -9,6 +9,7 @@ import {
   FlatList,
   TextInput,
   Keyboard,
+  Platform,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
   text: '#1A1A1A',
+  saffron: '#FF9800',
   textSecondary: '#666666',
   textLight: '#999999',
   border: '#E0E0E0',
@@ -145,10 +147,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
         <Text style={styles.datesText}>
           Start: {project.startDate} | End: {project.endDate}
         </Text>
-        <View style={styles.viewDetailsContainer}>
-          <Text style={styles.viewDetailsText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.text} />
-        </View>
+        <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onPress}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -650,4 +655,23 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginRight: 4,
   },
+  actionButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: COLORS.saffron,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...Platform.select({
+        ios: {
+          shadowColor: COLORS.saffron,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
+    },
 });
