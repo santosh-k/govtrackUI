@@ -1,12 +1,15 @@
 /**
- * Tasks Screen - Main Task List View
+ * Tasks Screen - Main Task List View with Tabs
  *
- * Displays a scrollable list of task cards with:
- * - Task ID and Status Badge
- * - Task Category (main title)
- * - Assigned By name and Office
- * - Assignment Date and Time
- * - Floating Action Button to create new task
+ * Displays a two-tabbed interface:
+ * - My Tasks: Tasks assigned to the user
+ * - Assigned by Me: Tasks the user has assigned to others
+ *
+ * Features:
+ * - Tab navigation with clean, professional styling
+ * - Reusable TaskCard component for both tabs
+ * - Floating Action Button visible on both tabs
+ * - Navigation to task details and create task screens
  */
 
 import React, { useState } from 'react';
@@ -22,7 +25,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import Header from '@/components/Header';
 import { COLORS, SPACING } from '@/theme';
 
 // Types
@@ -38,8 +40,10 @@ interface Task {
   status: 'Pending' | 'In Progress' | 'Completed' | 'Overdue';
 }
 
-// Sample data
-const MOCK_TASKS: Task[] = [
+type TabName = 'My Tasks' | 'Assigned by Me';
+
+// Sample data - Tasks assigned TO the user
+const MY_TASKS: Task[] = [
   {
     id: '1',
     taskId: 'TSK-2024-001',
@@ -84,11 +88,15 @@ const MOCK_TASKS: Task[] = [
     status: 'Overdue',
     department: 'Admin Dept.',
   },
+];
+
+// Sample data - Tasks assigned BY the user to others
+const ASSIGNED_BY_ME_TASKS: Task[] = [
   {
     id: '5',
     taskId: 'TSK-2024-005',
     category: 'Equipment Maintenance',
-    assignedBy: 'Suresh Patel',
+    assignedBy: 'You',
     office: 'Mechanical Wing',
     date: '12 Jan 2024',
     time: '03:30 PM',
@@ -99,12 +107,34 @@ const MOCK_TASKS: Task[] = [
     id: '6',
     taskId: 'TSK-2024-006',
     category: 'Structural Assessment',
-    assignedBy: 'Er Anil Mehta',
+    assignedBy: 'You',
     office: 'Structural Engineering',
     date: '11 Jan 2024',
     time: '01:00 PM',
     status: 'Pending',
     department: 'Structural Dept.',
+  },
+  {
+    id: '7',
+    taskId: 'TSK-2024-007',
+    category: 'Electrical Safety Check',
+    assignedBy: 'You',
+    office: 'Electrical Division',
+    date: '09 Jan 2024',
+    time: '09:15 AM',
+    status: 'Completed',
+    department: 'Electrical Dept.',
+  },
+  {
+    id: '8',
+    taskId: 'TSK-2024-008',
+    category: 'Water Pipeline Inspection',
+    assignedBy: 'You',
+    office: 'Water Resources',
+    date: '08 Jan 2024',
+    time: '02:00 PM',
+    status: 'In Progress',
+    department: 'Water Dept.',
   },
 ];
 
@@ -186,7 +216,12 @@ function TaskCard({ task, onPress }: TaskCardProps) {
 }
 
 export default function TasksScreen() {
-  const [tasks] = useState<Task[]>(MOCK_TASKS);
+  const [activeTab, setActiveTab] = useState<TabName>('My Tasks');
+  const [myTasks] = useState<Task[]>(MY_TASKS);
+  const [assignedByMeTasks] = useState<Task[]>(ASSIGNED_BY_ME_TASKS);
+
+  // Determine which tasks to display based on active tab
+  const displayedTasks = activeTab === 'My Tasks' ? myTasks : assignedByMeTasks;
 
   const handleTaskPress = (task: Task) => {
     router.push({
@@ -205,18 +240,45 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <Header title="My Tasks" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
+      {/* Static Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Tasks</Text>
+      </View>
+
+      {/* Tab Navigator */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'My Tasks' && styles.tabActive]}
+          onPress={() => setActiveTab('My Tasks')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'My Tasks' && styles.tabTextActive]}>
+            My Tasks
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'Assigned by Me' && styles.tabActive]}
+          onPress={() => setActiveTab('Assigned by Me')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'Assigned by Me' && styles.tabTextActive]}>
+            Assigned by Me
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Task List */}
       <FlatList
-        data={tasks}
+        data={displayedTasks}
         renderItem={renderTask}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Visible on both tabs */}
       <TouchableOpacity
         style={styles.fab}
         onPress={handleCreateTask}
@@ -233,6 +295,54 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  tabTextActive: {
+    color: COLORS.primary,
   },
   listContent: {
     padding: SPACING.md,
