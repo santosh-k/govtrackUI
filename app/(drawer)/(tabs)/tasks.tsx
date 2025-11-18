@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import Header from '@/components/Header';
 import { COLORS, SPACING } from '@/theme';
 
 // Types
@@ -240,12 +241,10 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Static Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tasks</Text>
-      </View>
+      {/* Header with Hamburger Menu */}
+      <Header title="Tasks" />
 
       {/* Tab Navigator */}
       <View style={styles.tabBar}>
@@ -295,30 +294,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    backgroundColor: COLORS.cardBackground,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
-    textAlign: 'center',
   },
   tabBar: {
     flexDirection: 'row',
