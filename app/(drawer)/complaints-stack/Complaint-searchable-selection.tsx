@@ -25,7 +25,7 @@ const COLORS = {
   primary: '#FF9800',
   border: '#E0E0E0',
   divider: '#EEEEEE',
-  hover: '#F9F9F9',
+  hover: '#F9F9F9'
 };
 
 interface Item {

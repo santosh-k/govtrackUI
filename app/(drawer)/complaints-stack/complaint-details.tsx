@@ -253,7 +253,7 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
             onPress={() => handleSwipe('left')}
             activeOpacity={0.8}
           >
-            <Ionicons name="chevron-forward" size={40} color="#FFFFFF" />
+          <Ionicons name="chevron-forward" size={40} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
@@ -710,7 +710,9 @@ export default function ComplaintDetailsScreen() {
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Contact Number</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.contactNumber}</Text>
+              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.contactNumber
+              ? '*******' + complaintData.reportedBy.contactNumber.slice(-3)
+              : ''}</Text>
             </View>
             <View style={styles.reportedByField}>
               <Text style={styles.reportedByLabel}>Address</Text>

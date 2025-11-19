@@ -31,7 +31,7 @@ export const extractSearchData = (text?: string): string => {
     text.match(/Location:\s*([^,]+)/)?.[1],
   ]
     .filter(Boolean)
-    .join(", ");
+    .join("|");
 };
 export default function SearchComplaintScreen() {
   const [complaintName, setComplaintName] = useState('');
@@ -100,7 +100,7 @@ export default function SearchComplaintScreen() {
 
           {/* TEXT INPUT 1 */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Project Name</Text>
+            <Text style={styles.inputLabel}>Complaint Name</Text>
             <TextInput
               style={styles.textInput}
               placeholder="Enter Complaint Name"

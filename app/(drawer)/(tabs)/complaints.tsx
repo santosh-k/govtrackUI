@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { DrawerActions, useNavigation,useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ComplaintGroup from '../complaints-stack/complaint-group';
 
 const COLORS = {
   background: '#F8F9FA',
@@ -69,7 +70,7 @@ function StatCard({ title, value, icon, backgroundColor, iconColor, datFilter, o
     >
       <View style={styles.cardContent}>
         {/* Top: Line-art icon */}
-        <Ionicons name={icon} size={48} color={iconColor} />
+        <Ionicons name={icon} size={28} color={iconColor} />
 
         {/* Middle: Large bold number */}
         <Text style={styles.statNumber}>{value.toLocaleString()}</Text>
@@ -341,8 +342,18 @@ export default function ComplaintDashboardScreen() {
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Complaints Dashboard</Text>
-
         <View style={styles.headerSpacer} />
+       {/* Search Entry Point */}
+        <TouchableOpacity
+          style={styles.searchBar}
+          activeOpacity={0.7}
+          onPress={() => {
+            router.push('/Complaint-Search');
+            console.log("Pushed Search Screen");
+          }}
+        >
+          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Horizontal Filter Pills */}
@@ -416,20 +427,7 @@ export default function ComplaintDashboardScreen() {
           <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
         </TouchableOpacity>
       </ScrollView>
-       {/* Search Entry Point */}
-        <TouchableOpacity
-          style={styles.searchBar}
-          activeOpacity={0.7}
-          onPress={() => {
-            router.push('/(drawer)/Complaint-Search');
-            console.log("Pushed Search Screen");
-          }}
-        >
-          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
-          <Text style={styles.searchPlaceholder}>
-            Search by Complaint Name, ID, or Location...
-          </Text>
-        </TouchableOpacity>
+       
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -461,17 +459,6 @@ export default function ComplaintDashboardScreen() {
           />
 
           <StatCard
-            title="Closed"
-            value={stats.closed}
-            icon="close-circle-outline"
-            backgroundColor={COLORS.pastelPeach}
-            iconColor={COLORS.iconPeach}
-            filterType="closed"
-            datFilter={selectedFilter}
-            onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
-          />
-
-          <StatCard
             title="Pending"
             value={stats.pending}
             icon="time-outline"
@@ -494,6 +481,16 @@ export default function ComplaintDashboardScreen() {
           />
 
           <StatCard
+            title="Closed"
+            value={stats.closed}
+            icon="close-circle-outline"
+            backgroundColor={COLORS.pastelPeach}
+            iconColor={COLORS.iconPeach}
+            filterType="closed"
+            datFilter={selectedFilter}
+            onPress={() => handleStatCardPress('closed', 'Closed Complaints')}
+          />
+          <StatCard
             title="Completed by You"
             value={stats.completedByYou}
             icon="checkmark-done-outline"
@@ -503,7 +500,6 @@ export default function ComplaintDashboardScreen() {
             datFilter={selectedFilter}
             onPress={() => handleStatCardPress('completedByYou', 'Completed by You')}
           />
-
           <StatCard
             title="Assigned by You"
             value={stats.assignedByYou}
@@ -515,6 +511,7 @@ export default function ComplaintDashboardScreen() {
             onPress={() => handleStatCardPress('assignedByYou', 'Assigned by You')}
           />
         </View>
+       <ComplaintGroup params={{ fromDashboard: 'true', cityId: 99 }} />
       </ScrollView>
 
       {/* Calendar Modal */}
@@ -661,13 +658,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    height: 68, // match container height
+    flexGrow: 0,
   },
   filterPillsContainer: {
-    paddingHorizontal: 6,
-    paddingTop: 8,
-    paddingBottom: 24,
-    gap: 8,
-  },
+     paddingHorizontal: 6,
+     paddingTop: 8,
+     paddingBottom: 8,
+     gap: 8,
+     height: 56,   // ← ADD THIS (choose any height you want)
+     alignItems: 'center', // optional: vertical centering
+},
   filterPill: {
     paddingVertical: 8,
     paddingHorizontal: 18,
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 40,
+    minHeight: 32,
   },
   filterPillActive: {
     backgroundColor: COLORS.primary,
@@ -701,7 +702,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 24,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -709,7 +710,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   statCard: {
-    width: '47%',
+    width: '30%',
     borderRadius: 16,
     ...Platform.select({
       ios: {
@@ -724,24 +725,24 @@ const styles = StyleSheet.create({
     }),
   },
   cardContent: {
-    paddingVertical: 24,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 6,
   },
   statNumber: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -1,
   },
   statTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   // Calendar Modal Styles
   modalOverlay: {

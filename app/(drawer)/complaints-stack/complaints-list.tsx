@@ -62,6 +62,7 @@ interface Complaint {
   id: string;
   category: string;
   department: string;
+  serviceChild: string;
   location: string;
   status: 'Open' | 'In Progress' | 'Resolved' | 'Closed' | string;
   sla: 'Breached' | 'Nearing' | 'On Track' | string;
@@ -69,6 +70,7 @@ interface Complaint {
   hasPhotos?: boolean;
   hasVideos?: boolean;
   hasDocuments?: boolean;
+  zone: string | undefined;
 }
 
 /*const SAMPLE_COMPLAINTS: Complaint[] = [
@@ -187,16 +189,20 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
     >
       {/* Top Section - ID (left) and Status Badge (right) */}
       <View style={styles.cardTopRow}>
-        <Text style={styles.complaintId}>{complaint.id}</Text>
+       {/*  <Text style={styles.complaintId}>{complaint.id}</Text> */}
+        <Text style={styles.complaintCategory} numberOfLines={1}>
+            {complaint.department + (complaint?.zone ? ` ${complaint.zone}` : '')}
+          </Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(complaint.status) }]}>
           <Text style={styles.statusBadgeText}>{complaint.status}</Text>
         </View>
       </View>
-
       {/* Main Body - Category and Location */}
       <View style={styles.cardMainBody}>
-        <Text style={styles.complaintCategory}>
-          {complaint.category}
+        <Text style={styles.complaintSubCategory}>
+          {complaint.serviceChild
+            ? `${complaint.category}/${complaint.serviceChild}`
+            : complaint.category}
         </Text>
         <View style={styles.locationContainer}>
           <Ionicons name="location-outline" size={16} color={COLORS.primary} />
@@ -224,20 +230,21 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
             </View>
           )}
           {/* Department Text Below */}
-          <Text style={styles.complaintDepartment} numberOfLines={2}>
-            {complaint.department}
-          </Text>
+          
         </View>
 
-        <TouchableOpacity
+       {/*  <TouchableOpacity
           style={styles.actionButton}
           onPress={onPress}
           activeOpacity={0.8}
         >
           <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+          <View style={styles.detailsIconContainer}>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.saffron} />
+          </View>
       </View>
-    </TouchableOpacity>
+    </TouchableOpacity> 
   );
 }
 
@@ -256,6 +263,7 @@ export default function ComplaintsScreen() {
   // Local state
   const [searchQuery, setSearchQueryLocal] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [currentStatusParam, setCurrentStatusParam] = useState<string>('');
 
   // Check if navigation came from dashboard
   const fromDashboard = params.fromDashboard === 'true';
@@ -299,9 +307,25 @@ export default function ComplaintsScreen() {
     }
   };
 
+  // Map UI status labels to API status values
+  const mapLabelToApiStatus = (label: string): string => {
+    switch (label) {
+      case 'Open':
+        return 'submitted';
+      case 'In Progress':
+        return 'in_progress';
+      case 'Resolved':
+        return 'resolved';
+      case 'Closed':
+        return 'closed';
+      default:
+        return label.toLowerCase();
+    }
+  };
+
   // Fetch complaints from Redux
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
-    const status = statusFilter || '';
+    const status = typeof statusFilter === 'string' && statusFilter !== undefined ? statusFilter : currentStatusParam || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter =  params.dateFilter as string || 'this_month'
     const start_date = params.start_date as string 
@@ -335,10 +359,10 @@ export default function ComplaintsScreen() {
     if (searchData) {
     dispatch(setSearchQuery(searchData));
     setSearchQueryLocal(searchData);   
-    handleFetchComplaints(1, undefined, false);  // <-- ensure API runs
+    handleFetchComplaints(1, currentStatusParam, false);  // <-- ensure API runs
   }
     if (params.filter) {
-      handleFetchComplaints(1, undefined, false);
+      handleFetchComplaints(1, currentStatusParam, false);
     }
   }, [params.filter, params.dateFilter, params.start_date, params.end_date]);
 
@@ -346,7 +370,7 @@ export default function ComplaintsScreen() {
   useFocusEffect(
     useCallback(() => {
       if (params.filter) {
-        handleFetchComplaints(1, undefined, false);
+        handleFetchComplaints(1, currentStatusParam, false);
       }
     }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
   );
@@ -395,13 +419,35 @@ export default function ComplaintsScreen() {
       id: complaint.id.toString(),
       category: complaint.complaintOption?.option_name || complaint.service?.service_name_en || 'Unknown',
       department: complaint.service?.service_name_en || 'Unknown Department',
+      serviceChild: complaint.serviceChild?.service_name_en || '',
       location: complaint.location_address || 'Unknown Location',
-      status: complaint.status_display || complaint.status || 'Open',
+      // Normalize status to human-readable labels used by the UI filters
+      status: (
+        (complaint.status_display && String(complaint.status_display)) ||
+        (function () {
+          const s = String(complaint.status || '').toLowerCase();
+          switch (s) {
+            case 'in_progress':
+              return 'In Progress';
+            case 'submitted':
+            case 'open':
+              return 'Open';
+            case 'resolved':
+              return 'Resolved';
+            case 'closed':
+              return 'Closed';
+            default:
+              // fallback to original status or 'Open'
+              return complaint.status || 'Open';
+          }
+        })()
+      ),
       sla: 'On Track', // SLA status from API if available
       createdAt: new Date(complaint.created_at).toLocaleDateString(),
       hasPhotos: !!complaint.photos, // Check if complaint has photos
       hasVideos: !!complaint.videos, // Check if complaint has videos
       hasDocuments: !!complaint.documents, // Check if complaint has documents
+      zone: complaint.zone,
     }));
   }, [complaints]);
 
@@ -569,11 +615,18 @@ export default function ComplaintsScreen() {
     const filter = params.dateFilter as string || 'this_month'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
+    // Convert tempSelectedStatuses (labels) to API status param (comma-separated)
+    const statusParam = tempSelectedStatuses && tempSelectedStatuses.length > 0
+      ? tempSelectedStatuses.map(mapLabelToApiStatus).join(',')
+      : '';
+
+    // Persist the status param so subsequent automatic fetches use it
+    setCurrentStatusParam(statusParam);
     dispatch(
       fetchComplaints({
         stats_filter,
         filter,
-        status: '',
+        status: statusParam,
         page: 1,
         limit: 10,
         search: searchQuery,
@@ -598,24 +651,103 @@ export default function ComplaintsScreen() {
   };
 
   const handleRemoveFilter = (filterType: 'status' | 'category' | 'zone' | 'department', value?: string) => {
+    // Compute new filter values synchronously so we can immediately refetch
+    const stats_filter = getApiStatus(params.filter as string) || 'total';
+    const filter = params.dateFilter as string || 'this_month'
+    const start_date = params.start_date as string 
+    const end_date = params.end_date as string
+
     switch (filterType) {
-      case 'status':
-        if (value) {
-          setSelectedStatuses((prev) => prev.filter((s) => s !== value));
-        }
+      case 'status': {
+        // Remove the status label and compute new status param
+        const newSelectedStatuses = value ? selectedStatuses.filter((s) => s !== value) : [...selectedStatuses];
+        setSelectedStatuses(newSelectedStatuses);
+        const statusParam = newSelectedStatuses && newSelectedStatuses.length > 0
+          ? newSelectedStatuses.map(mapLabelToApiStatus).join(',')
+          : '';
+        // Persist the status param so subsequent fetches use it
+        setCurrentStatusParam(statusParam);
+        dispatch(
+          fetchComplaints({
+            stats_filter,
+            filter,
+            status: statusParam,
+            page: 1,
+            limit: 10,
+            search: searchQuery,
+            isInfiniteScroll: false,
+            category_id: selectedCategoryId ?? undefined,
+            zone_id: selectedZoneId ?? undefined,
+            department_id: selectedDepartmentId ?? undefined,
+            start_date: start_date ?? undefined,
+            end_date: end_date ?? undefined,
+          })
+        );
         break;
-      case 'category':
+      }
+      case 'category': {
         setSelectedCategory('');
         setSelectedCategoryId(null);
+        dispatch(
+          fetchComplaints({
+            stats_filter,
+            filter,
+            status: currentStatusParam || '',
+            page: 1,
+            limit: 10,
+            search: searchQuery,
+            isInfiniteScroll: false,
+            category_id: undefined,
+            zone_id: selectedZoneId ?? undefined,
+            department_id: selectedDepartmentId ?? undefined,
+            start_date: start_date ?? undefined,
+            end_date: end_date ?? undefined,
+          })
+        );
         break;
-      case 'zone':
+      }
+      case 'zone': {
         setSelectedZone('');
         setSelectedZoneId(null);
+        dispatch(
+          fetchComplaints({
+            stats_filter,
+            filter,
+            status: currentStatusParam || '',
+            page: 1,
+            limit: 10,
+            search: searchQuery,
+            isInfiniteScroll: false,
+            category_id: selectedCategoryId ?? undefined,
+            zone_id: undefined,
+            department_id: selectedDepartmentId ?? undefined,
+            start_date: start_date ?? undefined,
+            end_date: end_date ?? undefined,
+          })
+        );
         break;
-      case 'department':
+      }
+      case 'department': {
         setSelectedDepartment('');
         setSelectedDepartmentId(null);
+        dispatch(
+          fetchComplaints({
+            stats_filter,
+            filter,
+            status: currentStatusParam || '',
+            page: 1,
+            limit: 10,
+            search: searchQuery,
+            isInfiniteScroll: false,
+            category_id: selectedCategoryId ?? undefined,
+            zone_id: selectedZoneId ?? undefined,
+            department_id: undefined,
+            start_date: start_date ?? undefined,
+            end_date: end_date ?? undefined,
+          })
+        );
         break;
+      }
     }
   };
 
@@ -998,7 +1130,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     borderRadius: 16,
     padding: 18,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...Platform.select({
@@ -1017,7 +1149,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 8,
   },
   complaintId: {
     fontSize: 12,
@@ -1044,6 +1176,13 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
     color: COLORS.text,
+    marginBottom: 4,
+    lineHeight: 26,
+  },
+  complaintSubCategory: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
     marginBottom: 8,
     lineHeight: 26,
   },
@@ -1064,6 +1203,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 8,
+  },
+  detailsIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.background,
+        justifyContent: 'center',
+        alignItems: 'center',
   },
   footerLeftBlock: {
     flex: 1,

@@ -8,7 +8,7 @@
  * - History Tab: Read-only timeline (no reply input)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,9 @@ import {
   Alert,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Keyboard,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,6 +35,8 @@ import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import AddMediaSheet from '@/components/AddMediaSheet';
 import Toast from '@/components/Toast';
 import { Video, ResizeMode } from 'expo-av';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 
 // Types
 type TabName = 'Details' | 'Media' | 'History';
@@ -239,6 +244,30 @@ export default function TaskDetailsScreen() {
   // In a real app, fetch task data based on taskId
   const [taskData] = useState<TaskDetails>(MOCK_TASK);
 
+  // Gesture support for swiping tabs - using simple state tracking
+  const lastGestureX = useRef(0);
+  const gestureStartX = useRef(0);
+
+  const handleSwipe = (xPos: number) => {
+    const diff = gestureStartX.current - xPos;
+    const threshold = 50;
+
+    if (Math.abs(diff) > threshold) {
+      const tabs: TabName[] = ['Details', 'Media', 'History'];
+      const currentIndex = tabs.indexOf(activeTab);
+
+      if (diff > 0 && currentIndex < tabs.length - 1) {
+        // Swiped left - go to next tab
+        setActiveTab(tabs[currentIndex + 1]);
+        gestureStartX.current = 0;
+      } else if (diff < 0 && currentIndex > 0) {
+        // Swiped right - go to previous tab
+        setActiveTab(tabs[currentIndex - 1]);
+        gestureStartX.current = 0;
+      }
+    }
+  };
+
   // Log taskId for debugging (in production, this would fetch from API)
   React.useEffect(() => {
     if (taskId) {
@@ -295,8 +324,9 @@ export default function TaskDetailsScreen() {
     setShowMediaViewer(true);
   };
 
-  const handleAddReply = () => {
-    if (!replyText.trim()) {
+  const handleAddReply = async () => {
+    const message = replyText.trim();
+    if (!message) {
       Alert.alert('Required', 'Please enter a reply message');
       return;
     }
@@ -304,7 +334,7 @@ export default function TaskDetailsScreen() {
     const newReply: ReplyItem = {
       id: `${replies.length + 1}`,
       user: 'You',
-      message: replyText,
+      message: message,
       timestamp: new Date().toLocaleString('en-US', {
         day: '2-digit',
         month: 'short',
@@ -314,28 +344,56 @@ export default function TaskDetailsScreen() {
       }),
     };
 
-    setReplies([...replies, newReply]);
+    // 1️⃣ Update reply list
+    setReplies(prev => [...prev, newReply]);
+
+    // 2️⃣ Clear input
     setReplyText('');
+
+    // 3️⃣ Show toast
     setToastMessage('Reply added successfully!');
     setToastVisible(true);
-  };
 
-  const renderDetailsTab = () => (
-    <ScrollView style={styles.tabContent} contentContainerStyle={styles.tabContentPadding} showsVerticalScrollIndicator={false}>
-      {/* Task Description & Location Card */}
+    // 4️⃣ Hide keyboard AFTER state updates
+    Keyboard.dismiss();
+
+    // 5️⃣ Scroll AFTER re-render
+    setTimeout(() => {
+      scrollRef?.current?.scrollToEnd(true);
+    }, 300);
+  };
+  const scrollRef = useRef<KeyboardAwareScrollView>(null);
+  const renderDetailsTab = () => {
+  return (
+    <KeyboardAwareScrollView
+      ref={scrollRef}
+      style={styles.tabContent}
+      contentContainerStyle={styles.tabContentPadding}
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      keyboardShouldPersistTaps="always"
+      extraScrollHeight={0}  
+      extraHeight={0}
+      keyboardOpeningTime={0}
+      showsVerticalScrollIndicator={false}
+    >
+
+      {/* Task Description Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Task Description</Text>
         <Text style={styles.descriptionText}>{taskData.description}</Text>
 
-        {/* Location Section (integrated into same card) */}
+        {/* Location Section */}
         <View style={styles.locationSection}>
           <View style={styles.locationDivider} />
           <Text style={styles.locationLabel}>Location</Text>
-          <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress} activeOpacity={0.7}>
+
+          <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress}>
             <Ionicons name="location" size={20} color={COLORS.info} />
             <Text style={styles.locationText}>{taskData.location}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.mapLink} onPress={handleLocationPress} activeOpacity={0.7}>
+
+          <TouchableOpacity style={styles.mapLink} onPress={handleLocationPress}>
             <Ionicons name="map-outline" size={16} color={COLORS.primary} />
             <Text style={styles.mapLinkText}>Tap to view location on map</Text>
           </TouchableOpacity>
@@ -369,10 +427,11 @@ export default function TaskDetailsScreen() {
           </View>
         )}
 
-        {/* Add Reply Form */}
+        {/* Add Reply Section */}
         <View style={styles.addReplyForm}>
           <View style={styles.replyFormDivider} />
           <Text style={styles.addReplyLabel}>Add Reply</Text>
+
           <TextInput
             style={styles.replyInput}
             placeholder="Type your reply here..."
@@ -382,23 +441,32 @@ export default function TaskDetailsScreen() {
             textAlignVertical="top"
             value={replyText}
             onChangeText={setReplyText}
+            onFocus={() => {
+              // Force scroll to bottom when keyboard opens
+              setTimeout(() => {
+                scrollRef.current?.scrollToEnd(true);
+              }, 20);
+            }}
           />
+
           <TouchableOpacity
-            style={[styles.addReplyButton, !replyText.trim() && styles.addReplyButtonDisabled]}
-            onPress={handleAddReply}
+            style={[
+              styles.addReplyButton,
+              !replyText.trim() && styles.addReplyButtonDisabled
+            ]}
             disabled={!replyText.trim()}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
+            onPress={handleAddReply}
           >
-            <Ionicons name="send" size={18} color={COLORS.white} />
+            <Ionicons name="send" size={18} color="#fff" />
             <Text style={styles.addReplyButtonText}>Send Reply</Text>
           </TouchableOpacity>
         </View>
       </View>
-
-      <View style={{ height: 24 }} />
-    </ScrollView>
+      <View style={{ height: 40 }} />
+    </KeyboardAwareScrollView>
   );
-
+};
   const renderMediaTab = () => {
     // Unified media grid - no filtering
     const sortedMedia = [...mediaItems].sort((a, b) =>
@@ -550,10 +618,20 @@ export default function TaskDetailsScreen() {
         ))}
       </View>
 
-      {/* Tab Content */}
-      {activeTab === 'Details' && renderDetailsTab()}
-      {activeTab === 'Media' && renderMediaTab()}
-      {activeTab === 'History' && renderHistoryTab()}
+      {/* Tab Content - with swipe gesture support */}
+      <View 
+        style={styles.tabContentContainer}
+        onTouchStart={(e) => {
+          gestureStartX.current = e.nativeEvent.pageX;
+        }}
+        onTouchEnd={(e) => {
+          handleSwipe(e.nativeEvent.pageX);
+        }}
+      >
+        {activeTab === 'Details' && renderDetailsTab()}
+        {activeTab === 'Media' && renderMediaTab()}
+        {activeTab === 'History' && renderHistoryTab()}
+      </View>
 
       {/* Update Status Bottom Sheet */}
       <UpdateActivityBottomSheet
@@ -668,6 +746,9 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: COLORS.primary,
+  },
+  tabContentContainer: {
+    flex: 1,
   },
   tabContent: {
     flex: 1,

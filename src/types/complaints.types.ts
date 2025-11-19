@@ -59,6 +59,10 @@ export interface Complaint {
   status_display: string;
   priority_display: string;
   age_days: number;
+  photos: boolean;
+  videos: boolean;
+  documents: boolean;
+  zone: string | null
 }
 /** Pagination Info */
 export interface Pagination {
