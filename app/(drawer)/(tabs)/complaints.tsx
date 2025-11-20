@@ -7,7 +7,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
@@ -15,10 +14,14 @@ import {
   Modal,
   InteractionManager,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { DrawerActions, useNavigation,useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/src/store';
+import { fetchStats } from '@/src/store/statsSlice';
 import ComplaintGroup from '../complaints-stack/complaint-group';
 
 const COLORS = {
@@ -48,7 +51,7 @@ const COLORS = {
   iconPeach: '#D84315',
 };
 
-type QuickFilter = 'today' | 'week' | 'month' | 'custom';
+type QuickFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 interface StatCardProps {
   title: string;
@@ -86,7 +89,8 @@ export default function ComplaintDashboardScreen() {
 
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('today');
+  const dispatch = useDispatch<AppDispatch>();
+  const [selectedFilter, setSelectedFilter] = useState<QuickFilter>('all');
   const [dateRange, setDateRange] = useState('01 Jan - 31 Jan');
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
@@ -120,7 +124,7 @@ export default function ComplaintDashboardScreen() {
   };
 
   /** ✅ Fetch stats from API **/
-  const fetchStats = async (filter: string, startDate?: string, endDate?: string) => {
+  const handleFetchStats = async (filter: string, startDate?: string, endDate?: string) => {
     setLoading(true);
     setError(null);
 
@@ -139,6 +143,15 @@ export default function ComplaintDashboardScreen() {
       if (response?.success && response?.data) {
         setStats(response.data);
         console.log('Stats set:', response.data);
+        
+        // Also dispatch to Redux for global access (especially for complaint summary)
+        console.log('Dispatching fetchStats to Redux with params:', { filter, startDate, endDate });
+        const reduxResult = await dispatch(fetchStats({
+          filter,
+          startDate,
+          endDate
+        }));
+        console.log('Redux dispatch result:', reduxResult);
       } else {
         console.error('Invalid response structure:', response);
         setError('Invalid response structure');
@@ -152,7 +165,7 @@ export default function ComplaintDashboardScreen() {
   };
 
   useEffect(() => {
-    fetchStats('today');
+    handleFetchStats('all');
   }, []);
 
   useEffect(() => {
@@ -169,11 +182,13 @@ export default function ComplaintDashboardScreen() {
 
     setSelectedFilter(filter);
     if (filter == 'month'){
-      fetchStats('this_month');
+      handleFetchStats('this_month');
     }else if(filter == 'week'){
-      fetchStats('this_week');
+      handleFetchStats('this_week');
     }else if (filter == 'today'){
-      fetchStats('today');
+      handleFetchStats('today');
+    }else if (filter == 'all'){
+      handleFetchStats('all')
     }
     // Update date range display based on filter
     const today = new Date();
@@ -200,6 +215,7 @@ export default function ComplaintDashboardScreen() {
   if (selectedFilter === 'month') dateFilter = 'this_month';
   else if (selectedFilter === 'week') dateFilter = 'this_week';
   else if (selectedFilter === 'today') dateFilter = 'today';
+  else if (selectedFilter === 'all') dateFilter = 'all';
   else dateFilter = 'custom';
 
   const params: any = {
@@ -265,7 +281,7 @@ export default function ComplaintDashboardScreen() {
       setShowCalendarModal(false);
       console.log(startStrApi)
       console.log(endStrApi)
-      fetchStats('custom', startStrApi, endStrApi);
+      handleFetchStats('custom', startStrApi, endStrApi);
     
     }
   };
@@ -324,11 +340,7 @@ export default function ComplaintDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container,{
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom
-      
-    }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Header */}
@@ -348,7 +360,7 @@ export default function ComplaintDashboardScreen() {
           style={styles.searchBar}
           activeOpacity={0.7}
           onPress={() => {
-            router.push('/Complaint-Search');
+            router.push('/search-stack/complaint-search');
             console.log("Pushed Search Screen");
           }}
         >
@@ -363,6 +375,23 @@ export default function ComplaintDashboardScreen() {
         contentContainerStyle={styles.filterPillsContainer}
         style={styles.filterPillsScroll}
       >
+         <TouchableOpacity
+          style={[
+            styles.filterPill,
+            selectedFilter === 'all' && styles.filterPillActive,
+          ]}
+          onPress={() => handleFilterChange('all')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.filterPillText,
+              selectedFilter === 'all' && styles.filterPillTextActive,
+            ]}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.filterPill,

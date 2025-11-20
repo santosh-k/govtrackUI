@@ -1,0 +1,30 @@
+File Path,Import Source,Has edges prop,Has StatusBar,Uses useSafeAreaInsets,SafeAreaView Instances,Status,Fix Priority
+app/(drawer)/(tabs)/complaints.tsx,react-native,No,Yes,Yes,1,NEEDS FIX,High
+app/(drawer)/(tabs)/dashboard.tsx,react-native,No,Yes,Yes,1,NEEDS FIX,High
+app/(drawer)/(tabs)/projects.tsx,react-native,No,Yes,Yes,1,NEEDS FIX,High
+app/(drawer)/(tabs)/tasks.tsx,react-native,No,Yes,Yes,1,NEEDS FIX,High
+app/(drawer)/advanced-project-search.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/assign-task.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/Complaint-searchable-selection.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/assign-complaint.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/complaint-details.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/select-category.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/select-department.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/select-zone.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/create-bottleneck.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/create-complaint.tsx,react-native,No,Yes,No,3,NEEDS FIX,Medium
+app/(drawer)/create-inspection.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/create-task.tsx,react-native,No,Yes,No,2,NEEDS FIX,Medium
+app/(drawer)/my-task.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/placeholder.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/profile-edit.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/profile.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/project-details.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/project-list.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/search-stack/complaint-search.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/searchable-selection.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/selection-screen.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/settings.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/task-details.tsx,react-native,No,Yes,No,1,NEEDS FIX,Medium
+app/(drawer)/complaints-stack/Complaint-History.tsx,react-native-safe-area-context,No,No,No,1,CORRECT,None
+app/(drawer)/complaints-stack/complaints-list.tsx,react-native-safe-area-context,Yes,Yes,Yes,1,PERFECT,None

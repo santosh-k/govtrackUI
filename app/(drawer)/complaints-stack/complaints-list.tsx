@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TextInput,
@@ -11,11 +10,14 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { DrawerActions, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import FilterBottomSheet from '@/components/FilterBottomSheet';
+import * as Clipboard from 'expo-clipboard';
+import Toast from '@/components/Toast';
 import {
   fetchComplaints,
   setStatusFilter,
@@ -60,6 +62,7 @@ const COLORS = {
 
 interface Complaint {
   id: string;
+  complaint_number: string;
   category: string;
   department: string;
   serviceChild: string;
@@ -71,101 +74,15 @@ interface Complaint {
   hasVideos?: boolean;
   hasDocuments?: boolean;
   zone: string | undefined;
+  priority: number;
 }
-
-/*const SAMPLE_COMPLAINTS: Complaint[] = [
-  {
-    id: 'C-2023-4513',
-    category: 'Pothole Repair Request',
-    department: 'Roads & Infrastructure - Zone West',
-    location: 'Connaught Place, New Delhi',
-    status: 'Open',
-    sla: 'Breached',
-    createdAt: '2023-12-01',
-    hasPhotos: true,
-    hasVideos: false,
-    hasDocuments: true,
-  },
-  {
-    id: 'C-2023-4514',
-    category: 'Street Light Not Working',
-    department: 'Electrical Services - Zone North',
-    location: 'Karol Bagh Market Road',
-    status: 'In Progress',
-    sla: 'Nearing',
-    createdAt: '2023-12-02',
-    hasPhotos: true,
-    hasVideos: false,
-    hasDocuments: false,
-  },
-  {
-    id: 'C-2023-4515',
-    category: 'Water Supply Issue',
-    department: 'Water & Sanitation - Zone East',
-    location: 'Laxmi Nagar, Block C',
-    status: 'Resolved',
-    sla: 'On Track',
-    createdAt: '2023-12-03',
-    hasPhotos: false,
-    hasVideos: false,
-    hasDocuments: false,
-  },
-  {
-    id: 'C-2023-4516',
-    category: 'Garbage Collection Delay',
-    department: 'Waste Management - Zone South',
-    location: 'Greater Kailash Part 2',
-    status: 'In Progress',
-    sla: 'On Track',
-    createdAt: '2023-12-04',
-    hasPhotos: true,
-    hasVideos: true,
-    hasDocuments: true,
-  },
-  {
-    id: 'C-2023-4517',
-    category: 'Illegal Construction Report',
-    department: 'Building & Planning - Zone Central',
-    location: 'Nehru Place Commercial Complex',
-    status: 'Open',
-    sla: 'Breached',
-    createdAt: '2023-12-05',
-    hasPhotos: true,
-    hasVideos: true,
-    hasDocuments: false,
-  },
-  {
-    id: 'C-2023-4518',
-    category: 'Traffic Signal Malfunction',
-    department: 'Traffic Management - Zone West',
-    location: 'ITO Crossing, Central Delhi',
-    status: 'Closed',
-    sla: 'On Track',
-    createdAt: '2023-12-06',
-    hasPhotos: false,
-    hasVideos: false,
-    hasDocuments: true,
-  },
-  {
-    id: 'C-2023-4519',
-    category: 'Park Maintenance Required',
-    department: 'Parks & Gardens - Zone North',
-    location: 'Lodhi Garden, Main Entrance',
-    status: 'In Progress',
-    sla: 'Nearing',
-    createdAt: '2023-12-07',
-    hasPhotos: false,
-    hasVideos: false,
-    hasDocuments: false,
-  },
-]; */
 
 interface ComplaintCardProps {
   complaint: Complaint;
   onPress: () => void;
+  onCopy: (text: string) => void;
 }
-
-function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
+function ComplaintCard({ complaint, onPress, onCopy }: ComplaintCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Open':
@@ -180,7 +97,18 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
         return COLORS.textSecondary;
     }
   };
-
+  const getPriorityColor = (priorityId: number) => {
+  switch (priorityId) {
+    case 1:
+      return '#FF3B30'; // red
+    case 2:
+      return '#FFCC00'; // yellow
+    case 3:
+      return '#4CAF50'; // green
+    default:
+      return '#9E9E9E'; // fallback grey
+  }
+};
   return (
     <TouchableOpacity
       style={styles.complaintCard}
@@ -189,14 +117,44 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
     >
       {/* Top Section - ID (left) and Status Badge (right) */}
       <View style={styles.cardTopRow}>
-       {/*  <Text style={styles.complaintId}>{complaint.id}</Text> */}
-        <Text style={styles.complaintCategory} numberOfLines={1}>
-            {complaint.department + (complaint?.zone ? ` ${complaint.zone}` : '')}
+        <TouchableOpacity
+          onLongPress={() => onCopy(complaint.complaint_number)}
+          style={{ flexDirection: 'row', alignItems: 'center' }}
+        >
+          <Text style={styles.complaintId}>
+            {complaint.complaint_number}
           </Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(complaint.status) }]}>
+
+          <TouchableOpacity
+            onPress={() => onCopy(complaint.complaint_number)}
+            style={{ marginLeft: 6 }}
+          >
+            <Ionicons name="copy-outline" size={18} color="#444" />
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: getStatusColor(complaint.status) },
+          ]}
+        >
           <Text style={styles.statusBadgeText}>{complaint.status}</Text>
         </View>
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <Text style={styles.complaintCategory} numberOfLines={1} ellipsizeMode="tail">
+            {complaint.department + (complaint?.zone ? ` ${complaint.zone}` : '')}
+          </Text>
+
+          {/* Priority Icon */}
+          <Ionicons
+            name="alert-circle"
+            size={18}
+            color={getPriorityColor(complaint?.priority)}
+            style={{ marginLeft: 6 }}
+          />
+        </View>
       {/* Main Body - Category and Location */}
       <View style={styles.cardMainBody}>
         <Text style={styles.complaintSubCategory}>
@@ -230,25 +188,23 @@ function ComplaintCard({ complaint, onPress }: ComplaintCardProps) {
             </View>
           )}
           {/* Department Text Below */}
-          
         </View>
-
-       {/*  <TouchableOpacity
-          style={styles.actionButton}
-          onPress={onPress}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="arrow-forward" size={20} color={COLORS.cardBackground} />
-        </TouchableOpacity> */}
-          <View style={styles.detailsIconContainer}>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.saffron} />
-          </View>
       </View>
+      {/* Footer Row: Dates and Action */}
+        <View style={styles.cardFooter}>
+            <Text style={styles.datesText}>
+              Created At: {complaint.createdAt}
+            </Text>
+            <View style={styles.detailsIconContainer}>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.saffron} />
+            </View>
+        </View>
     </TouchableOpacity> 
   );
 }
 
 export default function ComplaintsScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const navigation = useNavigation();
   const dispatch = useDispatch<AppDispatch>();
@@ -264,6 +220,34 @@ export default function ComplaintsScreen() {
   const [searchQuery, setSearchQueryLocal] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [currentStatusParam, setCurrentStatusParam] = useState<string>('');
+
+  // Clear all previous filters and search data on mount or when params change
+  useEffect(() => {
+    console.log('ComplaintsScreen - Clearing all previous filters and search on params change');
+    
+    // Clear complaints from Redux
+    dispatch({ type: 'complaints/clearComplaints' });
+    
+    // Clear all local filter states
+    setSearchQueryLocal('');
+    setSelectedStatuses([]);
+    setSelectedCategory('');
+    setSelectedZone('');
+    setSelectedDepartment('');
+    setSelectedCategoryId(null);
+    setSelectedZoneId(null);
+    setSelectedDepartmentId(null);
+    setCurrentStatusParam('');
+    
+    // Clear temp filter states
+    setTempSelectedStatuses([]);
+    setTempSelectedCategory('');
+    setTempSelectedZone('');
+    setTempSelectedDepartment('');
+    setTempSelectedCategoryId(null);
+    setTempSelectedZoneId(null);
+    setTempSelectedDepartmentId(null);
+  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId, params.searchData]);
 
   // Check if navigation came from dashboard
   const fromDashboard = params.fromDashboard === 'true';
@@ -286,6 +270,13 @@ export default function ComplaintsScreen() {
   const [tempSelectedCategoryId, setTempSelectedCategoryId] = useState<string | number | null>(null);
   const [tempSelectedZoneId, setTempSelectedZoneId] = useState<string | number | null>(null);
   const [tempSelectedDepartmentId, setTempSelectedDepartmentId] = useState<string | number | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const copyToClipboard = (text: string) => {
+  Clipboard.setStringAsync(text);
+  setToastMessage('Copied to clipboard');
+  setToastVisible(true);
+  };  
 
   // Map dashboard filter to API status
   const getApiStatus = (filterType: string): string => {
@@ -318,6 +309,8 @@ export default function ComplaintsScreen() {
         return 'resolved';
       case 'Closed':
         return 'closed';
+      case 'High Priority':
+        return 'high_priority'
       default:
         return label.toLowerCase();
     }
@@ -327,7 +320,7 @@ export default function ComplaintsScreen() {
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
     const status = typeof statusFilter === 'string' && statusFilter !== undefined ? statusFilter : currentStatusParam || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
-    const filter =  params.dateFilter as string || 'this_month'
+    const filter =  params.dateFilter as string || 'all'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
     console.log('fetchComplaint Api Called')
@@ -335,6 +328,8 @@ export default function ComplaintsScreen() {
     console.log('Start Date == ', start_date)
     console.log('End Date == ', end_date)
     console.log('All Params == ', params)
+    // Always clear complaints before new fetch to avoid stale data
+    dispatch({ type: 'complaints/clearComplaints' });
     dispatch(
       fetchComplaints({
         stats_filter,
@@ -355,16 +350,19 @@ export default function ComplaintsScreen() {
 
   // Fetch on mount and when filter changes
   useEffect(() => {
+    console.log('ComplaintList - Mount/Filter Effect - params.filter:', params.filter, 'params.categoryId:', params.categoryId);
+    
     const searchData = params.searchData as string || undefined
     if (searchData) {
-    dispatch(setSearchQuery(searchData));
-    setSearchQueryLocal(searchData);   
-    handleFetchComplaints(1, currentStatusParam, false);  // <-- ensure API runs
-  }
-    if (params.filter) {
+      dispatch(setSearchQuery(searchData));
+      setSearchQueryLocal(searchData);   
+      handleFetchComplaints(1, currentStatusParam, false);
+    } else if (params.filter && !params.categoryId) {
+      // Coming from stat card (not from complaint group)
+      console.log('ComplaintList - Fetching from stat card');
       handleFetchComplaints(1, currentStatusParam, false);
     }
-  }, [params.filter, params.dateFilter, params.start_date, params.end_date]);
+  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
 
   // Refetch complaints when screen comes into focus
   useFocusEffect(
@@ -413,10 +411,38 @@ export default function ComplaintsScreen() {
     }
   }, [params.filter]);
 
+  // Handle categoryId from complaint group navigation
+  useEffect(() => {
+    const categoryId = params.categoryId as string | number | undefined;
+    const categoryName = params.categoryName as string | undefined;
+    
+    console.log('ComplaintList - CategoryId useEffect triggered - categoryId:', categoryId, 'categoryName:', categoryName);
+    
+    if (categoryId && categoryName) {
+      console.log('ComplaintList - Setting category from complaint group - ID:', categoryId, 'Name:', categoryName);
+      setSelectedCategoryId(categoryId as any);
+      setSelectedCategory(categoryName);
+    } else if (!categoryId && !params.categoryName) {
+      // Coming from stat card - clear category filters
+      console.log('ComplaintList - Clearing category filters (from stat card)');
+      setSelectedCategoryId(null);
+      setSelectedCategory('');
+    }
+  }, [params.categoryId, params.categoryName]);
+
+  // Fetch after categoryId is set
+  useEffect(() => {
+    if (selectedCategoryId !== null && selectedCategory) {
+      console.log('ComplaintList - Fetching after categoryId state updated:', selectedCategoryId, selectedCategory);
+      handleFetchComplaints(1, currentStatusParam, false);
+    }
+  }, [selectedCategoryId, selectedCategory]);
+
   // Transform API complaints to display format
   const transformedComplaints = useMemo(() => {
     return complaints.map((complaint: any) => ({
       id: complaint.id.toString(),
+      complaint_number: complaint.complaint_number,
       category: complaint.complaintOption?.option_name || complaint.service?.service_name_en || 'Unknown',
       department: complaint.service?.service_name_en || 'Unknown Department',
       serviceChild: complaint.serviceChild?.service_name_en || '',
@@ -448,6 +474,7 @@ export default function ComplaintsScreen() {
       hasVideos: !!complaint.videos, // Check if complaint has videos
       hasDocuments: !!complaint.documents, // Check if complaint has documents
       zone: complaint.zone,
+      priority: complaint.priority,
     }));
   }, [complaints]);
 
@@ -462,42 +489,13 @@ export default function ComplaintsScreen() {
 
   // Filter and search logic
   const filteredComplaints = useMemo(() => {
-    let filtered = transformedComplaints;
-
-    // Apply status filter
-    if (selectedStatuses.length > 0) {
-      filtered = filtered.filter((c) => selectedStatuses.includes(c.status));
+    // Always display API results directly when search or any filter is active
+    if (searchQuery.trim() || selectedStatuses.length > 0 || selectedCategory || selectedZone || selectedDepartment || selectedCategoryId || selectedZoneId || selectedDepartmentId) {
+      return transformedComplaints;
     }
-
-    // Apply category filter
-    if (selectedCategory) {
-      filtered = filtered.filter((c) => c.category === selectedCategory);
-    }
-
-    // Apply zone filter
-    if (selectedZone) {
-      filtered = filtered.filter((c) => c.department.includes(selectedZone));
-    }
-
-    // Apply department filter
-    if (selectedDepartment) {
-      filtered = filtered.filter((c) => c.department === selectedDepartment);
-    }
-
-    // Apply search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.id.toLowerCase().includes(query) ||
-          c.category.toLowerCase().includes(query) ||
-          c.department.toLowerCase().includes(query) ||
-          c.location.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedDepartment, transformedComplaints]);
+    // If no search or filters, return all complaints
+    return transformedComplaints;
+  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedDepartment, transformedComplaints, selectedCategoryId, selectedZoneId, selectedDepartmentId]);
 
   const handleComplaintPress = (complaint: Complaint) => {
     router.push({
@@ -612,7 +610,7 @@ export default function ComplaintsScreen() {
     // Fetch complaints with new filters (reset to page 1)
     // Use tempSelected*Id directly because React state updates are async
     const stats_filter = getApiStatus(params.filter as string) || 'total';
-    const filter = params.dateFilter as string || 'this_month'
+    const filter = params.dateFilter as string || 'all'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
     // Convert tempSelectedStatuses (labels) to API status param (comma-separated)
@@ -653,7 +651,7 @@ export default function ComplaintsScreen() {
   const handleRemoveFilter = (filterType: 'status' | 'category' | 'zone' | 'department', value?: string) => {
     // Compute new filter values synchronously so we can immediately refetch
     const stats_filter = getApiStatus(params.filter as string) || 'total';
-    const filter = params.dateFilter as string || 'this_month'
+    const filter = params.dateFilter as string || 'all'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
 
@@ -780,8 +778,8 @@ export default function ComplaintsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} translucent={Platform.OS === 'android'} />
 
       {/* Custom Header */}
       <View style={styles.header}>
@@ -958,6 +956,7 @@ export default function ComplaintsScreen() {
                 key={complaint.id}
                 complaint={complaint}
                 onPress={() => handleComplaintPress(complaint)}
+                onCopy={copyToClipboard}
               />
             ))}
 
@@ -999,6 +998,13 @@ export default function ComplaintsScreen() {
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
       />
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type="success"
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1007,6 +1013,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    ...Platform.select({
+      android: {
+        paddingTop: 0,
+        paddingBottom: 0,
+      },
+    }),
   },
   header: {
     flexDirection: 'row',
@@ -1153,7 +1165,7 @@ const styles = StyleSheet.create({
   },
   complaintId: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '700',
     color: COLORS.textLight,
     letterSpacing: 0.5,
   },
@@ -1363,6 +1375,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: '500',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  datesText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: COLORS.textSecondary,
+    flex: 1,
   },
 });
 

@@ -294,7 +294,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.6}>
@@ -340,8 +340,8 @@ export default function EditProfileScreen() {
           <View style={styles.formCard}>
             <ModernInputField label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Enter your full name" error={errors.fullName} />
             <ModernInputField label="Email Address" value={email} onChangeText={setEmail} placeholder="Enter your email" keyboardType="email-address" error={errors.email} />
-            <ModernInputField label="Designation" value={designation} onChangeText={setDesignation} placeholder="Enter your designation" />
-            <ModernInputField label="Department" value={department} onChangeText={setDepartment} placeholder="Enter your department" />
+           {/*  <ModernInputField label="Designation" value={designation} onChangeText={setDesignation} placeholder="Enter your designation" />
+            <ModernInputField label="Department" value={department} onChangeText={setDepartment} placeholder="Enter your department" /> */}
             <ModernInputField label="Residential Address" value={address} onChangeText={setAddress} placeholder="Enter your residential address" multiline />
             <TouchableOpacity
               style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}

@@ -15,18 +15,36 @@ const initialState: StatsState = {
   filter: null,
 };
 
-export const fetchStats = createAsyncThunk('stats/fetch', async (filter: string, { rejectWithValue }) => {
-  try {
-    // Dynamic import to avoid circular dependency
-    const { default: ApiManager } = await import('@/src/services/ApiManager');
-    const response = await ApiManager.getInstance().getStats(filter);
-    // Expecting shape { success: true, data: { ... } }
-    return response.data;
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch stats';
-    return rejectWithValue(msg);
+export const fetchStats = createAsyncThunk(
+  'stats/fetch',
+  async (
+    params: {
+      filter: string;
+      startDate?: string;
+      endDate?: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      console.log('fetchStats thunk - params:', params);
+      // Dynamic import to avoid circular dependency
+      const { default: ApiManager } = await import('@/src/services/ApiManager');
+      const response = await ApiManager.getInstance().getStats(
+        params.filter,
+        params.startDate,
+        params.endDate
+      );
+      console.log('fetchStats thunk - response:', response);
+      console.log('fetchStats thunk - response.data:', response.data);
+      // Expecting shape { success: true, data: { ... } }
+      return response.data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to fetch stats';
+      console.error('fetchStats thunk - error:', msg);
+      return rejectWithValue(msg);
+    }
   }
-});
+);
 
 const statsSlice = createSlice({
   name: 'stats',
@@ -50,6 +68,8 @@ const statsSlice = createSlice({
       })
       .addCase(fetchStats.fulfilled, (state, action: PayloadAction<StatsData>) => {
         state.isLoading = false;
+        console.log('statsSlice - fulfilled action.payload:', action.payload);
+        console.log('statsSlice - complaint_summary:', action.payload.complaint_summary);
         state.data = action.payload;
         state.error = null;
       })

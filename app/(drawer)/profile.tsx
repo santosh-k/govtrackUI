@@ -3,11 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
+  TouchableOpacity,
+  Platform,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
 import ProfileHeader from '@/components/ProfileHeader';
@@ -60,10 +62,14 @@ export default function ProfileScreen() {
         : '',
     address: user?.address ?? '',
     profile_Image: user?.profile_image,
+    level:  Array.isArray(user?.designations) && user.designations.length > 0
+        ? user.designations[0]?.level.name ?? ''
+        : '',
+    division: user?.division?.name,    
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <ProfileHeader userData={userData} />
 
@@ -104,6 +110,16 @@ export default function ProfileScreen() {
             label="Email Address"
             value={userData.email || 'Not provided'}
             icon="mail-outline"
+          />
+          <ProfileItem
+            label="Level"
+            value={userData.level || 'Not provided'}
+            icon="star"
+          />
+           <ProfileItem
+            label="Division"
+            value={userData.division || 'Not provided'}
+            icon="folder"
           />
           <ProfileItem
             label="Designation"

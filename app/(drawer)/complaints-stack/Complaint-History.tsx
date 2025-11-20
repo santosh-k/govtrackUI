@@ -61,7 +61,7 @@ const ComplaintHistory = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.tabContent}>
         {/* Header */}
         <View style={styles.header}>

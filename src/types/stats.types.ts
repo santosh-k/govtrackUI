@@ -35,11 +35,29 @@ export interface YourComplaints {
   };
 }
 
+export interface ComplaintSummaryItem {
+  category_id: number;
+  name: string;
+  total: number;
+  progress: number;
+  closed: number;
+}
+
+export interface ComplaintSummary {
+  tabs: string[];
+  data: {
+    division: ComplaintSummaryItem[];
+    zone: ComplaintSummaryItem[];
+    circle: ComplaintSummaryItem[];
+  };
+}
+
 export interface StatsData {
   filter: StatsFilter;
   overview: Overview;
   your_activity: YourActivity;
   your_complaints: YourComplaints;
+  complaint_summary?: ComplaintSummary;
 }
 
 export interface StatsResponse {

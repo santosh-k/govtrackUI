@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
@@ -15,6 +14,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
@@ -278,6 +278,10 @@ export default function ComplaintDetailsScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  const handleCall = (number: string) => {
+   if (!number) return;
+   Linking.openURL(`tel:${number}`);
+  };
   // Fetch complaint details on mount
   useEffect(() => {
     if (params.id) {
@@ -311,21 +315,24 @@ export default function ComplaintDetailsScreen() {
   }, [assignmentState && assignmentState.lastAssignment, dispatch]);
 
   const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'SUBMITTED':
-        return COLORS.statusSubmitted;
-      case 'OPEN':
-        return COLORS.statusOpen;
-      case 'IN PROGRESS':
-        return COLORS.statusInProgress;
-      case 'RESOLVED':
-        return COLORS.statusResolved;
-      case 'CLOSED':
-        return COLORS.statusClosed;
-      default:
-        return COLORS.textSecondary;
-    }
-  };
+  const s = (status || "").trim().toUpperCase();
+
+  switch (s) {
+    case "SUBMITTED":
+      return COLORS.statusSubmitted;
+    case "OPEN":
+      return COLORS.statusOpen;
+    case "IN PROGRESS":
+    case "IN_PROGRESS":
+      return COLORS.statusInProgress;
+    case "RESOLVED":
+      return COLORS.statusResolved;
+    case "CLOSED":
+      return COLORS.statusClosed;
+    default:
+      return COLORS.textSecondary;
+  }
+};
 
   const handleLocationPress = async () => {
     if (!complaintData) return;
@@ -419,7 +426,7 @@ export default function ComplaintDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Loading State */}
@@ -485,14 +492,14 @@ export default function ComplaintDetailsScreen() {
               </View>
             </TouchableOpacity> */}
             <TouchableOpacity
-              style={[styles.headerStatusButton, { backgroundColor: getStatusColor(complaintData.status)}]}
+              style={[styles.headerStatusButton, { backgroundColor: getStatusColor(complaintData.statusDisplay)}]}
               onPress={() => handleHistoryTask()}
               activeOpacity={0.7}
             >
-              <Text style={[styles.headerStatusText, { color: COLORS.text }]}>
+              <Text style={[styles.headerStatusText]}>
                 {complaintData.statusDisplay}
               </Text>
-              <Ionicons name="chevron-down" size={14} color={COLORS.text} style={styles.headerChevronIcon} />
+              <Ionicons name="chevron-down" size={14} color={COLORS.cardBackground} style={styles.headerChevronIcon} />
             </TouchableOpacity>
           </View>
 
@@ -530,8 +537,46 @@ export default function ComplaintDetailsScreen() {
                   <Text style={styles.gridLabel}>Category</Text>
                   <Text style={styles.gridValue}>{complaintData.category}</Text>
                 </View>
+                <View style={styles.fullWidthRow}>
+                  <Text style={styles.gridLabel}>Description</Text>
+                  <Text style={styles.gridValue}>{complaintData.description}</Text>
+                </View>
               </View>
+              <View style={styles.primaryCardDivider} />
+              <Text style={styles.complaintByTitle}>Complaint By</Text>
+              {/* Complaint By Section */}
+              <View style={styles.reportedByContainer}>
+                <View style={styles.reportedByField}>
+                  <Text style={styles.reportedByLabel}>Name</Text>
+                  <Text style={styles.reportedByValue}>{complaintData.reportedBy?.name}</Text>
+                </View>
+                <View style={styles.reportedByField}>
+                  <Text style={styles.reportedByLabel}>Contact Number</Text>
 
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.reportedByValue}>
+                      {complaintData.reportedBy?.contactNumber}
+                    </Text>
+
+                    <TouchableOpacity
+                      style={{ marginLeft: 8 }}
+                      onPress={() => handleCall(complaintData.reportedBy?.contactNumber)}
+                    >
+                      <Ionicons name="call-outline" size={20} color="#030303ff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.reportedByField}>
+                  <Text style={styles.reportedByLabel}>Address</Text>
+                  <Text style={styles.reportedByValue}>{complaintData.reportedBy?.address}</Text>
+                </View>
+                {complaintData.reportedBy?.email && (
+                  <View style={styles.reportedByField}>
+                    <Text style={styles.reportedByLabel}>Email</Text>
+                    <Text style={styles.reportedByValue}>{complaintData.reportedBy.email}</Text>
+                  </View>
+                )}
+              </View>
               {/* Separator Line */}
               <View style={styles.primaryCardDivider} />
 
@@ -698,35 +743,7 @@ export default function ComplaintDetailsScreen() {
             );
           })}
         </View> */}
-        {/* Card 5: Complainant Information */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Reported By</Text>
-
-          {/* Reported By Section */}
-          <View style={styles.reportedByContainer}>
-            <View style={styles.reportedByField}>
-              <Text style={styles.reportedByLabel}>Name</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.name}</Text>
-            </View>
-            <View style={styles.reportedByField}>
-              <Text style={styles.reportedByLabel}>Contact Number</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.contactNumber
-              ? '*******' + complaintData.reportedBy.contactNumber.slice(-3)
-              : ''}</Text>
-            </View>
-            <View style={styles.reportedByField}>
-              <Text style={styles.reportedByLabel}>Address</Text>
-              <Text style={styles.reportedByValue}>{complaintData.reportedBy?.address}</Text>
-            </View>
-            {complaintData.reportedBy?.email && (
-              <View style={styles.reportedByField}>
-                <Text style={styles.reportedByLabel}>Email</Text>
-                <Text style={styles.reportedByValue}>{complaintData.reportedBy.email}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
+       
         {/* Spacer for floating action bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -902,6 +919,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     letterSpacing: 0.2,
   },
+  complaintByTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
   subjectTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -1066,7 +1091,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   reportedByContainer: {
-    gap: 20,
+    gap: 12,
   },
   reportedByField: {
     gap: 6,
@@ -1387,5 +1412,12 @@ const styles = StyleSheet.create({
   }, */
   headerChevronIcon: {
     marginLeft: 2,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.cardBackground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
 });

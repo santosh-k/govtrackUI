@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,17 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/store';
 
 interface ComplaintItem {
-  id: string;
-  category: string;
+  category_id: number;
+  name: string;
   total: number;
-  inProgress: number;
+  progress: number;
   closed: number;
 }
 
@@ -30,31 +33,76 @@ const COLORS = {
   lightPrimary: '#E6F0FF',
 };
 
-const dummyData: ComplaintItem[] = [
-  { id: '1', category: 'Street Light', total: 25, inProgress: 8, closed: 7 },
-  { id: '2', category: 'Pot Hole', total: 12, inProgress: 5, closed: 3 },
-  { id: '3', category: 'Damaged Road', total: 18, inProgress: 7, closed: 5 },
-  { id: '4', category: 'Garbage', total: 9, inProgress: 3, closed: 4 },
-  { id: '5', category: 'Water Leakage', total: 14, inProgress: 4, closed: 5 },
-];
-
-const TABS = ["Cateogeory", "Zone", "Circle"];
-
 const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
-  const [activeTab, setActiveTab] = useState("Cateogeory");
   const router = useRouter();
-  // ---------------- FILTER TABLE DATA BASED ON TAB ----------------
-  const filteredData = dummyData.filter(item => {
-    if (activeTab === "Cateogeory") return true;
-    if (activeTab === "Zone") return item.inProgress > 0;
-    if (activeTab === "Circle") return item.closed > 0;
-    return true;
-  });
-const onSelect = (item: ComplaintItem) => { 
-    router.push({ pathname: '/complaints-stack/complaints-list', 
-        params: { ...params, // passed from parent screen groupType: item.category, groupId: item.id,
-         },
-    }); };
+  const [activeTab, setActiveTab] = useState('division');
+
+  // Get stats data from Redux
+  const statsData = useSelector((state: RootState) => state.stats.data);
+  const statsLoading = useSelector((state: RootState) => state.stats.isLoading);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ComplaintGroup - statsData:', statsData);
+    console.log('ComplaintGroup - statsLoading:', statsLoading);
+    console.log('ComplaintGroup - complaint_summary:', statsData?.complaint_summary);
+  }, [statsData, statsLoading]);
+
+  // Get tabs and data from complaint_summary
+  const tabs = useMemo(() => {
+    const tabsFromRedux = statsData?.complaint_summary?.tabs ?? [];
+    console.log('ComplaintGroup - tabs from Redux:', tabsFromRedux);
+    return tabsFromRedux.length > 0 ? tabsFromRedux : ['division', 'zone', 'circle'];
+  }, [statsData]);
+
+  // Get the data for the active tab
+  const complaintData = useMemo(() => {
+    const summaryData = statsData?.complaint_summary?.data;
+    if (!summaryData) {
+      console.log('ComplaintGroup - No summary data available');
+      return [];
+    }
+
+    // Cast activeTab to valid tab type
+    const tabKey = activeTab as keyof typeof summaryData;
+    const data = summaryData[tabKey] ?? [];
+    console.log('ComplaintGroup - data for tab', activeTab, ':', data);
+    return data;
+  }, [statsData, activeTab]);
+
+  const onSelect = (item: ComplaintItem) => {
+    // Get dateFilter from params or default to 'all'
+    const dateFilter = params.dateFilter || 'all';
+    const selectedStartDate = params.start_date;
+    const selectedEndDate = params.end_date;
+
+    const navigationParams: any = {
+      ...params,
+      // Add complaint summary specific params
+      groupType: item.name,
+      groupId: item.category_id,
+      categoryId: item.category_id, // Add category_id as a filter for the API
+      categoryName: item.name,
+      // Preserve date filter params
+      dateFilter,
+    };
+
+    // Add custom date params if they exist
+    if (selectedStartDate) {
+      navigationParams.start_date = selectedStartDate;
+    }
+    if (selectedEndDate) {
+      navigationParams.end_date = selectedEndDate;
+    }
+
+    console.log('ComplaintGroup - Navigation params:', navigationParams);
+
+    router.push({
+      pathname: '/complaints-stack/complaints-list',
+      params: navigationParams,
+    });
+  };
+
   const renderRow = ({ item }: { item: ComplaintItem }) => (
     <Pressable
       style={({ pressed }) => [
@@ -62,21 +110,33 @@ const onSelect = (item: ComplaintItem) => {
         pressed && { backgroundColor: COLORS.lightPrimary },
       ]}
       android_ripple={{ color: COLORS.lightPrimary }}
-      onPress={() => onSelect(item)}>
-      <Text style={[styles.cell, styles.categoryCell]}>{item.category}</Text>
+      onPress={() => onSelect(item)}
+    >
+      <Text style={[styles.cell, styles.categoryCell]}>{item.name}</Text>
       <Text style={styles.cell}>{item.total}</Text>
-      <Text style={styles.cell}>{item.inProgress}</Text>
+      <Text style={styles.cell}>{item.progress}</Text>
       <Text style={styles.cell}>{item.closed}</Text>
     </Pressable>
   );
 
+  if (statsLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.sectionTitle}>Complaint Summary</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-    <Text style={styles.sectionTitle}>Complaint Summary</Text>
+      <Text style={styles.sectionTitle}>Complaint Summary</Text>
 
-      {/* ---------------- TABS UI ---------------- */}
+      {/* TABS UI */}
       <View style={styles.tabContainer}>
-        {TABS.map(tab => (
+        {tabs.map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
@@ -91,13 +151,13 @@ const onSelect = (item: ComplaintItem) => {
                 activeTab === tab && styles.activeTabText,
               ]}
             >
-              {tab}
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* ---------------- TABLE HEADER ---------------- */}
+      {/* TABLE HEADER */}
       <View style={styles.tableHeader}>
         <Text style={[styles.headerCell, styles.categoryCell]}>Category</Text>
         <Text style={styles.headerCell}>Total</Text>
@@ -105,12 +165,18 @@ const onSelect = (item: ComplaintItem) => {
         <Text style={styles.headerCell}>Closed</Text>
       </View>
 
-      {/* ---------------- TABLE LIST ---------------- */}
+      {/* TABLE LIST */}
       <FlatList
-        data={filteredData}
+        data={complaintData}
         renderItem={renderRow}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.category_id.toString()}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+        ListEmptyComponent={
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.border, fontSize: 14 }}>No data available</Text>
+          </View>
+        }
       />
     </View>
   );
@@ -178,7 +244,7 @@ const styles = StyleSheet.create({
   // ---------------- ROW ----------------
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 14,
+    paddingVertical: 18,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderColor: COLORS.border,
@@ -187,7 +253,8 @@ const styles = StyleSheet.create({
   cell: {
     flex: 1,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '500',
     color: COLORS.text,
   },
 

@@ -3,12 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TouchableOpacity,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -45,34 +45,41 @@ export default function SearchComplaintScreen() {
 
   const handleFindComplaints = () => {
     const filterParts = [];
-
     if (complaintName) filterParts.push(`ComplaintName: ${complaintName}`);
     if (complaintNumber) filterParts.push(`Complaint No: ${complaintNumber}`);
     if (location) filterParts.push(`Location: ${location}`);
 
-    const filterDisplay =
-      filterParts.length > 0
-        ? `Search Results - ${filterParts.join(', ')}`
-        : 'Search Results';
+    
+    let params: any = { fromDashboard: 'true' };
+
+    if (filterParts.length > 0) {
+      // At least one field filled, build search query
+      const searchParts = [];
+      if (complaintName) searchParts.push(complaintName);
+      if (complaintNumber) searchParts.push(complaintNumber);
+      if (location) searchParts.push(location);
+      params.searchData = searchParts.join("|");
+      params.filter = 'all';
+    } else {
+      // No fields filled, show all complaints for this month
+      params.filter = 'all';
+      params.searchData = '';
+    }
 
     // Reset fields
     setComplaintName('');
     setComplaintNumber('');
     setLocation('');
 
-    // Replace the search screen with the complaints list so the stack
-    // doesn't retain the search screen and cause odd back navigation.
-    console.log('Selected Serach Data ==', filterDisplay)
-    const searchText = extractSearchData(filterDisplay)
-    // Use push to navigate to complaints list
+    console.log('Find Complaints - Params:', params);
     router.push({
       pathname: '/complaints-stack/complaints-list',
-      params: { searchData: searchText },
+      params,
     });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Header */}

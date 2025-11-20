@@ -43,7 +43,7 @@ interface FilterBottomSheetProps {
   onReset: () => void;
 }
 
-const STATUS_OPTIONS = ['Open', 'In Progress', 'Resolved', 'Closed'];
+const STATUS_OPTIONS = ['High Priority', 'Open', 'In Progress', 'Resolved', 'Closed'];
 
 export default function FilterBottomSheet({
   visible,

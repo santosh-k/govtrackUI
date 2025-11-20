@@ -3,13 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  ScrollView,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
@@ -147,10 +149,7 @@ export default function ProjectsDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container,{
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom
-    }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header title="Projects" />
 
