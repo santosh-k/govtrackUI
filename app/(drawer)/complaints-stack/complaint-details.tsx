@@ -31,7 +31,8 @@ import {
 import { AppDispatch } from '@/src/store/index';
 import { selectAssignment, clearLastAssignment } from '@/src/store/assignmentSlice';
 import moment from 'moment';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+const insets = useSafeAreaInsets();
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
@@ -1131,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   floatingActionBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: insets.bottom,
     left: 0,
     right: 0,
     flexDirection: 'row',

@@ -15,8 +15,10 @@ import crashlytics from "@react-native-firebase/crashlytics";
 import messaging from "@react-native-firebase/messaging";
 import { 
   requestUserPermission, 
-  getFcmToken, 
-  foregroundMessageListener 
+  getFcmToken,
+  foregroundMessageListener,
+  setupTokenRefreshListener,
+  displayNotification,
 } from "../src/services/notifications";
 
 // -------------------------------------------------------------
@@ -63,23 +65,43 @@ export default function RootLayout() {
   // 🔥 FIREBASE MESSAGING INITIALIZATION
   useEffect(() => {
     async function initFCM() {
+      console.log('🔥 Initializing FCM...');
+      
+      // Step 1: Request permissions
       const hasPermission = await requestUserPermission();
       if (hasPermission) {
+        // Step 2: Get and send FCM token to backend
         await getFcmToken();
+        
+        // Step 3: Listen for token refreshes
+        const unsubscribeTokenRefresh = setupTokenRefreshListener();
+        
+        // Step 4: Listen for foreground messages
+        const unsubscribeForeground = foregroundMessageListener();
+        
+        // Step 5: Handle background messages
+        messaging().setBackgroundMessageHandler(
+          async remoteMessage => {
+            console.log('📱 Background Message Received:', remoteMessage);
+            // Display notification even when app is backgrounded
+            await displayNotification(remoteMessage);
+          }
+        );
+        
+        // Cleanup function
+        return () => {
+          unsubscribeForeground?.();
+          unsubscribeTokenRefresh?.();
+        };
+      } else {
+        console.warn('⚠️ Notification permission not granted');
       }
     }
 
-    initFCM();
-
-    // Foreground messages
-    const unsubscribe = foregroundMessageListener();
-
-    // Background messages
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log("Background Message:", remoteMessage);
-    });
-
-    return unsubscribe;
+    const cleanup = initFCM();
+    return () => {
+      cleanup?.then(fn => fn?.());
+    };
   }, []);
 
   return (

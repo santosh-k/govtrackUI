@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
@@ -23,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchAssignmentOptions, selectAssignment, assignComplaint } from '@/src/store/assignmentSlice';
 import { clearSelection } from '@/src/store/selectionSlice';
 import { AppDispatch, RootState } from '@/src/store';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',

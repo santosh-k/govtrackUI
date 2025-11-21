@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   FlatList,
@@ -15,6 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { setSelection } from '@/src/store/selectionSlice';
 import { AppDispatch } from '@/src/store';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#F5F5F5',

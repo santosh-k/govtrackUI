@@ -13,7 +13,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
@@ -36,6 +35,7 @@ import AddMediaSheet from '@/components/AddMediaSheet';
 import Toast from '@/components/Toast';
 import { Video, ResizeMode } from 'expo-av';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 // Types

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   TextInput,
@@ -12,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import selectionData from '@/data/selectionData.json';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#F5F5F5',
