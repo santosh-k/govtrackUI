@@ -1,7 +1,18 @@
 import messaging from '@react-native-firebase/messaging';
+import * as Notifications from 'expo-notifications';
 import { Platform, PermissionsAndroid } from 'react-native';
-import notifee, { AndroidImportance } from '@notifee/react-native';
 import { ApiManager } from './ApiManager';
+
+/**
+ * ✅ Configure notification handler for how notifications appear
+ */
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 /**
  * ✅ Step 1: Request User Permission for Notifications
@@ -76,7 +87,6 @@ async function sendTokenToBackend(token) {
     const response = await ApiManager.post('/api/notifications/register-token', {
       fcmToken: token,
       platform: Platform.OS,
-      deviceId: require('expo-device').getDeviceId?.(),
     });
     console.log('✅ FCM token sent to backend:', response);
   } catch (error) {
@@ -120,39 +130,22 @@ export function foregroundMessageListener() {
 }
 
 /**
- * ✅ Step 6: Display Notification Card
+ * ✅ Step 6: Display Notification Card using expo-notifications
  * This shows the actual notification UI to the user
  */
 export async function displayNotification(remoteMessage) {
   try {
-    const { title, body, imageUrl } = remoteMessage.notification || {};
+    const { title, body } = remoteMessage.notification || {};
     
-    // Create notification channel for Android
-    if (Platform.OS === 'android') {
-      await notifee.createChannel({
-        id: 'default',
-        name: 'Default Channel',
-        importance: AndroidImportance.HIGH,
-        vibration: true,
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: title || 'New Message',
+        body: body || '',
+        data: remoteMessage.data || {},
         sound: 'default',
-      });
-    }
-
-    // Display the notification
-    await notifee.displayNotification({
-      title: title || 'New Message',
-      body: body || '',
-      android: {
-        channelId: 'default',
-        smallIcon: 'ic_launcher',
-        largeIcon: imageUrl,
-        pressAction: {
-          id: 'default',
-        },
+        badge: 1,
       },
-      ios: {
-        sound: 'default',
-      },
+      trigger: null, // Show immediately
     });
 
     console.log('✅ Notification displayed to user');

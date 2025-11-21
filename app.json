@@ -85,8 +85,7 @@
           "sound": true,
           "badge": true
         }
-      ],
-      "@notifee/react-native"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
