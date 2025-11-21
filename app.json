@@ -64,15 +64,20 @@
       ],
       "expo-secure-store",
       "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics",
+     "@react-native-firebase/app",
+      [
+        "@react-native-firebase/crashlytics",
         {
           "crashlytics_auto_collection_enabled": true
-        },
-      "@react-native-firebase/messaging",
+        }
+      ],
+      [
+        "@react-native-firebase/messaging",
         {
           "sound": true,
           "badge": true
         }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
