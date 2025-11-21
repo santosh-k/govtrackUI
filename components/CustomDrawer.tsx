@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -19,70 +19,68 @@ const COLORS = {
   textSecondary: '#666666',
   primary: '#2196F3',
   border: '#eeeeeeff',
-  logoutButton: '#FF851B',
-  subMenuBackground: '#F8F8F8',
 };
 
 interface MenuItem {
   id: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  route?: string;
-  hasSubMenu?: boolean;
-  subItems?: SubMenuItem[];
-}
-
-interface SubMenuItem {
-  id: string;
-  label: string;
   route: string;
 }
 
 const menuItems: MenuItem[] = [
-  { id: 'home', label: 'Home', icon: 'home-outline', route: '/(drawer)/(tabs)/dashboard' },
-  { id: 'complaints', label: 'Complaints', icon: 'document-text-outline', route: '/(drawer)/(tabs)/complaints' },
-  { id: 'projects', label: 'Projects', icon: 'folder-outline', route: '/(drawer)/(tabs)/projects' },
   {
-    id: 'inspections',
-    label: 'Inspections',
-    icon: 'clipboard-outline',
-    hasSubMenu: true,
-    subItems: [
-      { id: 'project-inspection', label: 'Project Inspection', route: '/(drawer)/advanced-project-search' },
-      { id: 'assets-inspection', label: 'Assets Inspection', route: '/(drawer)/search-asset' },
-      { id: 'water-logging-point', label: 'Water Logging Point', route: '/(drawer)/placeholder' },
-      { id: 'water-logging-removal', label: 'Water Logging Removal', route: '/(drawer)/placeholder' },
-      { id: 'street-light-inspection', label: 'Street Light Inspection', route: '/(drawer)/placeholder' },
-    ],
+    id: 'home',
+    label: 'Home',
+    icon: 'home-outline',
+    route: '/(drawer)/(tabs)/dashboard'
   },
-  { id: 'my-task', label: 'My Task', icon: 'checkmark-done-outline', route: '/(drawer)/(tabs)/tasks?tab=my-tasks' },
-  { id: 'assign-task', label: 'Assign Task', icon: 'add-circle-outline', route: '/(drawer)/(tabs)/tasks?tab=assigned-by-me' },
-  { id: 'my-profile', label: 'My Profile', icon: 'person-outline', route: '/(drawer)/profile' },
-  { id: 'settings', label: 'Settings', icon: 'settings-outline', route: '/(drawer)/settings' },
+  {
+    id: 'project-inspections',
+    label: 'Project Inspections',
+    icon: 'clipboard-outline',
+    route: '/(drawer)/advanced-project-search'
+  },
+  {
+    id: 'assets-inspections',
+    label: 'Assets Inspections',
+    icon: 'business-outline',
+    route: '/(drawer)/search-asset'
+  },
+  {
+    id: 'water-logging-point',
+    label: 'Water Logging Point',
+    icon: 'water-outline',
+    route: '/(drawer)/water-logging-point'
+  },
+  {
+    id: 'water-logging-removal',
+    label: 'Water Logging Removal',
+    icon: 'water-outline',
+    route: '/(drawer)/water-logging-removal'
+  },
+  {
+    id: 'street-light-inspection',
+    label: 'Street Light Inspections',
+    icon: 'bulb-outline',
+    route: '/(drawer)/street-light-inspection'
+  },
+  {
+    id: 'my-profile',
+    label: 'My Profile',
+    icon: 'person-outline',
+    route: '/(drawer)/profile'
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: 'settings-outline',
+    route: '/(drawer)/settings'
+  },
 ];
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
-  const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
-
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menuId]: !prev[menuId],
-    }));
-  };
-
-  const handleMenuItemPress = (item: MenuItem) => {
-    if (item.hasSubMenu) {
-      toggleMenu(item.id);
-    } else if (item.route) {
-      // Close drawer first
-      props.navigation.closeDrawer();
-      // Navigate to the route
-      router.push(item.route as any);
-    }
-  };
-
-  const handleSubMenuItemPress = (route: string) => {
+  const handleMenuItemPress = (route: string) => {
     // Close drawer first
     props.navigation.closeDrawer();
     // Navigate to the route
@@ -109,55 +107,21 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item) => (
-            <View key={item.id}>
-              {/* Main Menu Item */}
-              <TouchableOpacity
-                style={styles.menuItem}
-                activeOpacity={0.6}
-                onPress={() => handleMenuItemPress(item)}
-              >
-                <Ionicons name={item.icon} size={24} color={COLORS.text} />
-                <Text style={styles.menuItemText}>{item.label}</Text>
-                {item.hasSubMenu ? (
-                  <Ionicons
-                    name={expandedMenus[item.id] ? 'chevron-up' : 'chevron-down'}
-                    size={20}
-                    color={COLORS.textSecondary}
-                    style={styles.chevronIcon}
-                  />
-                ) : (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={COLORS.textSecondary}
-                    style={styles.chevronIcon}
-                  />
-                )}
-              </TouchableOpacity>
-
-              {/* Sub Menu Items (Collapsible) */}
-              {item.hasSubMenu && expandedMenus[item.id] && item.subItems && (
-                <View style={styles.subMenuContainer}>
-                  {item.subItems.map((subItem) => (
-                    <TouchableOpacity
-                      key={subItem.id}
-                      style={styles.subMenuItem}
-                      activeOpacity={0.6}
-                      onPress={() => handleSubMenuItemPress(subItem.route)}
-                    >
-                      <View style={styles.subMenuDot} />
-                      <Text style={styles.subMenuItemText}>{subItem.label}</Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={18}
-                        color={COLORS.textSecondary}
-                        style={styles.subMenuChevron}
-                      />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuItem}
+              activeOpacity={0.6}
+              onPress={() => handleMenuItemPress(item.route)}
+            >
+              <Ionicons name={item.icon} size={24} color={COLORS.text} />
+              <Text style={styles.menuItemText}>{item.label}</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS.textSecondary}
+                style={styles.chevronIcon}
+              />
+            </TouchableOpacity>
           ))}
         </View>
       </DrawerContentScrollView>
@@ -234,35 +198,6 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   chevronIcon: {
-    marginLeft: 'auto',
-  },
-  // Sub Menu Styles
-  subMenuContainer: {
-    backgroundColor: COLORS.subMenuBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  subMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingLeft: 56,
-    paddingRight: 16,
-  },
-  subMenuDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.textSecondary,
-    marginRight: 12,
-  },
-  subMenuItemText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: '400',
-  },
-  subMenuChevron: {
     marginLeft: 'auto',
   },
 });
