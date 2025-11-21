@@ -70,5 +70,13 @@
     { "id": "6", "name": "Budget Constraints" },
     { "id": "7", "name": "Design Changes" },
     { "id": "8", "name": "Site Access Issues" }
+  ],
+  "assetCategories": [
+    { "id": "1", "name": "Roads" },
+    { "id": "2", "name": "Buildings" },
+    { "id": "3", "name": "Bridges" },
+    { "id": "4", "name": "Electrical" },
+    { "id": "5", "name": "Parks" },
+    { "id": "6", "name": "Drains" }
   ]
 }

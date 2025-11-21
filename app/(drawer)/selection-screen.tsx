@@ -30,7 +30,7 @@ interface SelectionItem {
   name: string;
 }
 
-type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes';
+type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes' | 'assetCategories';
 
 export default function SelectionScreen() {
   const params = useLocalSearchParams();
