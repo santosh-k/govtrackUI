@@ -8,6 +8,27 @@ import { router } from 'expo-router';
 import { AuthProvider, AuthContext } from '../src/contexts/AuthContext';
 import { useContext, useEffect } from 'react';
 
+import crashlytics from "@react-native-firebase/crashlytics";
+
+// 🔥 Firebase Messaging
+import messaging from "@react-native-firebase/messaging";
+import { 
+  requestUserPermission, 
+  getFcmToken, 
+  foregroundMessageListener 
+} from "../src/services/notifications";
+
+// -------------------------------------------------------------
+// 🔥 GLOBAL CRASHLYTICS ERROR HANDLER
+// -------------------------------------------------------------
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  crashlytics().recordError(error);
+  if (isFatal) {
+    console.log("Fatal JS Error:", error);
+    // Optional: show custom crash UI
+  }
+});
+
 function Loading() {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -38,6 +59,28 @@ function AuthHandler({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  // 🔥 FIREBASE MESSAGING INITIALIZATION
+  useEffect(() => {
+    async function initFCM() {
+      const hasPermission = await requestUserPermission();
+      if (hasPermission) {
+        await getFcmToken();
+      }
+    }
+
+    initFCM();
+
+    // Foreground messages
+    const unsubscribe = foregroundMessageListener();
+
+    // Background messages
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      console.log("Background Message:", remoteMessage);
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
     <Provider store={store}>
       <PersistGate loading={<Loading />} persistor={persistor}>

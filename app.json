@@ -11,21 +11,31 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"],
+        "FirebaseAppDelegateProxyEnabled": true,
         "NSCameraUsageDescription": "This app needs access to your camera to take profile pictures.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile pictures."
-      }
+      },
+      "googleServicesFile": "./GoogleService-Info.plist"
+      
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true,
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
       ],
       "package": "com.surajspx.pwddelhiapp"
     },
@@ -52,7 +62,17 @@
           "cameraPermission": "This app needs access to your camera to take profile pictures."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
+        {
+          "crashlytics_auto_collection_enabled": true
+        },
+      "@react-native-firebase/messaging",
+        {
+          "sound": true,
+          "badge": true
+        }
     ],
     "experiments": {
       "typedRoutes": true
