@@ -7,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { router } from 'expo-router';
 import { AuthProvider, AuthContext } from '../src/contexts/AuthContext';
 import { useContext, useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import crashlytics from "@react-native-firebase/crashlytics";
 
@@ -82,7 +83,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Provider store={store}>
+    <SafeAreaProvider>
+      <Provider store={store}>
       <PersistGate loading={<Loading />} persistor={persistor}>
         <AuthProvider>
           <AuthHandler>
@@ -109,5 +111,7 @@ export default function RootLayout() {
         </AuthProvider>
       </PersistGate>
     </Provider>
+    </SafeAreaProvider>
+    
   );
 }

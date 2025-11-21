@@ -11,15 +11,23 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
         "FirebaseAppDelegateProxyEnabled": true,
         "NSCameraUsageDescription": "This app needs access to your camera to take profile pictures.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile pictures."
       },
-      "googleServicesFile": "./GoogleService-Info.plist"
-      
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.surajspx.pwddelhiapp"
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCrKfkav4s3JwdPp785FvvdkQq-GiY-Oac"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -32,10 +40,10 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO",
-        "INTERNET",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "POST_NOTIFICATIONS"
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "package": "com.surajspx.pwddelhiapp"
     },
@@ -64,7 +72,7 @@
       ],
       "expo-secure-store",
       "@react-native-firebase/app",
-     "@react-native-firebase/app",
+      "@react-native-firebase/app",
       [
         "@react-native-firebase/crashlytics",
         {
