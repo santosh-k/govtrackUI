@@ -22,7 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchAssignmentOptions, selectAssignment, assignComplaint } from '@/src/store/assignmentSlice';
 import { clearSelection } from '@/src/store/selectionSlice';
 import { AppDispatch, RootState } from '@/src/store';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView,useSafeAreaInsets } from 'react-native-safe-area-context';
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
@@ -36,7 +36,7 @@ const COLORS = {
   disabled: '#F5F5F5',
   disabledText: '#BDBDBD',
 };
-
+const insets = useSafeAreaInsets();
 // Mock hierarchical data
 const MOCK_DATA = {
   divisions: [
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: insets.bottom,
     left: 0,
     right: 0,
     backgroundColor: COLORS.cardBackground,
