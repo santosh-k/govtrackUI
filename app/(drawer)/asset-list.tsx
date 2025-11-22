@@ -27,6 +27,14 @@ interface AssetDetails {
   [key: string]: string;
 }
 
+interface Observation {
+  id: string;
+  text: string;
+  reportedBy: string;
+  department: string;
+  date: string;
+}
+
 interface Asset {
   id: string;
   name: string;
@@ -37,7 +45,7 @@ interface Asset {
   subDivision: string;
   inspectionDate: string;
   details: AssetDetails;
-  recentObservation?: string;
+  observations?: Observation[];
 }
 
 // Mock Assets Data with Enhanced Structure (matching selectionData.json categories)
@@ -63,7 +71,29 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '10-Jan-2024',
       'Condition': 'Good',
     },
-    recentObservation: 'Minor cracks observed on the left lane near km marker 2.1. Surface wear noted in high-traffic areas. Immediate patching recommended.',
+    observations: [
+      {
+        id: 'OBS-001-01',
+        text: 'Minor cracks observed on the left lane near km marker 2.1. Surface wear noted in high-traffic areas. Immediate patching recommended.',
+        reportedBy: 'Rajesh Kumar',
+        department: 'Roads Dept',
+        date: '15-Mar-2024',
+      },
+      {
+        id: 'OBS-001-02',
+        text: 'Pothole formation beginning at km marker 1.8. Water accumulation during rain may accelerate damage.',
+        reportedBy: 'Anjali Sharma',
+        department: 'Roads Dept',
+        date: '10-Mar-2024',
+      },
+      {
+        id: 'OBS-001-03',
+        text: 'Road markings faded on right lane between km 1.5 and 2.0. Repainting required for safety.',
+        reportedBy: 'Vikram Singh',
+        department: 'Roads Dept',
+        date: '05-Mar-2024',
+      },
+    ],
   },
   {
     id: 'AST-2024-002',
@@ -86,7 +116,22 @@ const ASSETS_DATA: Asset[] = [
       'Last Renovation': '2022',
       'Structural Health': 'Excellent',
     },
-    recentObservation: 'Water seepage detected on 3rd floor ceiling near northwest corner. Paint peeling observed. Plumbing inspection required urgently.',
+    observations: [
+      {
+        id: 'OBS-002-01',
+        text: 'Water seepage detected on 3rd floor ceiling near northwest corner. Paint peeling observed. Plumbing inspection required urgently.',
+        reportedBy: 'Priya Mehta',
+        department: 'Building Dept',
+        date: '12-Mar-2024',
+      },
+      {
+        id: 'OBS-002-02',
+        text: 'Cracks appearing on exterior wall near main entrance. Structural assessment recommended.',
+        reportedBy: 'Suresh Reddy',
+        department: 'Building Dept',
+        date: '08-Mar-2024',
+      },
+    ],
   },
   {
     id: 'AST-2024-003',
@@ -109,7 +154,29 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '05-Feb-2024',
       'Condition': 'Fair - Minor Repairs Needed',
     },
-    recentObservation: 'Pothole developing on right lane near Rajouri Garden Metro exit. Water logging reported during last rain. Drainage system needs clearing.',
+    observations: [
+      {
+        id: 'OBS-003-01',
+        text: 'Pothole developing on right lane near Rajouri Garden Metro exit. Water logging reported during last rain.',
+        reportedBy: 'Amit Verma',
+        department: 'Roads Dept',
+        date: '18-Mar-2024',
+      },
+      {
+        id: 'OBS-003-02',
+        text: 'Drainage system near Punjabi Bagh junction blocked. Debris accumulation causing water overflow.',
+        reportedBy: 'Neha Kapoor',
+        department: 'Drainage Dept',
+        date: '15-Mar-2024',
+      },
+      {
+        id: 'OBS-003-03',
+        text: 'Street light malfunctioning at km marker 2.5. Safety concern during night hours.',
+        reportedBy: 'Ravi Patel',
+        department: 'Electrical Dept',
+        date: '12-Mar-2024',
+      },
+    ],
   },
   {
     id: 'AST-2024-004',
@@ -197,7 +264,22 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '15-Jan-2024',
       'Condition': 'Excellent',
     },
-    recentObservation: 'Minor rust spots observed on steel girders at pier 3. Expansion joints showing signs of wear. Protective coating touch-up recommended within 2 months.',
+    observations: [
+      {
+        id: 'OBS-007-01',
+        text: 'Minor rust spots observed on steel girders at pier 3. Expansion joints showing signs of wear.',
+        reportedBy: 'Deepak Malhotra',
+        department: 'Bridges Dept',
+        date: '25-Feb-2024',
+      },
+      {
+        id: 'OBS-007-02',
+        text: 'Protective coating peeling on north side of pier 2. Preventive maintenance required to avoid corrosion.',
+        reportedBy: 'Sanjay Gupta',
+        department: 'Bridges Dept',
+        date: '20-Feb-2024',
+      },
+    ],
   },
   {
     id: 'AST-2024-008',
@@ -556,36 +638,48 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
               {/* Separator */}
               <View style={styles.observationSeparator} />
 
-              {/* Recent Observations Section */}
-              <Text style={styles.sectionTitle}>Recent Observations</Text>
+              {/* Observations & Findings Section */}
+              <Text style={styles.sectionTitle}>Observations & Findings</Text>
 
-              <View style={styles.observationContainer}>
-                <Text style={asset.recentObservation ? styles.observationText : styles.observationEmptyText}>
-                  {asset.recentObservation || 'No recent observations recorded.'}
-                </Text>
-              </View>
+              {asset.observations && asset.observations.length > 0 ? (
+                asset.observations.map((observation) => (
+                  <View key={observation.id} style={styles.observationCard}>
+                    {/* Observation Text */}
+                    <Text style={styles.observationCardText}>{observation.text}</Text>
 
-              {/* Create Task Button */}
-              <TouchableOpacity
-                style={styles.createTaskButton}
-                onPress={() => {
-                  onClose();
-                  setTimeout(() => {
-                    router.push({
-                      pathname: '/(drawer)/create-task',
-                      params: {
-                        assetId: asset.id,
-                        assetName: asset.name,
-                        observation: asset.recentObservation || '',
-                      },
-                    });
-                  }, 300);
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-                <Text style={styles.createTaskButtonText}>Create Task</Text>
-              </TouchableOpacity>
+                    {/* Metadata */}
+                    <Text style={styles.observationMeta}>
+                      By {observation.reportedBy} • {observation.department} • {observation.date}
+                    </Text>
+
+                    {/* Create Task Button */}
+                    <TouchableOpacity
+                      style={styles.createTaskButtonSmall}
+                      onPress={() => {
+                        onClose();
+                        setTimeout(() => {
+                          router.push({
+                            pathname: '/(drawer)/create-task',
+                            params: {
+                              assetId: asset.id,
+                              assetName: asset.name,
+                              observation: observation.text,
+                            },
+                          });
+                        }, 300);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="add-circle-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.createTaskButtonSmallText}>Create Task</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyObservationCard}>
+                  <Text style={styles.emptyObservationText}>No observations recorded.</Text>
+                </View>
+              )}
             </View>
           </ScrollView>
         </Animated.View>
@@ -1151,45 +1245,53 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     marginHorizontal: -SPACING.md,
   },
-  observationContainer: {
-    backgroundColor: '#F9F9F9',
+  observationCard: {
+    backgroundColor: '#F5F5F5',
     padding: SPACING.md,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: SPACING.md,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
   },
-  observationText: {
+  observationCardText: {
     fontSize: 14,
     lineHeight: 20,
     color: COLORS.text,
+    fontWeight: '500',
+    marginBottom: 10,
   },
-  observationEmptyText: {
+  observationMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#999999',
+    marginBottom: 12,
+  },
+  createTaskButtonSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.white,
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    gap: 6,
+  },
+  createTaskButtonSmallText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  emptyObservationCard: {
+    backgroundColor: '#F5F5F5',
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginBottom: SPACING.md,
+    alignItems: 'center',
+  },
+  emptyObservationText: {
     fontSize: 14,
     lineHeight: 20,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
-  },
-  createTaskButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.lg,
-    borderRadius: 10,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.md,
-    gap: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  createTaskButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.white,
   },
 });

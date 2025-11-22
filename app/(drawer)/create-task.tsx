@@ -103,6 +103,20 @@ export default function CreateTaskScreen() {
   }, [params.selectedCategory, params.selectedDepartment]);
 
   /**
+   * Pre-fill form fields when coming from asset observation
+   */
+  useEffect(() => {
+    if (params.assetName) {
+      // Pre-fill task name with asset name if provided
+      setTaskName(`Task for ${params.assetName as string}`);
+    }
+    if (params.observation) {
+      // Pre-fill description with observation text
+      setDescription(params.observation as string);
+    }
+  }, [params.assetName, params.observation]);
+
+  /**
    * Handles back navigation
    */
   const handleGoBack = () => {
