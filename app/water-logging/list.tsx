@@ -3,10 +3,11 @@
  *
  * Features:
  * - Two-tab interface (Logging Points vs Removal Points)
+ * - Interactive status updates with auto-move between tabs
  * - Search functionality by road name or place name
- * - Simplified list cards for better scannability
+ * - Simplified list cards with status badges
  * - Detailed bottom sheet for viewing full incident data
- * - Conditional FAB (only on Logging Points tab)
+ * - Status update sheet for changing incident status
  */
 
 import React, { useState, useMemo } from 'react';
@@ -27,9 +28,10 @@ import { COLORS, SPACING } from '@/theme';
 import WaterLoggingDetailsBottomSheet, {
   WaterLoggingIncident,
 } from '@/components/WaterLoggingDetailsBottomSheet';
+import WaterLoggingStatusUpdateSheet from '@/components/WaterLoggingStatusUpdateSheet';
 
-// Mock Data with complete details
-const MOCK_INCIDENTS: WaterLoggingIncident[] = [
+// Initial Mock Data
+const INITIAL_MOCK_INCIDENTS: WaterLoggingIncident[] = [
   {
     id: 'WL-2024-001',
     roadName: 'Ring Road near Rajouri Garden Metro',
@@ -127,7 +129,7 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     approxArea: '180 m',
     mainCause: 'Sewer Overflow',
     trafficImpact: 'Partial',
-    status: 'Reported',
+    status: 'Working',
     latitude: 28.5672,
     longitude: 77.2499,
     media: [
@@ -234,30 +236,29 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
   },
 ];
 
-// Helper function to get severity color
-const getSeverityColor = (severity: string): string => {
-  switch (severity) {
-    case 'Low':
-      return '#4CAF50';
-    case 'Medium':
-      return '#FF9800';
-    case 'High':
-      return '#FF5722';
-    case 'Critical':
-      return '#F44336';
+// Helper function to get status color
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'Reported':
+      return '#FF9800'; // Orange
+    case 'Working':
+      return '#2196F3'; // Blue
+    case 'Cleared':
+      return '#4CAF50'; // Green
     default:
       return COLORS.textSecondary;
   }
 };
 
-// Simplified Incident Card Component
+// Simplified Incident Card Component with Interactive Status
 interface IncidentCardProps {
   incident: WaterLoggingIncident;
   onPress: () => void;
+  onStatusPress: () => void;
 }
 
-const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
-  const severityColor = getSeverityColor(incident.severity);
+const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress, onStatusPress }) => {
+  const statusColor = getStatusColor(incident.status);
 
   return (
     <TouchableOpacity
@@ -265,32 +266,48 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Top Row: Date & Time | Severity Badge */}
+      {/* Top Row: Date & Time | Interactive Status Button */}
       <View style={styles.cardTopRow}>
         <View style={styles.dateTimeContainer}>
           <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
           <Text style={styles.dateTimeText}>{incident.dateTime}</Text>
         </View>
-        <View style={[styles.severityBadge, { backgroundColor: severityColor }]}>
-          <Text style={styles.severityText}>{incident.severity}</Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.statusButton, { backgroundColor: statusColor }]}
+          onPress={(e) => {
+            e.stopPropagation();
+            onStatusPress();
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.statusButtonText}>{incident.status}</Text>
+          <Ionicons name="chevron-down" size={14} color={COLORS.white} />
+        </TouchableOpacity>
       </View>
 
-      {/* Main Content: Road Name & Location Type */}
+      {/* Main Content: Road Name */}
       <Text style={styles.roadName} numberOfLines={2}>
         {incident.roadName}
       </Text>
-      <View style={styles.locationTypeBadge}>
-        <Ionicons name="business-outline" size={12} color={COLORS.primary} />
-        <Text style={styles.locationTypeText}>{incident.locationType}</Text>
+
+      {/* Location Type • Division */}
+      <View style={styles.metaRow}>
+        <Ionicons name="business-outline" size={14} color={COLORS.textSecondary} />
+        <Text style={styles.metaText}>
+          {incident.locationType} • {incident.division}
+        </Text>
       </View>
 
-      {/* Footer: Division | View Details Link */}
+      {/* Address */}
+      <View style={styles.addressRow}>
+        <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+        <Text style={styles.addressText} numberOfLines={1}>
+          {incident.address}
+        </Text>
+      </View>
+
+      {/* Footer: View Details Link */}
       <View style={styles.cardFooter}>
-        <View style={styles.divisionContainer}>
-          <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.divisionText}>{incident.division}</Text>
-        </View>
         <View style={styles.viewDetailsContainer}>
           <Text style={styles.viewDetailsText}>View Full Details</Text>
           <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
@@ -304,17 +321,20 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
 export default function WaterLoggingListScreen() {
   const [activeTab, setActiveTab] = useState<'logging' | 'removal'>('logging');
   const [searchQuery, setSearchQuery] = useState('');
+  const [incidents, setIncidents] = useState<WaterLoggingIncident[]>(INITIAL_MOCK_INCIDENTS);
   const [selectedIncident, setSelectedIncident] = useState<WaterLoggingIncident | null>(null);
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [statusUpdateSheetVisible, setStatusUpdateSheetVisible] = useState(false);
+  const [incidentToUpdate, setIncidentToUpdate] = useState<string | null>(null);
 
   // Filter incidents by tab
   const tabFilteredIncidents = useMemo(() => {
     if (activeTab === 'logging') {
-      return MOCK_INCIDENTS.filter((incident) => incident.status === 'Reported');
+      return incidents.filter((incident) => incident.status !== 'Cleared');
     } else {
-      return MOCK_INCIDENTS.filter((incident) => incident.status === 'Cleared');
+      return incidents.filter((incident) => incident.status === 'Cleared');
     }
-  }, [activeTab]);
+  }, [activeTab, incidents]);
 
   // Filter by search query
   const filteredIncidents = useMemo(() => {
@@ -343,13 +363,42 @@ export default function WaterLoggingListScreen() {
     setBottomSheetVisible(true);
   };
 
+  const handleStatusPress = (incidentId: string) => {
+    setIncidentToUpdate(incidentId);
+    setStatusUpdateSheetVisible(true);
+  };
+
   const handleCloseBottomSheet = () => {
     setBottomSheetVisible(false);
     setTimeout(() => setSelectedIncident(null), 300);
   };
 
+  const handleStatusUpdate = (data: { newStatus: 'Working' | 'Cleared'; media: any[]; remarks: string }) => {
+    if (!incidentToUpdate) return;
+
+    setIncidents((prevIncidents) =>
+      prevIncidents.map((incident) => {
+        if (incident.id === incidentToUpdate) {
+          return {
+            ...incident,
+            status: data.newStatus,
+            media: [...(incident.media || []), ...data.media],
+          };
+        }
+        return incident;
+      })
+    );
+
+    setStatusUpdateSheetVisible(false);
+    setIncidentToUpdate(null);
+  };
+
   const renderIncidentItem = ({ item }: { item: WaterLoggingIncident }) => (
-    <IncidentCard incident={item} onPress={() => handleCardPress(item)} />
+    <IncidentCard
+      incident={item}
+      onPress={() => handleCardPress(item)}
+      onStatusPress={() => handleStatusPress(item.id)}
+    />
   );
 
   const renderEmptyState = () => (
@@ -365,6 +414,8 @@ export default function WaterLoggingListScreen() {
       </Text>
     </View>
   );
+
+  const currentIncident = incidents.find((inc) => inc.id === incidentToUpdate);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -450,11 +501,23 @@ export default function WaterLoggingListScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Bottom Sheet */}
+      {/* Details Bottom Sheet */}
       <WaterLoggingDetailsBottomSheet
         visible={bottomSheetVisible}
         incident={selectedIncident}
         onClose={handleCloseBottomSheet}
+      />
+
+      {/* Status Update Sheet */}
+      <WaterLoggingStatusUpdateSheet
+        visible={statusUpdateSheetVisible}
+        incidentId={incidentToUpdate}
+        currentStatus={currentIncident?.status || 'Reported'}
+        onClose={() => {
+          setStatusUpdateSheetVisible(false);
+          setIncidentToUpdate(null);
+        }}
+        onUpdate={handleStatusUpdate}
       />
     </SafeAreaView>
   );
@@ -579,13 +642,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
-  severityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  statusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
   },
-  severityText: {
-    fontSize: 11,
+  statusButtonText: {
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.white,
     textTransform: 'uppercase',
@@ -597,39 +663,36 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 23,
   },
-  locationTypeBadge: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 4,
+    gap: 6,
+    marginBottom: 6,
+  },
+  metaText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 12,
   },
-  locationTypeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
+  addressText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-  },
-  divisionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  divisionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   viewDetailsContainer: {
     flexDirection: 'row',
