@@ -78,5 +78,49 @@
     { "id": "4", "name": "Electrical" },
     { "id": "5", "name": "Parks" },
     { "id": "6", "name": "Drains" }
+  ],
+  "locationTypes": [
+    { "id": "1", "name": "Road" },
+    { "id": "2", "name": "Underpass" },
+    { "id": "3", "name": "Flyover" },
+    { "id": "4", "name": "Basement" },
+    { "id": "5", "name": "Park" },
+    { "id": "6", "name": "Colony" },
+    { "id": "7", "name": "School" },
+    { "id": "8", "name": "Hospital" },
+    { "id": "9", "name": "Government Building" },
+    { "id": "10", "name": "Other" }
+  ],
+  "affectedAreas": [
+    { "id": "1", "name": "Left" },
+    { "id": "2", "name": "Right" },
+    { "id": "3", "name": "Both" },
+    { "id": "4", "name": "Entire Area" },
+    { "id": "5", "name": "Carriageway" },
+    { "id": "6", "name": "Footpath" },
+    { "id": "7", "name": "Basement Floor" },
+    { "id": "8", "name": "Park Center" }
+  ],
+  "waterLoggingCauses": [
+    { "id": "1", "name": "Heavy Rain" },
+    { "id": "2", "name": "Choked Drain" },
+    { "id": "3", "name": "Sewer Overflow" },
+    { "id": "4", "name": "Construction" },
+    { "id": "5", "name": "Pipe Burst" },
+    { "id": "6", "name": "No Drainage" },
+    { "id": "7", "name": "Unknown" }
+  ],
+  "trafficImpacts": [
+    { "id": "1", "name": "No Impact" },
+    { "id": "2", "name": "Partial" },
+    { "id": "3", "name": "Heavy Disruption" },
+    { "id": "4", "name": "Completely Blocked" },
+    { "id": "5", "name": "Entry Blocked" }
+  ],
+  "severities": [
+    { "id": "1", "name": "Low" },
+    { "id": "2", "name": "Medium" },
+    { "id": "3", "name": "High" },
+    { "id": "4", "name": "Critical" }
   ]
 }

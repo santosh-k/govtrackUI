@@ -51,7 +51,7 @@ const menuItems: MenuItem[] = [
     id: 'water-logging-point',
     label: 'Water Logging Point',
     icon: 'water-outline',
-    route: '/(drawer)/water-logging-point'
+    route: '/water-logging/list'
   },
   {
     id: 'water-logging-removal',
