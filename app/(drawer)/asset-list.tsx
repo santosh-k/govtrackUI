@@ -13,11 +13,14 @@ import {
   Modal,
   ScrollView,
   Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 import { AssetFilterBottomSheet, AssetFilters } from '@/components/AssetFilterBottomSheet';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // Types
 interface AssetDetails {
@@ -445,7 +448,7 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
 
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [600, 0],
+    outputRange: [SCREEN_HEIGHT, 0],
   });
 
   return (
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
+    height: SCREEN_HEIGHT * 0.8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
