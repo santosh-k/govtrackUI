@@ -37,6 +37,7 @@ interface Asset {
   subDivision: string;
   inspectionDate: string;
   details: AssetDetails;
+  recentObservation?: string;
 }
 
 // Mock Assets Data with Enhanced Structure (matching selectionData.json categories)
@@ -62,6 +63,7 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '10-Jan-2024',
       'Condition': 'Good',
     },
+    recentObservation: 'Minor cracks observed on the left lane near km marker 2.1. Surface wear noted in high-traffic areas. Immediate patching recommended.',
   },
   {
     id: 'AST-2024-002',
@@ -84,6 +86,7 @@ const ASSETS_DATA: Asset[] = [
       'Last Renovation': '2022',
       'Structural Health': 'Excellent',
     },
+    recentObservation: 'Water seepage detected on 3rd floor ceiling near northwest corner. Paint peeling observed. Plumbing inspection required urgently.',
   },
   {
     id: 'AST-2024-003',
@@ -106,6 +109,7 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '05-Feb-2024',
       'Condition': 'Fair - Minor Repairs Needed',
     },
+    recentObservation: 'Pothole developing on right lane near Rajouri Garden Metro exit. Water logging reported during last rain. Drainage system needs clearing.',
   },
   {
     id: 'AST-2024-004',
@@ -193,6 +197,7 @@ const ASSETS_DATA: Asset[] = [
       'Last Maintenance': '15-Jan-2024',
       'Condition': 'Excellent',
     },
+    recentObservation: 'Minor rust spots observed on steel girders at pier 3. Expansion joints showing signs of wear. Protective coating touch-up recommended within 2 months.',
   },
   {
     id: 'AST-2024-008',
@@ -547,6 +552,40 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
                   <Text style={styles.detailValueSheet}>{value}</Text>
                 </View>
               ))}
+
+              {/* Separator */}
+              <View style={styles.observationSeparator} />
+
+              {/* Recent Observations Section */}
+              <Text style={styles.sectionTitle}>Recent Observations</Text>
+
+              <View style={styles.observationContainer}>
+                <Text style={asset.recentObservation ? styles.observationText : styles.observationEmptyText}>
+                  {asset.recentObservation || 'No recent observations recorded.'}
+                </Text>
+              </View>
+
+              {/* Create Task Button */}
+              <TouchableOpacity
+                style={styles.createTaskButton}
+                onPress={() => {
+                  onClose();
+                  setTimeout(() => {
+                    router.push({
+                      pathname: '/(drawer)/create-task',
+                      params: {
+                        assetId: asset.id,
+                        assetName: asset.name,
+                        observation: asset.recentObservation || '',
+                      },
+                    });
+                  }, 300);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+                <Text style={styles.createTaskButtonText}>Create Task</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </Animated.View>
@@ -1105,5 +1144,52 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.primary,
+  },
+  observationSeparator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 20,
+    marginHorizontal: -SPACING.md,
+  },
+  observationContainer: {
+    backgroundColor: '#F9F9F9',
+    padding: SPACING.md,
+    borderRadius: 8,
+    marginBottom: SPACING.md,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  observationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: COLORS.text,
+  },
+  observationEmptyText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
+  createTaskButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 10,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
+    gap: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  createTaskButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.white,
   },
 });
