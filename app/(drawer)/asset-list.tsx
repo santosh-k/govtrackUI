@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
+import { AssetFilterBottomSheet, AssetFilters } from '@/components/AssetFilterBottomSheet';
 
 // Types
 interface AssetDetails {
@@ -28,16 +29,24 @@ interface Asset {
   name: string;
   category: 'Road' | 'Building';
   lastInspectionDate: string;
+  department: string;
+  division: string;
+  subDivision: string;
+  inspectionDate: string;
   details: AssetDetails;
 }
 
-// Mock Assets Data
+// Mock Assets Data with Enhanced Structure
 const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-001',
     name: 'National Highway 44 Widening Project Section A',
     category: 'Road',
     lastInspectionDate: '15-Mar-2024',
+    department: 'Roads & Infrastructure',
+    division: 'North Division',
+    subDivision: 'Sub-Div A',
+    inspectionDate: '2024-03-15',
     details: {
       'Starting Point': 'Delhi Border, NH-44',
       'Ending Point': 'Panipat Junction',
@@ -56,6 +65,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Municipal Corporation Building - Main Block',
     category: 'Building',
     lastInspectionDate: '12-Mar-2024',
+    department: 'Civil',
+    division: 'Central Division',
+    subDivision: 'Sub-Div B',
+    inspectionDate: '2024-03-12',
     details: {
       'Cost': '₹8.5 Crore',
       'Building Client': 'Delhi Municipal Corporation',
@@ -74,6 +87,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Ring Road Section - West Delhi Corridor',
     category: 'Road',
     lastInspectionDate: '18-Mar-2024',
+    department: 'Roads & Infrastructure',
+    division: 'West Division',
+    subDivision: 'Sub-Div A',
+    inspectionDate: '2024-03-18',
     details: {
       'Starting Point': 'Punjabi Bagh Junction',
       'Ending Point': 'Rajouri Garden Metro',
@@ -92,6 +109,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Government School Building - Primary Wing',
     category: 'Building',
     lastInspectionDate: '10-Mar-2024',
+    department: 'Civil',
+    division: 'East Division',
+    subDivision: 'Sub-Div C',
+    inspectionDate: '2024-03-10',
     details: {
       'Cost': '₹4.2 Crore',
       'Building Client': 'Education Department, Delhi',
@@ -110,6 +131,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Mathura Road Extension - South District',
     category: 'Road',
     lastInspectionDate: '22-Mar-2024',
+    department: 'Roads & Infrastructure',
+    division: 'South Division',
+    subDivision: 'Sub-Div B',
+    inspectionDate: '2024-03-22',
     details: {
       'Starting Point': 'Ashram Chowk',
       'Ending Point': 'Badarpur Border',
@@ -128,6 +153,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'District Hospital Complex - East Wing',
     category: 'Building',
     lastInspectionDate: '08-Mar-2024',
+    department: 'Civil',
+    division: 'South Division',
+    subDivision: 'Sub-Div A',
+    inspectionDate: '2024-03-08',
     details: {
       'Cost': '₹15.0 Crore',
       'Building Client': 'Health Department, Delhi',
@@ -146,6 +175,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Outer Ring Road - North Section',
     category: 'Road',
     lastInspectionDate: '25-Feb-2024',
+    department: 'Roads & Infrastructure',
+    division: 'North Division',
+    subDivision: 'Sub-Div B',
+    inspectionDate: '2024-02-25',
     details: {
       'Starting Point': 'Wazirabad Bridge',
       'Ending Point': 'GTK Depot Junction',
@@ -164,6 +197,10 @@ const ASSETS_DATA: Asset[] = [
     name: 'Community Center Building - Sector 12',
     category: 'Building',
     lastInspectionDate: '05-Mar-2024',
+    department: 'Civil',
+    division: 'West Division',
+    subDivision: 'Sub-Div B',
+    inspectionDate: '2024-03-05',
     details: {
       'Cost': '₹6.8 Crore',
       'Building Client': 'DDA - Delhi Development Authority',
@@ -175,6 +212,50 @@ const ASSETS_DATA: Asset[] = [
       'Fire Safety': 'Compliant',
       'Last Renovation': '2021',
       'Structural Health': 'Good',
+    },
+  },
+  {
+    id: 'AST-2024-009',
+    name: 'Street Light Network - Vasant Vihar',
+    category: 'Road',
+    lastInspectionDate: '01-Feb-2024',
+    department: 'Electrical',
+    division: 'Central Division',
+    subDivision: 'Sub-Div A',
+    inspectionDate: '2024-02-01',
+    details: {
+      'Starting Point': 'Vasant Vihar Main Market',
+      'Ending Point': 'Nelson Mandela Marg',
+      'Length': '1.8 KM',
+      'No. of Lanes': '4',
+      'Lane Length': '3.5m each',
+      'Right of Way': '45 meters',
+      'Surface Type': 'Asphalt',
+      'Traffic Volume': 'Medium (8,000+ vehicles/day)',
+      'Last Maintenance': '10-Dec-2023',
+      'Condition': 'Good',
+    },
+  },
+  {
+    id: 'AST-2024-010',
+    name: 'Sports Complex Building - North District',
+    category: 'Building',
+    lastInspectionDate: '28-Jan-2024',
+    department: 'Civil',
+    division: 'North Division',
+    subDivision: 'Sub-Div C',
+    inspectionDate: '2024-01-28',
+    details: {
+      'Cost': '₹12.5 Crore',
+      'Building Client': 'Sports Authority of Delhi',
+      'Year of Construction': '2020',
+      'Type of Construction': 'Steel Frame Structure',
+      'Total Area': '35,000 sq ft',
+      'No. of Floors': '3 (G+2)',
+      'Occupancy Type': 'Sports/Recreation',
+      'Fire Safety': 'Compliant',
+      'Last Renovation': 'N/A',
+      'Structural Health': 'Excellent',
     },
   },
 ];
@@ -414,11 +495,29 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
                 <Text style={styles.detailValueSheet}>{asset.lastInspectionDate}</Text>
               </View>
 
+              {/* Department */}
+              <View style={styles.detailRowSheet}>
+                <Text style={styles.detailLabelSheet}>Department</Text>
+                <Text style={styles.detailValueSheet}>{asset.department}</Text>
+              </View>
+
+              {/* Division */}
+              <View style={[styles.detailRowSheet, styles.detailRowAlt]}>
+                <Text style={styles.detailLabelSheet}>Division</Text>
+                <Text style={styles.detailValueSheet}>{asset.division}</Text>
+              </View>
+
+              {/* Sub-Division */}
+              <View style={styles.detailRowSheet}>
+                <Text style={styles.detailLabelSheet}>Sub-Division</Text>
+                <Text style={styles.detailValueSheet}>{asset.subDivision}</Text>
+              </View>
+
               {/* All Details from details object */}
               {Object.entries(asset.details).map(([key, value], index) => (
                 <View
                   key={key}
-                  style={[styles.detailRowSheet, index % 2 === 0 ? styles.detailRowAlt : null]}
+                  style={[styles.detailRowSheet, (index + 3) % 2 === 0 ? styles.detailRowAlt : null]}
                 >
                   <Text style={styles.detailLabelSheet}>{key}</Text>
                   <Text style={styles.detailValueSheet}>{value}</Text>
@@ -432,15 +531,56 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
   );
 };
 
+// Helper function to parse date from DD-MM-YYYY to Date object
+const parseDate = (dateStr: string): Date | null => {
+  if (!dateStr || dateStr.length !== 10) return null;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+  const year = parseInt(parts[2], 10);
+  const date = new Date(year, month, day);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// Helper function to parse date from YYYY-MM-DD to Date object
+const parseISODate = (dateStr: string): Date | null => {
+  if (!dateStr || dateStr.length !== 10) return null;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 // Main Asset List Screen
 export default function AssetListScreen() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [filters, setFilters] = useState<AssetFilters>({
+    category: '',
+    department: '',
+    division: '',
+    subDivision: '',
+    fromDate: '',
+    toDate: '',
+  });
 
-  // Get filter params from search
-  const filterCategory = params.category as string || '';
+  // Update filters from selection screens when returning
+  React.useEffect(() => {
+    if (params.selectedCategory) {
+      setFilters((prev) => ({ ...prev, category: params.selectedCategory as string }));
+    }
+    if (params.selectedDepartment) {
+      setFilters((prev) => ({ ...prev, department: params.selectedDepartment as string }));
+    }
+    if (params.selectedDivision) {
+      setFilters((prev) => ({ ...prev, division: params.selectedDivision as string }));
+    }
+    if (params.selectedSubDivision) {
+      setFilters((prev) => ({ ...prev, subDivision: params.selectedSubDivision as string }));
+    }
+  }, [params]);
 
   const navigateBack = () => {
     router.push('/(drawer)/search-asset');
@@ -467,13 +607,123 @@ export default function AssetListScreen() {
     setTimeout(() => setSelectedAsset(null), 300);
   };
 
-  // Filter assets based on search query and category
+  const handleApplyFilters = (newFilters: AssetFilters) => {
+    setFilters(newFilters);
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      filters.category ||
+      filters.department ||
+      filters.division ||
+      filters.subDivision ||
+      filters.fromDate ||
+      filters.toDate
+    );
+  };
+
+  // Navigation handlers for selection screens
+  const handleOpenCategorySelector = () => {
+    setFilterSheetVisible(false);
+    router.push({
+      pathname: '/(drawer)/selection-screen',
+      params: {
+        title: 'Select Category',
+        options: JSON.stringify(['Road', 'Building']),
+        returnScreen: 'asset-list',
+        returnParam: 'selectedCategory',
+      },
+    });
+  };
+
+  const handleOpenDepartmentSelector = () => {
+    setFilterSheetVisible(false);
+    router.push({
+      pathname: '/(drawer)/selection-screen',
+      params: {
+        title: 'Select Department',
+        options: JSON.stringify([
+          'Roads & Infrastructure',
+          'Civil',
+          'Electrical',
+        ]),
+        returnScreen: 'asset-list',
+        returnParam: 'selectedDepartment',
+      },
+    });
+  };
+
+  const handleOpenDivisionSelector = () => {
+    setFilterSheetVisible(false);
+    router.push({
+      pathname: '/(drawer)/selection-screen',
+      params: {
+        title: 'Select Division',
+        options: JSON.stringify([
+          'North Division',
+          'South Division',
+          'East Division',
+          'West Division',
+          'Central Division',
+        ]),
+        returnScreen: 'asset-list',
+        returnParam: 'selectedDivision',
+      },
+    });
+  };
+
+  const handleOpenSubDivisionSelector = () => {
+    setFilterSheetVisible(false);
+    router.push({
+      pathname: '/(drawer)/selection-screen',
+      params: {
+        title: 'Select Sub-Division',
+        options: JSON.stringify([
+          'Sub-Div A',
+          'Sub-Div B',
+          'Sub-Div C',
+        ]),
+        returnScreen: 'asset-list',
+        returnParam: 'selectedSubDivision',
+      },
+    });
+  };
+
+  // Filter assets based on search query and filters
   const filteredAssets = useMemo(() => {
     let assets = ASSETS_DATA;
 
-    // Apply category filter
-    if (filterCategory) {
-      assets = assets.filter((asset) => asset.category === filterCategory);
+    // Apply filters
+    if (filters.category) {
+      assets = assets.filter((asset) => asset.category === filters.category);
+    }
+
+    if (filters.department) {
+      assets = assets.filter((asset) => asset.department === filters.department);
+    }
+
+    if (filters.division) {
+      assets = assets.filter((asset) => asset.division === filters.division);
+    }
+
+    if (filters.subDivision) {
+      assets = assets.filter((asset) => asset.subDivision === filters.subDivision);
+    }
+
+    // Date range filtering
+    if (filters.fromDate || filters.toDate) {
+      const fromDate = filters.fromDate ? parseDate(filters.fromDate) : null;
+      const toDate = filters.toDate ? parseDate(filters.toDate) : null;
+
+      assets = assets.filter((asset) => {
+        const assetDate = parseISODate(asset.inspectionDate);
+        if (!assetDate) return false;
+
+        if (fromDate && assetDate < fromDate) return false;
+        if (toDate && assetDate > toDate) return false;
+
+        return true;
+      });
     }
 
     // Apply local search query
@@ -487,7 +737,7 @@ export default function AssetListScreen() {
     }
 
     return assets;
-  }, [searchQuery, filterCategory]);
+  }, [searchQuery, filters]);
 
   const renderAssetItem = ({ item }: { item: Asset }) => (
     <DynamicAssetCard
@@ -502,8 +752,9 @@ export default function AssetListScreen() {
       <Ionicons name="file-tray-outline" size={64} color="#CCCCCC" />
       <Text style={styles.emptyStateTitle}>No assets found</Text>
       <Text style={styles.emptyStateText}>
-        No assets match your search criteria.{'\n'}
-        Try adjusting your search terms.
+        {hasActiveFilters()
+          ? 'No assets match your filter criteria.\nTry adjusting your filters.'
+          : 'No assets match your search criteria.\nTry adjusting your search terms.'}
       </Text>
     </View>
   );
@@ -524,7 +775,14 @@ export default function AssetListScreen() {
               <Ionicons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Asset List</Text>
-            <View style={styles.headerSpacer} />
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setFilterSheetVisible(true)}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="funnel-outline" size={24} color={COLORS.text} />
+              {hasActiveFilters() && <View style={styles.filterBadge} />}
+            </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
 
@@ -575,6 +833,18 @@ export default function AssetListScreen() {
           asset={selectedAsset}
           onClose={closeBottomSheet}
         />
+
+        {/* Asset Filter Bottom Sheet */}
+        <AssetFilterBottomSheet
+          visible={filterSheetVisible}
+          currentFilters={filters}
+          onApply={handleApplyFilters}
+          onClose={() => setFilterSheetVisible(false)}
+          onOpenCategorySelector={handleOpenCategorySelector}
+          onOpenDepartmentSelector={handleOpenDepartmentSelector}
+          onOpenDivisionSelector={handleOpenDivisionSelector}
+          onOpenSubDivisionSelector={handleOpenSubDivisionSelector}
+        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -605,8 +875,19 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
   },
-  headerSpacer: {
-    width: 40,
+  filterButton: {
+    padding: SPACING.sm,
+    marginRight: -SPACING.sm,
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error,
   },
   // Search Bar Styles
   searchContainer: {
