@@ -290,12 +290,10 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress, onStatus
         {incident.roadName}
       </Text>
 
-      {/* Location Type • Division */}
+      {/* Location Type */}
       <View style={styles.metaRow}>
         <Ionicons name="business-outline" size={14} color={COLORS.textSecondary} />
-        <Text style={styles.metaText}>
-          {incident.locationType} • {incident.division}
-        </Text>
+        <Text style={styles.metaText}>{incident.locationType}</Text>
       </View>
 
       {/* Address */}
@@ -306,8 +304,22 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress, onStatus
         </Text>
       </View>
 
-      {/* Footer: View Details Link */}
+      {/* Landmark (if available) */}
+      {incident.landmark && (
+        <View style={styles.landmarkRow}>
+          <Ionicons name="pin-outline" size={14} color={COLORS.textSecondary} />
+          <Text style={styles.landmarkText} numberOfLines={1}>
+            {incident.landmark}
+          </Text>
+        </View>
+      )}
+
+      {/* Footer: Division | View Details Link */}
       <View style={styles.cardFooter}>
+        <View style={styles.divisionContainer}>
+          <Ionicons name="business" size={14} color={COLORS.textSecondary} />
+          <Text style={styles.divisionText}>{incident.division}</Text>
+        </View>
         <View style={styles.viewDetailsContainer}>
           <Text style={styles.viewDetailsText}>View Full Details</Text>
           <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
@@ -678,7 +690,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   addressText: {
     flex: 1,
@@ -686,13 +698,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
+  landmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  landmarkText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  divisionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  divisionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   viewDetailsContainer: {
     flexDirection: 'row',

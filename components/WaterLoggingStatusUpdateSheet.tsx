@@ -89,13 +89,19 @@ export default function WaterLoggingStatusUpdateSheet({
 
   const handleMediaPicked = (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
       const newMedia: MediaAttachment = {
-        id: `media-${Date.now()}`,
-        uri: result.assets[0].uri,
-        type: result.assets[0].type === 'video' ? 'video' : 'image',
+        id: `media-${Date.now()}-${Math.random()}`,
+        uri: asset.uri,
+        type: asset.type === 'video' ? 'video' : 'image',
       };
-      setMedia([...media, newMedia]);
+      setMedia((prevMedia) => [...prevMedia, newMedia]);
     }
+    setShowMediaSheet(false);
+  };
+
+  const handleCloseMediaSheet = () => {
+    setShowMediaSheet(false);
   };
 
   const handleRemoveMedia = (id: string) => {
@@ -243,6 +249,7 @@ export default function WaterLoggingStatusUpdateSheet({
                       <TouchableOpacity
                         style={styles.removeMediaButton}
                         onPress={() => handleRemoveMedia(item.id)}
+                        activeOpacity={0.7}
                       >
                         <Ionicons name="close-circle" size={24} color={COLORS.white} />
                       </TouchableOpacity>
@@ -256,9 +263,11 @@ export default function WaterLoggingStatusUpdateSheet({
                   <TouchableOpacity
                     style={styles.addMediaButton}
                     onPress={handleAddMedia}
-                    activeOpacity={0.7}
+                    activeOpacity={0.6}
                   >
-                    <Ionicons name="camera" size={32} color={COLORS.primary} />
+                    <View style={styles.addMediaIconContainer}>
+                      <Ionicons name="camera" size={28} color={COLORS.primary} />
+                    </View>
                     <Text style={styles.addMediaText}>Add Photo/Video</Text>
                   </TouchableOpacity>
                 </View>
@@ -295,13 +304,15 @@ export default function WaterLoggingStatusUpdateSheet({
         </View>
       </Modal>
 
-      {/* Add Media Sheet */}
-      <AddMediaSheet
-        visible={showMediaSheet}
-        onClose={() => setShowMediaSheet(false)}
-        onPhotoTaken={handleMediaPicked}
-        onMediaSelected={handleMediaPicked}
-      />
+      {/* Add Media Sheet - Render conditionally to avoid modal stacking issues */}
+      {showMediaSheet && (
+        <AddMediaSheet
+          visible={showMediaSheet}
+          onClose={handleCloseMediaSheet}
+          onPhotoTaken={handleMediaPicked}
+          onMediaSelected={handleMediaPicked}
+        />
+      )}
     </>
   );
 }
@@ -472,18 +483,27 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: COLORS.primary,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: 'rgba(255, 152, 0, 0.05)',
+  },
+  addMediaIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   addMediaText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primary,
-    marginTop: 6,
     textAlign: 'center',
+    paddingHorizontal: 4,
   },
   remarksInput: {
     backgroundColor: COLORS.background,
