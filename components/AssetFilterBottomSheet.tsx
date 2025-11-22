@@ -9,10 +9,13 @@ import {
   TouchableWithoutFeedback,
   Animated,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export interface AssetFilters {
   category: string;
@@ -62,7 +65,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
 
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [600, 0],
+    outputRange: [SCREEN_HEIGHT, 0],
   });
 
   const handleReset = () => {
@@ -187,122 +190,121 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
           </View>
 
           {/* Scrollable Content */}
-          <ScrollView style={styles.sheetContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.filterSection}>
-              {/* Category */}
-              <View style={styles.filterField}>
-                <Text style={styles.fieldLabel}>Category</Text>
-                <TouchableOpacity
-                  style={styles.selectField}
-                  onPress={handleOpenCategorySelector}
-                  activeOpacity={0.7}
+          <ScrollView
+            style={styles.sheetContent}
+            contentContainerStyle={styles.sheetContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Category */}
+            <View style={styles.filterField}>
+              <Text style={styles.fieldLabel}>Category</Text>
+              <TouchableOpacity
+                style={styles.selectField}
+                onPress={handleOpenCategorySelector}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.selectFieldText,
+                    !localFilters.category && styles.placeholderText,
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.selectFieldText,
-                      !localFilters.category && styles.placeholderText,
-                    ]}
-                  >
-                    {localFilters.category || 'Select Category'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
+                  {localFilters.category || 'Select Category'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-              {/* Department */}
-              <View style={styles.filterField}>
-                <Text style={styles.fieldLabel}>Department</Text>
-                <TouchableOpacity
-                  style={styles.selectField}
-                  onPress={handleOpenDepartmentSelector}
-                  activeOpacity={0.7}
+            {/* Department */}
+            <View style={styles.filterField}>
+              <Text style={styles.fieldLabel}>Department</Text>
+              <TouchableOpacity
+                style={styles.selectField}
+                onPress={handleOpenDepartmentSelector}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.selectFieldText,
+                    !localFilters.department && styles.placeholderText,
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.selectFieldText,
-                      !localFilters.department && styles.placeholderText,
-                    ]}
-                  >
-                    {localFilters.department || 'Select Department'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
+                  {localFilters.department || 'Select Department'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-              {/* Division */}
-              <View style={styles.filterField}>
-                <Text style={styles.fieldLabel}>Division</Text>
-                <TouchableOpacity
-                  style={styles.selectField}
-                  onPress={handleOpenDivisionSelector}
-                  activeOpacity={0.7}
+            {/* Division */}
+            <View style={styles.filterField}>
+              <Text style={styles.fieldLabel}>Division</Text>
+              <TouchableOpacity
+                style={styles.selectField}
+                onPress={handleOpenDivisionSelector}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.selectFieldText,
+                    !localFilters.division && styles.placeholderText,
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.selectFieldText,
-                      !localFilters.division && styles.placeholderText,
-                    ]}
-                  >
-                    {localFilters.division || 'Select Division'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
+                  {localFilters.division || 'Select Division'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-              {/* Sub-Division */}
-              <View style={styles.filterField}>
-                <Text style={styles.fieldLabel}>Sub-Division</Text>
-                <TouchableOpacity
-                  style={styles.selectField}
-                  onPress={handleOpenSubDivisionSelector}
-                  activeOpacity={0.7}
+            {/* Sub-Division */}
+            <View style={styles.filterField}>
+              <Text style={styles.fieldLabel}>Sub-Division</Text>
+              <TouchableOpacity
+                style={styles.selectField}
+                onPress={handleOpenSubDivisionSelector}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.selectFieldText,
+                    !localFilters.subDivision && styles.placeholderText,
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.selectFieldText,
-                      !localFilters.subDivision && styles.placeholderText,
-                    ]}
-                  >
-                    {localFilters.subDivision || 'Select Sub-Division'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              </View>
+                  {localFilters.subDivision || 'Select Sub-Division'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
-              {/* Inspection Date Range */}
-              <View style={styles.filterField}>
-                <Text style={styles.fieldLabel}>Inspection Date Range</Text>
-                <View style={styles.dateRangeContainer}>
-                  <View style={styles.dateInputWrapper}>
-                    <Text style={styles.dateInputLabel}>From Date</Text>
-                    <TextInput
-                      style={styles.dateInput}
-                      placeholder="DD-MM-YYYY"
-                      placeholderTextColor={COLORS.textSecondary}
-                      value={localFilters.fromDate}
-                      onChangeText={(text) => updateFilter('fromDate', text)}
-                      maxLength={10}
-                      keyboardType="numbers-and-punctuation"
-                    />
-                  </View>
-                  <View style={styles.dateInputWrapper}>
-                    <Text style={styles.dateInputLabel}>To Date</Text>
-                    <TextInput
-                      style={styles.dateInput}
-                      placeholder="DD-MM-YYYY"
-                      placeholderTextColor={COLORS.textSecondary}
-                      value={localFilters.toDate}
-                      onChangeText={(text) => updateFilter('toDate', text)}
-                      maxLength={10}
-                      keyboardType="numbers-and-punctuation"
-                    />
-                  </View>
+            {/* Inspection Date Range */}
+            <View style={styles.filterField}>
+              <Text style={styles.fieldLabel}>Inspection Date Range</Text>
+              <View style={styles.dateRangeContainer}>
+                <View style={styles.dateInputWrapper}>
+                  <Text style={styles.dateInputLabel}>From Date</Text>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="DD-MM-YYYY"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={localFilters.fromDate}
+                    onChangeText={(text) => updateFilter('fromDate', text)}
+                    maxLength={10}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+                <View style={styles.dateInputWrapper}>
+                  <Text style={styles.dateInputLabel}>To Date</Text>
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="DD-MM-YYYY"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={localFilters.toDate}
+                    onChangeText={(text) => updateFilter('toDate', text)}
+                    maxLength={10}
+                    keyboardType="numbers-and-punctuation"
+                  />
                 </View>
               </View>
             </View>
-
-            {/* Bottom Spacing */}
-            <View style={{ height: 20 }} />
           </ScrollView>
 
           {/* Footer Buttons */}
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    height: SCREEN_HEIGHT * 0.75,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
@@ -382,8 +384,9 @@ const styles = StyleSheet.create({
   sheetContent: {
     flex: 1,
   },
-  filterSection: {
+  sheetContentContainer: {
     padding: SPACING.md,
+    paddingBottom: 20,
   },
   filterField: {
     marginBottom: SPACING.md + 4,
