@@ -1,10 +1,11 @@
 /**
  * Water Logging Points - List Screen
  *
- * Displays a list of reported water logging incidents with:
+ * Displays detailed water logging incidents with:
+ * - Complete information in each card
  * - Severity badges with color coding
- * - Location and type information
- * - Date/time stamps
+ * - Location and incident details
+ * - Media gallery for photos/videos
  * - FAB for creating new reports
  */
 
@@ -18,91 +19,193 @@ import {
   TouchableOpacity,
   FlatList,
   Platform,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 
 // Types
+interface MediaAttachment {
+  id: string;
+  uri: string;
+  type: 'image' | 'video';
+}
+
 interface WaterLoggingIncident {
   id: string;
   roadName: string;
   locationType: string;
-  depth: string;
-  severity: 'Low' | 'Medium' | 'High' | 'Critical';
-  dateTime: string;
-  status: string;
+  division: string;
   landmark?: string;
   address: string;
+  dateTime: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  affectedArea: string;
+  maxWaterDepth: string;
+  approxArea: string;
+  mainCause: string;
+  trafficImpact: string;
+  status: string;
+  media?: MediaAttachment[];
 }
 
-// Mock Data
+// Mock Data with complete details
 const MOCK_INCIDENTS: WaterLoggingIncident[] = [
   {
     id: 'WL-2024-001',
     roadName: 'Ring Road near Rajouri Garden Metro',
     locationType: 'Road',
-    depth: '1.5 ft',
-    severity: 'High',
-    dateTime: '20-Mar-2024 10:30 AM',
-    status: 'Reported',
+    division: 'West Division',
     landmark: 'Opposite Metro Station Gate 2',
-    address: 'Ring Road, Rajouri Garden, Delhi',
+    address: 'Ring Road, Rajouri Garden, West Delhi',
+    dateTime: '20-Mar-2024, 10:30 AM',
+    severity: 'High',
+    affectedArea: 'Both',
+    maxWaterDepth: '1.5 ft',
+    approxArea: '200 m',
+    mainCause: 'Choked Drain',
+    trafficImpact: 'Heavy Disruption',
+    status: 'Reported',
+    media: [
+      {
+        id: 'm1',
+        uri: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm2',
+        uri: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm3',
+        uri: 'https://images.unsplash.com/photo-1563207153-f403bf289096?w=400',
+        type: 'image',
+      },
+    ],
   },
   {
     id: 'WL-2024-002',
     roadName: 'ITO Underpass - Central Section',
     locationType: 'Underpass',
-    depth: '2.0 ft',
-    severity: 'Critical',
-    dateTime: '20-Mar-2024 09:15 AM',
-    status: 'Reported',
+    division: 'Central Division',
     landmark: 'ITO Junction',
-    address: 'ITO, Delhi',
+    address: 'ITO, Central Delhi',
+    dateTime: '20-Mar-2024, 09:15 AM',
+    severity: 'Critical',
+    affectedArea: 'Entire Area',
+    maxWaterDepth: '2.0 ft',
+    approxArea: '350 m',
+    mainCause: 'Heavy Rain',
+    trafficImpact: 'Completely Blocked',
+    status: 'Reported',
+    media: [
+      {
+        id: 'm4',
+        uri: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm5',
+        uri: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400',
+        type: 'image',
+      },
+    ],
   },
   {
     id: 'WL-2024-003',
     roadName: 'Nehru Park Main Gate',
     locationType: 'Park',
-    depth: '0.8 ft',
-    severity: 'Medium',
-    dateTime: '19-Mar-2024 04:45 PM',
-    status: 'Reported',
+    division: 'Central Division',
     landmark: 'Near Main Entrance',
-    address: 'Nehru Park, Chanakyapuri, Delhi',
+    address: 'Nehru Park, Chanakyapuri, Central Delhi',
+    dateTime: '19-Mar-2024, 04:45 PM',
+    severity: 'Medium',
+    affectedArea: 'Park Center',
+    maxWaterDepth: '0.8 ft',
+    approxArea: '150 m',
+    mainCause: 'Heavy Rain',
+    trafficImpact: 'No Impact',
+    status: 'Reported',
   },
   {
     id: 'WL-2024-004',
     roadName: 'Mathura Road Extension',
     locationType: 'Road',
-    depth: '1.2 ft',
-    severity: 'High',
-    dateTime: '19-Mar-2024 02:20 PM',
-    status: 'Reported',
+    division: 'South Division',
     landmark: 'Near Ashram Chowk',
-    address: 'Mathura Road, Delhi',
+    address: 'Mathura Road, South Delhi',
+    dateTime: '19-Mar-2024, 02:20 PM',
+    severity: 'High',
+    affectedArea: 'Carriageway',
+    maxWaterDepth: '1.2 ft',
+    approxArea: '180 m',
+    mainCause: 'Sewer Overflow',
+    trafficImpact: 'Partial',
+    status: 'Reported',
+    media: [
+      {
+        id: 'm6',
+        uri: 'https://images.unsplash.com/photo-1504490374041-7a5c14e8e92a?w=400',
+        type: 'image',
+      },
+    ],
   },
   {
     id: 'WL-2024-005',
     roadName: 'Model Town Colony Road 5',
     locationType: 'Colony',
-    depth: '0.5 ft',
-    severity: 'Low',
-    dateTime: '19-Mar-2024 11:00 AM',
-    status: 'Reported',
+    division: 'North Division',
     landmark: 'Near Community Center',
-    address: 'Model Town, Delhi',
+    address: 'Model Town, North Delhi',
+    dateTime: '19-Mar-2024, 11:00 AM',
+    severity: 'Low',
+    affectedArea: 'Left',
+    maxWaterDepth: '0.5 ft',
+    approxArea: '80 m',
+    mainCause: 'Heavy Rain',
+    trafficImpact: 'No Impact',
+    status: 'Reported',
   },
   {
     id: 'WL-2024-006',
     roadName: 'Punjabi Bagh Flyover East Approach',
     locationType: 'Flyover',
-    depth: '1.8 ft',
-    severity: 'Critical',
-    dateTime: '18-Mar-2024 03:30 PM',
-    status: 'Reported',
+    division: 'West Division',
     landmark: 'East Side Entry',
-    address: 'Punjabi Bagh, Delhi',
+    address: 'Punjabi Bagh, West Delhi',
+    dateTime: '18-Mar-2024, 03:30 PM',
+    severity: 'Critical',
+    affectedArea: 'Both',
+    maxWaterDepth: '1.8 ft',
+    approxArea: '280 m',
+    mainCause: 'Pipe Burst',
+    trafficImpact: 'Completely Blocked',
+    status: 'Reported',
+    media: [
+      {
+        id: 'm7',
+        uri: 'https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm8',
+        uri: 'https://images.unsplash.com/photo-1518893063132-36e46dbe2428?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm9',
+        uri: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400',
+        type: 'image',
+      },
+      {
+        id: 'm10',
+        uri: 'https://images.unsplash.com/photo-1582731223093-ea98f5f4b8d5?w=400',
+        type: 'image',
+      },
+    ],
   },
 ];
 
@@ -122,22 +225,32 @@ const getSeverityColor = (severity: string): string => {
   }
 };
 
-// Incident Card Component
-interface IncidentCardProps {
-  incident: WaterLoggingIncident;
-  onPress: () => void;
+// Detail Row Component
+interface DetailRowProps {
+  label: string;
+  value: string;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
+const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
+  <View style={styles.detailRow}>
+    {icon && <Ionicons name={icon} size={14} color={COLORS.textSecondary} style={styles.detailIcon} />}
+    <Text style={styles.detailLabel}>{label}:</Text>
+    <Text style={styles.detailValue}>{value}</Text>
+  </View>
+);
+
+// Incident Card Component with Full Details
+interface IncidentCardProps {
+  incident: WaterLoggingIncident;
+}
+
+const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
   const severityColor = getSeverityColor(incident.severity);
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      {/* Top Row: Date/Time & Severity Badge */}
+    <View style={styles.card}>
+      {/* Header Row: Date/Time & Severity Badge */}
       <View style={styles.cardTopRow}>
         <View style={styles.dateTimeContainer}>
           <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
@@ -148,31 +261,106 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
         </View>
       </View>
 
-      {/* Main Title */}
+      {/* Title Section */}
       <Text style={styles.roadName} numberOfLines={2}>
         {incident.roadName}
       </Text>
-
-      {/* Subtitle */}
-      <View style={styles.subtitleRow}>
-        <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
-        <Text style={styles.subtitleText}>
-          Type: {incident.locationType} | Depth: {incident.depth}
-        </Text>
+      <View style={styles.locationTypeBadge}>
+        <Ionicons name="business-outline" size={14} color={COLORS.primary} />
+        <Text style={styles.locationTypeText}>{incident.locationType}</Text>
       </View>
 
-      {/* Footer */}
-      <View style={styles.cardFooter}>
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Location Details Section */}
+      <Text style={styles.sectionTitle}>Location Details</Text>
+      <View style={styles.detailsContainer}>
+        <DetailRow label="Division" value={incident.division} icon="location-outline" />
+        {incident.landmark && (
+          <DetailRow label="Landmark" value={incident.landmark} icon="pin-outline" />
+        )}
+        <DetailRow label="Address" value={incident.address} icon="map-outline" />
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Incident Details Section */}
+      <Text style={styles.sectionTitle}>Incident Details</Text>
+      <View style={styles.incidentDetailsGrid}>
+        <View style={styles.gridItem}>
+          <Text style={styles.gridLabel}>Max Water Depth</Text>
+          <Text style={styles.gridValue}>{incident.maxWaterDepth}</Text>
+        </View>
+        <View style={styles.gridItem}>
+          <Text style={styles.gridLabel}>Approx Area</Text>
+          <Text style={styles.gridValue}>{incident.approxArea}</Text>
+        </View>
+        <View style={[styles.gridItem, styles.gridItemFull]}>
+          <Text style={styles.gridLabel}>Side/Area Affected</Text>
+          <Text style={styles.gridValue}>{incident.affectedArea}</Text>
+        </View>
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Cause & Impact Section */}
+      <Text style={styles.sectionTitle}>Cause & Impact</Text>
+      <View style={styles.detailsContainer}>
+        <View style={styles.causeImpactRow}>
+          <View style={styles.causeContainer}>
+            <Ionicons name="warning-outline" size={16} color="#FF5722" />
+            <View style={styles.causeTextContainer}>
+              <Text style={styles.causeLabel}>Main Cause</Text>
+              <Text style={styles.causeValue}>{incident.mainCause}</Text>
+            </View>
+          </View>
+          <View style={styles.impactContainer}>
+            <Ionicons name="car-outline" size={16} color="#2196F3" />
+            <View style={styles.impactTextContainer}>
+              <Text style={styles.impactLabel}>Traffic Impact</Text>
+              <Text style={styles.impactValue}>{incident.trafficImpact}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Media Gallery (if available) */}
+      {incident.media && incident.media.length > 0 && (
+        <>
+          <View style={styles.divider} />
+          <Text style={styles.sectionTitle}>Evidence</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.mediaGallery}
+            contentContainerStyle={styles.mediaGalleryContent}
+          >
+            {incident.media.map((media) => (
+              <View key={media.id} style={styles.mediaThumbnail}>
+                <Image source={{ uri: media.uri }} style={styles.mediaImage} />
+                {media.type === 'video' && (
+                  <View style={styles.videoOverlay}>
+                    <Ionicons name="play-circle" size={32} color={COLORS.white} />
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      {/* Status Footer */}
+      <View style={styles.statusFooter}>
         <View style={styles.statusContainer}>
           <View style={styles.statusDot} />
           <Text style={styles.statusText}>Status: {incident.status}</Text>
         </View>
-        <View style={styles.viewDetailsLink}>
-          <Text style={styles.viewDetailsText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-        </View>
+        <Text style={styles.incidentId}>{incident.id}</Text>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -184,20 +372,12 @@ export default function WaterLoggingListScreen() {
     router.back();
   };
 
-  const handleIncidentPress = (incident: WaterLoggingIncident) => {
-    // Navigate to details screen (to be implemented)
-    console.log('View incident details:', incident.id);
-  };
-
   const handleReportPress = () => {
     router.push('/water-logging/capture');
   };
 
   const renderIncidentItem = ({ item }: { item: WaterLoggingIncident }) => (
-    <IncidentCard
-      incident={item}
-      onPress={() => handleIncidentPress(item)}
-    />
+    <IncidentCard incident={item} />
   );
 
   const renderEmptyState = () => (
@@ -310,7 +490,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   dateTimeContainer: {
     flexDirection: 'row',
@@ -320,6 +500,7 @@ const styles = StyleSheet.create({
   dateTimeText: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   severityBadge: {
     paddingHorizontal: 10,
@@ -333,26 +514,170 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   roadName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
-    lineHeight: 22,
+    lineHeight: 23,
   },
-  subtitleRow: {
+  locationTypeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 4,
     marginBottom: 12,
   },
-  subtitleText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+  locationTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
-  cardFooter: {
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailsContainer: {
+    gap: 6,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  detailIcon: {
+    marginRight: 6,
+  },
+  detailLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginRight: 4,
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  incidentDetailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  gridItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#F9F9F9',
+    padding: 10,
+    borderRadius: 8,
+  },
+  gridItemFull: {
+    minWidth: '100%',
+  },
+  gridLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  gridValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  causeImpactRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  causeContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFEBEE',
+    padding: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  causeTextContainer: {
+    flex: 1,
+  },
+  causeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#C62828',
+    marginBottom: 2,
+  },
+  causeValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D32F2F',
+  },
+  impactContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#E3F2FD',
+    padding: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  impactTextContainer: {
+    flex: 1,
+  },
+  impactLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1565C0',
+    marginBottom: 2,
+  },
+  impactValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1976D2',
+  },
+  mediaGallery: {
+    marginTop: 4,
+  },
+  mediaGalleryContent: {
+    gap: 8,
+  },
+  mediaThumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    position: 'relative',
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -371,16 +696,13 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    fontWeight: '500',
   },
-  viewDetailsLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewDetailsText: {
-    fontSize: 13,
+  incidentId: {
+    fontSize: 11,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: COLORS.textSecondary,
+    letterSpacing: 0.5,
   },
   emptyState: {
     flex: 1,
