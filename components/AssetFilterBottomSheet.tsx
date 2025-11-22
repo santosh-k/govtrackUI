@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 
 export interface AssetFilters {
@@ -27,10 +28,6 @@ interface AssetFilterBottomSheetProps {
   currentFilters: AssetFilters;
   onApply: (filters: AssetFilters) => void;
   onClose: () => void;
-  onOpenCategorySelector: () => void;
-  onOpenDepartmentSelector: () => void;
-  onOpenDivisionSelector: () => void;
-  onOpenSubDivisionSelector: () => void;
 }
 
 export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
@@ -38,10 +35,6 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
   currentFilters,
   onApply,
   onClose,
-  onOpenCategorySelector,
-  onOpenDepartmentSelector,
-  onOpenDivisionSelector,
-  onOpenSubDivisionSelector,
 }) => {
   const [slideAnim] = useState(new Animated.Value(0));
   const [localFilters, setLocalFilters] = useState<AssetFilters>(currentFilters);
@@ -93,6 +86,71 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Navigation to SelectionScreen with proper params
+  const handleOpenCategorySelector = () => {
+    onClose(); // Close the bottom sheet first
+    setTimeout(() => {
+      router.push({
+        pathname: '/(drawer)/selection-screen',
+        params: {
+          title: 'Select Category',
+          dataKey: 'assetCategories',
+          currentValue: localFilters.category,
+          returnField: 'filterCategory',
+          returnTo: 'asset-list',
+        },
+      });
+    }, 300);
+  };
+
+  const handleOpenDepartmentSelector = () => {
+    onClose();
+    setTimeout(() => {
+      router.push({
+        pathname: '/(drawer)/selection-screen',
+        params: {
+          title: 'Select Department',
+          dataKey: 'departments',
+          currentValue: localFilters.department,
+          returnField: 'filterDepartment',
+          returnTo: 'asset-list',
+        },
+      });
+    }, 300);
+  };
+
+  const handleOpenDivisionSelector = () => {
+    onClose();
+    setTimeout(() => {
+      router.push({
+        pathname: '/(drawer)/selection-screen',
+        params: {
+          title: 'Select Division',
+          dataKey: 'divisions',
+          currentValue: localFilters.division,
+          returnField: 'filterDivision',
+          returnTo: 'asset-list',
+        },
+      });
+    }, 300);
+  };
+
+  const handleOpenSubDivisionSelector = () => {
+    onClose();
+    setTimeout(() => {
+      router.push({
+        pathname: '/(drawer)/selection-screen',
+        params: {
+          title: 'Select Sub-Division',
+          dataKey: 'subDivisions',
+          currentValue: localFilters.subDivision,
+          returnField: 'filterSubDivision',
+          returnTo: 'asset-list',
+        },
+      });
+    }, 300);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -120,7 +178,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
           {/* Header */}
           <View style={styles.sheetHeader}>
             <View style={styles.headerLeft}>
-              <Ionicons name="filter" size={24} color={COLORS.primary} />
+              <Ionicons name="funnel" size={24} color={COLORS.primary} />
               <Text style={styles.headerTitle}>Filter Assets</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -136,7 +194,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
                 <Text style={styles.fieldLabel}>Category</Text>
                 <TouchableOpacity
                   style={styles.selectField}
-                  onPress={onOpenCategorySelector}
+                  onPress={handleOpenCategorySelector}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -156,7 +214,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
                 <Text style={styles.fieldLabel}>Department</Text>
                 <TouchableOpacity
                   style={styles.selectField}
-                  onPress={onOpenDepartmentSelector}
+                  onPress={handleOpenDepartmentSelector}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -176,7 +234,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
                 <Text style={styles.fieldLabel}>Division</Text>
                 <TouchableOpacity
                   style={styles.selectField}
-                  onPress={onOpenDivisionSelector}
+                  onPress={handleOpenDivisionSelector}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -196,7 +254,7 @@ export const AssetFilterBottomSheet: React.FC<AssetFilterBottomSheetProps> = ({
                 <Text style={styles.fieldLabel}>Sub-Division</Text>
                 <TouchableOpacity
                   style={styles.selectField}
-                  onPress={onOpenSubDivisionSelector}
+                  onPress={handleOpenSubDivisionSelector}
                   activeOpacity={0.7}
                 >
                   <Text

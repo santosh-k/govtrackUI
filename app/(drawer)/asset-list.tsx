@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ interface AssetDetails {
 interface Asset {
   id: string;
   name: string;
-  category: 'Road' | 'Building';
+  category: 'Roads' | 'Buildings' | 'Bridges' | 'Electrical' | 'Parks' | 'Drains';
   lastInspectionDate: string;
   department: string;
   division: string;
@@ -36,16 +36,16 @@ interface Asset {
   details: AssetDetails;
 }
 
-// Mock Assets Data with Enhanced Structure
+// Mock Assets Data with Enhanced Structure (matching selectionData.json categories)
 const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-001',
     name: 'National Highway 44 Widening Project Section A',
-    category: 'Road',
+    category: 'Roads',
     lastInspectionDate: '15-Mar-2024',
-    department: 'Roads & Infrastructure',
+    department: 'Roads & Bridges Department',
     division: 'North Division',
-    subDivision: 'Sub-Div A',
+    subDivision: 'North Sub-Division A',
     inspectionDate: '2024-03-15',
     details: {
       'Starting Point': 'Delhi Border, NH-44',
@@ -63,11 +63,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-002',
     name: 'Municipal Corporation Building - Main Block',
-    category: 'Building',
+    category: 'Buildings',
     lastInspectionDate: '12-Mar-2024',
-    department: 'Civil',
+    department: 'Building Department',
     division: 'Central Division',
-    subDivision: 'Sub-Div B',
+    subDivision: 'Central Sub-Division A',
     inspectionDate: '2024-03-12',
     details: {
       'Cost': '₹8.5 Crore',
@@ -85,11 +85,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-003',
     name: 'Ring Road Section - West Delhi Corridor',
-    category: 'Road',
+    category: 'Roads',
     lastInspectionDate: '18-Mar-2024',
-    department: 'Roads & Infrastructure',
+    department: 'Roads & Bridges Department',
     division: 'West Division',
-    subDivision: 'Sub-Div A',
+    subDivision: 'West Sub-Division A',
     inspectionDate: '2024-03-18',
     details: {
       'Starting Point': 'Punjabi Bagh Junction',
@@ -107,11 +107,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-004',
     name: 'Government School Building - Primary Wing',
-    category: 'Building',
+    category: 'Buildings',
     lastInspectionDate: '10-Mar-2024',
-    department: 'Civil',
+    department: 'Building Department',
     division: 'East Division',
-    subDivision: 'Sub-Div C',
+    subDivision: 'East Sub-Division A',
     inspectionDate: '2024-03-10',
     details: {
       'Cost': '₹4.2 Crore',
@@ -129,11 +129,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-005',
     name: 'Mathura Road Extension - South District',
-    category: 'Road',
+    category: 'Roads',
     lastInspectionDate: '22-Mar-2024',
-    department: 'Roads & Infrastructure',
+    department: 'Roads & Bridges Department',
     division: 'South Division',
-    subDivision: 'Sub-Div B',
+    subDivision: 'South Sub-Division A',
     inspectionDate: '2024-03-22',
     details: {
       'Starting Point': 'Ashram Chowk',
@@ -151,11 +151,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-006',
     name: 'District Hospital Complex - East Wing',
-    category: 'Building',
+    category: 'Buildings',
     lastInspectionDate: '08-Mar-2024',
-    department: 'Civil',
+    department: 'Building Department',
     division: 'South Division',
-    subDivision: 'Sub-Div A',
+    subDivision: 'South Sub-Division B',
     inspectionDate: '2024-03-08',
     details: {
       'Cost': '₹15.0 Crore',
@@ -172,22 +172,21 @@ const ASSETS_DATA: Asset[] = [
   },
   {
     id: 'AST-2024-007',
-    name: 'Outer Ring Road - North Section',
-    category: 'Road',
+    name: 'Yamuna Bridge - Eastern Span',
+    category: 'Bridges',
     lastInspectionDate: '25-Feb-2024',
-    department: 'Roads & Infrastructure',
+    department: 'Roads & Bridges Department',
     division: 'North Division',
-    subDivision: 'Sub-Div B',
+    subDivision: 'North Sub-Division B',
     inspectionDate: '2024-02-25',
     details: {
-      'Starting Point': 'Wazirabad Bridge',
-      'Ending Point': 'GTK Depot Junction',
-      'Length': '4.1 KM',
+      'Starting Point': 'Wazirabad',
+      'Ending Point': 'GTK Depot',
+      'Length': '1.2 KM',
       'No. of Lanes': '6',
-      'Lane Length': '3.75m each',
-      'Right of Way': '70 meters',
-      'Surface Type': 'Concrete Pavement',
-      'Traffic Volume': 'High (18,000+ vehicles/day)',
+      'Span Type': 'Continuous Steel',
+      'Load Capacity': '100 Tonnes',
+      'Surface Type': 'Concrete Deck',
       'Last Maintenance': '15-Jan-2024',
       'Condition': 'Excellent',
     },
@@ -195,11 +194,11 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-008',
     name: 'Community Center Building - Sector 12',
-    category: 'Building',
+    category: 'Buildings',
     lastInspectionDate: '05-Mar-2024',
-    department: 'Civil',
+    department: 'Building Department',
     division: 'West Division',
-    subDivision: 'Sub-Div B',
+    subDivision: 'West Sub-Division B',
     inspectionDate: '2024-03-05',
     details: {
       'Cost': '₹6.8 Crore',
@@ -217,45 +216,79 @@ const ASSETS_DATA: Asset[] = [
   {
     id: 'AST-2024-009',
     name: 'Street Light Network - Vasant Vihar',
-    category: 'Road',
+    category: 'Electrical',
     lastInspectionDate: '01-Feb-2024',
-    department: 'Electrical',
+    department: 'Electrical Department',
     division: 'Central Division',
-    subDivision: 'Sub-Div A',
+    subDivision: 'Central Sub-Division B',
     inspectionDate: '2024-02-01',
     details: {
-      'Starting Point': 'Vasant Vihar Main Market',
-      'Ending Point': 'Nelson Mandela Marg',
-      'Length': '1.8 KM',
-      'No. of Lanes': '4',
-      'Lane Length': '3.5m each',
-      'Right of Way': '45 meters',
-      'Surface Type': 'Asphalt',
-      'Traffic Volume': 'Medium (8,000+ vehicles/day)',
+      'Coverage Area': 'Vasant Vihar Main Market',
+      'No. of Poles': '145',
+      'Light Type': 'LED 100W',
+      'Power Source': 'Grid Connected',
       'Last Maintenance': '10-Dec-2023',
       'Condition': 'Good',
     },
   },
   {
     id: 'AST-2024-010',
-    name: 'Sports Complex Building - North District',
-    category: 'Building',
+    name: 'Nehru Park - Central Garden Complex',
+    category: 'Parks',
     lastInspectionDate: '28-Jan-2024',
-    department: 'Civil',
-    division: 'North Division',
-    subDivision: 'Sub-Div C',
+    department: 'Horticulture Department',
+    division: 'Central Division',
+    subDivision: 'Central Sub-Division A',
     inspectionDate: '2024-01-28',
     details: {
-      'Cost': '₹12.5 Crore',
-      'Building Client': 'Sports Authority of Delhi',
-      'Year of Construction': '2020',
-      'Type of Construction': 'Steel Frame Structure',
-      'Total Area': '35,000 sq ft',
-      'No. of Floors': '3 (G+2)',
-      'Occupancy Type': 'Sports/Recreation',
-      'Fire Safety': 'Compliant',
-      'Last Renovation': 'N/A',
-      'Structural Health': 'Excellent',
+      'Total Area': '85 Acres',
+      'Green Cover': '75%',
+      'Facilities': 'Jogging Track, Amphitheatre',
+      'Trees': '2,500+',
+      'Maintenance Crew': '25 Staff',
+      'Last Renovation': '2020',
+      'Condition': 'Excellent',
+    },
+  },
+  {
+    id: 'AST-2024-011',
+    name: 'Main Drainage Canal - North Sector',
+    category: 'Drains',
+    lastInspectionDate: '15-Jan-2024',
+    department: 'Drainage Department',
+    division: 'North Division',
+    subDivision: 'North Sub-Division A',
+    inspectionDate: '2024-01-15',
+    details: {
+      'Starting Point': 'Model Town',
+      'Ending Point': 'Ring Road',
+      'Length': '3.5 KM',
+      'Width': '4 meters',
+      'Depth': '3 meters',
+      'Type': 'Concrete Lined',
+      'Last Cleaning': '05-Jan-2024',
+      'Condition': 'Good',
+    },
+  },
+  {
+    id: 'AST-2024-012',
+    name: 'Delhi Metro Connector Bridge',
+    category: 'Bridges',
+    lastInspectionDate: '20-Feb-2024',
+    department: 'Roads & Bridges Department',
+    division: 'Central Division',
+    subDivision: 'Central Sub-Division A',
+    inspectionDate: '2024-02-20',
+    details: {
+      'Starting Point': 'Rajiv Chowk',
+      'Ending Point': 'Connaught Place',
+      'Length': '0.8 KM',
+      'No. of Lanes': '4',
+      'Span Type': 'Pre-stressed Concrete',
+      'Load Capacity': '80 Tonnes',
+      'Surface Type': 'Asphalt Overlay',
+      'Last Maintenance': '10-Dec-2023',
+      'Condition': 'Good',
     },
   },
 ];
@@ -272,73 +305,42 @@ const DynamicAssetCard: React.FC<DynamicAssetCardProps> = ({
   onCardPress,
   onStartInspection,
 }) => {
-  // Render Road-specific details
-  const renderRoadDetails = () => (
-    <View style={styles.detailsGrid}>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Starting Point</Text>
-          <Text style={styles.detailValue} numberOfLines={2}>
-            {asset.details['Starting Point']}
-          </Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Length</Text>
-          <Text style={styles.detailValue}>{asset.details['Length']}</Text>
-        </View>
-      </View>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Ending Point</Text>
-          <Text style={styles.detailValue} numberOfLines={2}>
-            {asset.details['Ending Point']}
-          </Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>No. of Lanes</Text>
-          <Text style={styles.detailValue}>{asset.details['No. of Lanes']}</Text>
-        </View>
-      </View>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Right of Way</Text>
-          <Text style={styles.detailValue}>{asset.details['Right of Way']}</Text>
-        </View>
-      </View>
-    </View>
-  );
+  // Get icon based on category
+  const getCategoryIcon = () => {
+    switch (asset.category) {
+      case 'Roads':
+        return 'git-network-outline';
+      case 'Buildings':
+        return 'business-outline';
+      case 'Bridges':
+        return 'git-merge-outline';
+      case 'Electrical':
+        return 'flash-outline';
+      case 'Parks':
+        return 'leaf-outline';
+      case 'Drains':
+        return 'water-outline';
+      default:
+        return 'cube-outline';
+    }
+  };
 
-  // Render Building-specific details
-  const renderBuildingDetails = () => (
-    <View style={styles.detailsGrid}>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Cost</Text>
-          <Text style={styles.detailValue}>{asset.details['Cost']}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Year of Construction</Text>
-          <Text style={styles.detailValue}>{asset.details['Year of Construction']}</Text>
-        </View>
+  // Render details based on category
+  const renderDetails = () => {
+    const detailKeys = Object.keys(asset.details).slice(0, 4);
+    return (
+      <View style={styles.detailsGrid}>
+        {detailKeys.map((key, index) => (
+          <View key={key} style={[styles.detailRow, index % 2 === 0 && { marginBottom: 8 }]}>
+            <Text style={styles.detailLabel}>{key}</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {asset.details[key]}
+            </Text>
+          </View>
+        ))}
       </View>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Building Client</Text>
-          <Text style={styles.detailValue} numberOfLines={2}>
-            {asset.details['Building Client']}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.detailRow}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Type of Construction</Text>
-          <Text style={styles.detailValue} numberOfLines={2}>
-            {asset.details['Type of Construction']}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.card}>
@@ -353,7 +355,7 @@ const DynamicAssetCard: React.FC<DynamicAssetCardProps> = ({
           <Text style={styles.assetId}>{asset.id}</Text>
           <View style={styles.categoryBadge}>
             <Ionicons
-              name={asset.category === 'Road' ? 'git-network-outline' : 'business-outline'}
+              name={getCategoryIcon()}
               size={14}
               color={COLORS.primary}
             />
@@ -366,8 +368,8 @@ const DynamicAssetCard: React.FC<DynamicAssetCardProps> = ({
           {asset.name}
         </Text>
 
-        {/* Dynamic Details based on Category */}
-        {asset.category === 'Road' ? renderRoadDetails() : renderBuildingDetails()}
+        {/* Details */}
+        {renderDetails()}
       </TouchableOpacity>
 
       {/* Footer */}
@@ -402,6 +404,25 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
   onClose,
 }) => {
   const [slideAnim] = useState(new Animated.Value(0));
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Roads':
+        return 'git-network-outline';
+      case 'Buildings':
+        return 'business-outline';
+      case 'Bridges':
+        return 'git-merge-outline';
+      case 'Electrical':
+        return 'flash-outline';
+      case 'Parks':
+        return 'leaf-outline';
+      case 'Drains':
+        return 'water-outline';
+      default:
+        return 'cube-outline';
+    }
+  };
 
   React.useEffect(() => {
     if (visible) {
@@ -455,7 +476,7 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
           <View style={styles.sheetHeader}>
             <View style={styles.sheetHeaderLeft}>
               <Ionicons
-                name={asset.category === 'Road' ? 'git-network-outline' : 'business-outline'}
+                name={getCategoryIcon(asset.category)}
                 size={24}
                 color={COLORS.primary}
               />
@@ -481,7 +502,7 @@ const AssetDetailsBottomSheet: React.FC<AssetDetailsBottomSheetProps> = ({
                 <Text style={styles.detailLabelSheet}>Category</Text>
                 <View style={styles.categoryBadgeLarge}>
                   <Ionicons
-                    name={asset.category === 'Road' ? 'git-network-outline' : 'business-outline'}
+                    name={getCategoryIcon(asset.category)}
                     size={16}
                     color={COLORS.primary}
                   />
@@ -567,20 +588,25 @@ export default function AssetListScreen() {
   });
 
   // Update filters from selection screens when returning
-  React.useEffect(() => {
-    if (params.selectedCategory) {
-      setFilters((prev) => ({ ...prev, category: params.selectedCategory as string }));
+  useEffect(() => {
+    if (params.filterCategory) {
+      setFilters((prev) => ({ ...prev, category: params.filterCategory as string }));
+      // Re-open filter sheet after selection
+      setTimeout(() => setFilterSheetVisible(true), 100);
     }
-    if (params.selectedDepartment) {
-      setFilters((prev) => ({ ...prev, department: params.selectedDepartment as string }));
+    if (params.filterDepartment) {
+      setFilters((prev) => ({ ...prev, department: params.filterDepartment as string }));
+      setTimeout(() => setFilterSheetVisible(true), 100);
     }
-    if (params.selectedDivision) {
-      setFilters((prev) => ({ ...prev, division: params.selectedDivision as string }));
+    if (params.filterDivision) {
+      setFilters((prev) => ({ ...prev, division: params.filterDivision as string }));
+      setTimeout(() => setFilterSheetVisible(true), 100);
     }
-    if (params.selectedSubDivision) {
-      setFilters((prev) => ({ ...prev, subDivision: params.selectedSubDivision as string }));
+    if (params.filterSubDivision) {
+      setFilters((prev) => ({ ...prev, subDivision: params.filterSubDivision as string }));
+      setTimeout(() => setFilterSheetVisible(true), 100);
     }
-  }, [params]);
+  }, [params.filterCategory, params.filterDepartment, params.filterDivision, params.filterSubDivision]);
 
   const navigateBack = () => {
     router.push('/(drawer)/search-asset');
@@ -620,73 +646,6 @@ export default function AssetListScreen() {
       filters.fromDate ||
       filters.toDate
     );
-  };
-
-  // Navigation handlers for selection screens
-  const handleOpenCategorySelector = () => {
-    setFilterSheetVisible(false);
-    router.push({
-      pathname: '/(drawer)/selection-screen',
-      params: {
-        title: 'Select Category',
-        options: JSON.stringify(['Road', 'Building']),
-        returnScreen: 'asset-list',
-        returnParam: 'selectedCategory',
-      },
-    });
-  };
-
-  const handleOpenDepartmentSelector = () => {
-    setFilterSheetVisible(false);
-    router.push({
-      pathname: '/(drawer)/selection-screen',
-      params: {
-        title: 'Select Department',
-        options: JSON.stringify([
-          'Roads & Infrastructure',
-          'Civil',
-          'Electrical',
-        ]),
-        returnScreen: 'asset-list',
-        returnParam: 'selectedDepartment',
-      },
-    });
-  };
-
-  const handleOpenDivisionSelector = () => {
-    setFilterSheetVisible(false);
-    router.push({
-      pathname: '/(drawer)/selection-screen',
-      params: {
-        title: 'Select Division',
-        options: JSON.stringify([
-          'North Division',
-          'South Division',
-          'East Division',
-          'West Division',
-          'Central Division',
-        ]),
-        returnScreen: 'asset-list',
-        returnParam: 'selectedDivision',
-      },
-    });
-  };
-
-  const handleOpenSubDivisionSelector = () => {
-    setFilterSheetVisible(false);
-    router.push({
-      pathname: '/(drawer)/selection-screen',
-      params: {
-        title: 'Select Sub-Division',
-        options: JSON.stringify([
-          'Sub-Div A',
-          'Sub-Div B',
-          'Sub-Div C',
-        ]),
-        returnScreen: 'asset-list',
-        returnParam: 'selectedSubDivision',
-      },
-    });
   };
 
   // Filter assets based on search query and filters
@@ -840,10 +799,6 @@ export default function AssetListScreen() {
           currentFilters={filters}
           onApply={handleApplyFilters}
           onClose={() => setFilterSheetVisible(false)}
-          onOpenCategorySelector={handleOpenCategorySelector}
-          onOpenDepartmentSelector={handleOpenDepartmentSelector}
-          onOpenDivisionSelector={handleOpenDivisionSelector}
-          onOpenSubDivisionSelector={handleOpenSubDivisionSelector}
         />
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -889,7 +844,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: COLORS.error,
   },
-  // Search Bar Styles
   searchContainer: {
     backgroundColor: COLORS.cardBackground,
     paddingHorizontal: SPACING.md,
@@ -918,7 +872,6 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
-  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -942,7 +895,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: SPACING.md,
   },
-  // Asset Card Styles
   card: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
@@ -990,20 +942,16 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   detailsGrid: {
-    gap: 10,
+    gap: 6,
   },
   detailRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  detailItem: {
-    flex: 1,
+    marginBottom: 4,
   },
   detailLabel: {
     fontSize: 11,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   detailValue: {
     fontSize: 13,
@@ -1042,7 +990,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
   },
-  // Bottom Sheet Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
