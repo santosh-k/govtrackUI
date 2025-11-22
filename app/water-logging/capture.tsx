@@ -6,6 +6,8 @@
  * - Severity & Extent measurements
  * - Cause & Impact information
  * - Photo/video evidence
+ *
+ * Refined UI matching Create Complaint standards
  */
 
 import React, { useState, useEffect } from 'react';
@@ -57,7 +59,6 @@ export default function CaptureWaterLoggingScreen() {
   }));
   const [location, setLocation] = useState<LocationData | null>(null);
   const [landmark, setLandmark] = useState('');
-  const [roadPlaceName, setRoadPlaceName] = useState('');
   const [selectedDivision, setSelectedDivision] = useState('');
   const [selectedLocationType, setSelectedLocationType] = useState('');
 
@@ -114,34 +115,43 @@ export default function CaptureWaterLoggingScreen() {
 
   /**
    * Update selected values when returning from SelectionScreen
+   * Fixed: Safely handle all dropdown returns
    */
   useEffect(() => {
-    if (params.selectedDivision) {
-      setSelectedDivision(params.selectedDivision as string);
+    if (params.selectedDivision && typeof params.selectedDivision === 'string') {
+      setSelectedDivision(params.selectedDivision);
     }
-    if (params.selectedLocationType) {
-      setSelectedLocationType(params.selectedLocationType as string);
+  }, [params.selectedDivision]);
+
+  useEffect(() => {
+    if (params.selectedLocationType && typeof params.selectedLocationType === 'string') {
+      setSelectedLocationType(params.selectedLocationType);
     }
-    if (params.selectedSeverity) {
-      setSelectedSeverity(params.selectedSeverity as string);
+  }, [params.selectedLocationType]);
+
+  useEffect(() => {
+    if (params.selectedSeverity && typeof params.selectedSeverity === 'string') {
+      setSelectedSeverity(params.selectedSeverity);
     }
-    if (params.selectedAffectedArea) {
-      setSelectedAffectedArea(params.selectedAffectedArea as string);
+  }, [params.selectedSeverity]);
+
+  useEffect(() => {
+    if (params.selectedAffectedArea && typeof params.selectedAffectedArea === 'string') {
+      setSelectedAffectedArea(params.selectedAffectedArea);
     }
-    if (params.selectedCause) {
-      setSelectedCause(params.selectedCause as string);
+  }, [params.selectedAffectedArea]);
+
+  useEffect(() => {
+    if (params.selectedCause && typeof params.selectedCause === 'string') {
+      setSelectedCause(params.selectedCause);
     }
-    if (params.selectedTrafficImpact) {
-      setSelectedTrafficImpact(params.selectedTrafficImpact as string);
+  }, [params.selectedCause]);
+
+  useEffect(() => {
+    if (params.selectedTrafficImpact && typeof params.selectedTrafficImpact === 'string') {
+      setSelectedTrafficImpact(params.selectedTrafficImpact);
     }
-  }, [
-    params.selectedDivision,
-    params.selectedLocationType,
-    params.selectedSeverity,
-    params.selectedAffectedArea,
-    params.selectedCause,
-    params.selectedTrafficImpact,
-  ]);
+  }, [params.selectedTrafficImpact]);
 
   /**
    * Handles back navigation
@@ -230,7 +240,7 @@ export default function CaptureWaterLoggingScreen() {
   };
 
   /**
-   * Handles form submission
+   * Handles form submission with validation
    */
   const handleSubmit = async () => {
     // Validate required fields
@@ -241,11 +251,6 @@ export default function CaptureWaterLoggingScreen() {
 
     if (!selectedSeverity) {
       Alert.alert('Validation Error', 'Severity level is required');
-      return;
-    }
-
-    if (!roadPlaceName.trim()) {
-      Alert.alert('Validation Error', 'Road/Place name is required');
       return;
     }
 
@@ -348,24 +353,12 @@ export default function CaptureWaterLoggingScreen() {
 
           {/* Landmark */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+            <Text style={styles.fieldLabel}>Nearest Landmark (Optional)</Text>
             <TextInput
               style={styles.textInput}
               value={landmark}
               onChangeText={setLandmark}
               placeholder="e.g., Near Metro Station Gate 2"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-          </View>
-
-          {/* Road/Place Name */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Road/Place Name</Text>
-            <TextInput
-              style={styles.textInput}
-              value={roadPlaceName}
-              onChangeText={setRoadPlaceName}
-              placeholder="Enter road or place name"
               placeholderTextColor={COLORS.textSecondary}
             />
           </View>
@@ -429,7 +422,9 @@ export default function CaptureWaterLoggingScreen() {
 
           {/* Severity Dropdown */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Severity</Text>
+            <Text style={styles.fieldLabel}>
+              Severity <Text style={styles.requiredStar}>*</Text>
+            </Text>
             <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => {
@@ -455,7 +450,7 @@ export default function CaptureWaterLoggingScreen() {
 
           {/* Side/Area Affected Dropdown */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Side/Area Affected</Text>
+            <Text style={styles.fieldLabel}>Side / Area Affected</Text>
             <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => {
@@ -480,9 +475,7 @@ export default function CaptureWaterLoggingScreen() {
           </View>
 
           {/* Measurements Row */}
-          <View style={styles.fieldLabel}>
-            <Text style={styles.fieldLabel}>Measurements</Text>
-          </View>
+          <Text style={styles.fieldLabel}>Measurements</Text>
           <View style={styles.measurementRow}>
             <View style={styles.measurementField}>
               <Text style={styles.measurementLabel}>Max Water Depth</Text>
@@ -492,18 +485,18 @@ export default function CaptureWaterLoggingScreen() {
                 onChangeText={setMaxWaterDepth}
                 placeholder="e.g., 1.5 ft"
                 placeholderTextColor={COLORS.textSecondary}
-                keyboardType="default"
+                keyboardType="decimal-pad"
               />
             </View>
             <View style={styles.measurementField}>
-              <Text style={styles.measurementLabel}>Approx Area</Text>
+              <Text style={styles.measurementLabel}>Approx Area/Length</Text>
               <TextInput
                 style={styles.measurementInput}
                 value={approxArea}
                 onChangeText={setApproxArea}
                 placeholder="e.g., 50 m"
                 placeholderTextColor={COLORS.textSecondary}
-                keyboardType="default"
+                keyboardType="decimal-pad"
               />
             </View>
           </View>
@@ -539,9 +532,9 @@ export default function CaptureWaterLoggingScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Traffic Impact Dropdown */}
+          {/* Traffic / Public Impact Dropdown */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Traffic Impact</Text>
+            <Text style={styles.fieldLabel}>Traffic / Public Impact</Text>
             <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => {
@@ -568,10 +561,10 @@ export default function CaptureWaterLoggingScreen() {
 
         {/* Card 4: Evidence */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Photographs & Video</Text>
-          <Text style={styles.cardSubtitle}>Add photos or videos of the water logging</Text>
+          <Text style={styles.cardTitle}>Add Photo/Video</Text>
+          <Text style={styles.cardSubtitle}>Upload images or videos of the water logging</Text>
 
-          {/* Gallery Grid */}
+          {/* Modern Gallery Grid */}
           <View style={styles.gallery}>
             {attachments.map((attachment) => (
               <View key={attachment.id} style={styles.attachmentTile}>
@@ -591,7 +584,7 @@ export default function CaptureWaterLoggingScreen() {
               </View>
             ))}
 
-            {/* Add Media Button */}
+            {/* Add Media Button - Always visible */}
             <TouchableOpacity
               style={styles.addMediaButton}
               onPress={handleAddMedia}
@@ -782,6 +775,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.text,
     marginBottom: SPACING.sm,
+  },
+  requiredStar: {
+    color: COLORS.error,
+    fontSize: 14,
   },
   readOnlyField: {
     flexDirection: 'row',
