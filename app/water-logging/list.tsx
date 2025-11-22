@@ -1,15 +1,15 @@
 /**
  * Water Logging Points - List Screen
  *
- * Displays detailed water logging incidents with:
- * - Complete information in each card
- * - Severity badges with color coding
- * - Location and incident details
- * - Media gallery for photos/videos
- * - FAB for creating new reports
+ * Features:
+ * - Two-tab interface (Logging Points vs Removal Points)
+ * - Search functionality by road name or place name
+ * - Simplified list cards for better scannability
+ * - Detailed bottom sheet for viewing full incident data
+ * - Conditional FAB (only on Logging Points tab)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,37 +19,14 @@ import {
   TouchableOpacity,
   FlatList,
   Platform,
-  Image,
-  ScrollView,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
-
-// Types
-interface MediaAttachment {
-  id: string;
-  uri: string;
-  type: 'image' | 'video';
-}
-
-interface WaterLoggingIncident {
-  id: string;
-  roadName: string;
-  locationType: string;
-  division: string;
-  landmark?: string;
-  address: string;
-  dateTime: string;
-  severity: 'Low' | 'Medium' | 'High' | 'Critical';
-  affectedArea: string;
-  maxWaterDepth: string;
-  approxArea: string;
-  mainCause: string;
-  trafficImpact: string;
-  status: string;
-  media?: MediaAttachment[];
-}
+import WaterLoggingDetailsBottomSheet, {
+  WaterLoggingIncident,
+} from '@/components/WaterLoggingDetailsBottomSheet';
 
 // Mock Data with complete details
 const MOCK_INCIDENTS: WaterLoggingIncident[] = [
@@ -68,6 +45,8 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     mainCause: 'Choked Drain',
     trafficImpact: 'Heavy Disruption',
     status: 'Reported',
+    latitude: 28.6448,
+    longitude: 77.1178,
     media: [
       {
         id: 'm1',
@@ -101,6 +80,8 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     mainCause: 'Heavy Rain',
     trafficImpact: 'Completely Blocked',
     status: 'Reported',
+    latitude: 28.6289,
+    longitude: 77.2411,
     media: [
       {
         id: 'm4',
@@ -128,7 +109,9 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     approxArea: '150 m',
     mainCause: 'Heavy Rain',
     trafficImpact: 'No Impact',
-    status: 'Reported',
+    status: 'Cleared',
+    latitude: 28.5944,
+    longitude: 77.1954,
   },
   {
     id: 'WL-2024-004',
@@ -145,6 +128,8 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     mainCause: 'Sewer Overflow',
     trafficImpact: 'Partial',
     status: 'Reported',
+    latitude: 28.5672,
+    longitude: 77.2499,
     media: [
       {
         id: 'm6',
@@ -167,7 +152,9 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     approxArea: '80 m',
     mainCause: 'Heavy Rain',
     trafficImpact: 'No Impact',
-    status: 'Reported',
+    status: 'Cleared',
+    latitude: 28.7156,
+    longitude: 77.1914,
   },
   {
     id: 'WL-2024-006',
@@ -183,7 +170,9 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
     approxArea: '280 m',
     mainCause: 'Pipe Burst',
     trafficImpact: 'Completely Blocked',
-    status: 'Reported',
+    status: 'Cleared',
+    latitude: 28.6692,
+    longitude: 77.1316,
     media: [
       {
         id: 'm7',
@@ -207,50 +196,76 @@ const MOCK_INCIDENTS: WaterLoggingIncident[] = [
       },
     ],
   },
+  {
+    id: 'WL-2024-007',
+    roadName: 'Connaught Place Inner Circle',
+    locationType: 'Road',
+    division: 'Central Division',
+    landmark: 'Block A Entry',
+    address: 'Connaught Place, Central Delhi',
+    dateTime: '18-Mar-2024, 01:15 PM',
+    severity: 'Medium',
+    affectedArea: 'Right',
+    maxWaterDepth: '0.9 ft',
+    approxArea: '120 m',
+    mainCause: 'Choked Drain',
+    trafficImpact: 'Partial',
+    status: 'Reported',
+    latitude: 28.6315,
+    longitude: 77.2167,
+  },
+  {
+    id: 'WL-2024-008',
+    roadName: 'Dwarka Sector 21 Metro Station',
+    locationType: 'Road',
+    division: 'West Division',
+    landmark: 'Near Metro Gate 1',
+    address: 'Sector 21, Dwarka, West Delhi',
+    dateTime: '17-Mar-2024, 05:00 PM',
+    severity: 'Low',
+    affectedArea: 'Left',
+    maxWaterDepth: '0.6 ft',
+    approxArea: '95 m',
+    mainCause: 'Heavy Rain',
+    trafficImpact: 'No Impact',
+    status: 'Cleared',
+    latitude: 28.5528,
+    longitude: 77.0588,
+  },
 ];
 
 // Helper function to get severity color
 const getSeverityColor = (severity: string): string => {
   switch (severity) {
     case 'Low':
-      return '#4CAF50'; // Green
+      return '#4CAF50';
     case 'Medium':
-      return '#FF9800'; // Orange
+      return '#FF9800';
     case 'High':
-      return '#FF5722'; // Deep Orange
+      return '#FF5722';
     case 'Critical':
-      return '#F44336'; // Red
+      return '#F44336';
     default:
       return COLORS.textSecondary;
   }
 };
 
-// Detail Row Component
-interface DetailRowProps {
-  label: string;
-  value: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-}
-
-const DetailRow: React.FC<DetailRowProps> = ({ label, value, icon }) => (
-  <View style={styles.detailRow}>
-    {icon && <Ionicons name={icon} size={14} color={COLORS.textSecondary} style={styles.detailIcon} />}
-    <Text style={styles.detailLabel}>{label}:</Text>
-    <Text style={styles.detailValue}>{value}</Text>
-  </View>
-);
-
-// Incident Card Component with Full Details
+// Simplified Incident Card Component
 interface IncidentCardProps {
   incident: WaterLoggingIncident;
+  onPress: () => void;
 }
 
-const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
+const IncidentCard: React.FC<IncidentCardProps> = ({ incident, onPress }) => {
   const severityColor = getSeverityColor(incident.severity);
 
   return (
-    <View style={styles.card}>
-      {/* Header Row: Date/Time & Severity Badge */}
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Top Row: Date & Time | Severity Badge */}
       <View style={styles.cardTopRow}>
         <View style={styles.dateTimeContainer}>
           <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
@@ -261,112 +276,59 @@ const IncidentCard: React.FC<IncidentCardProps> = ({ incident }) => {
         </View>
       </View>
 
-      {/* Title Section */}
+      {/* Main Content: Road Name & Location Type */}
       <Text style={styles.roadName} numberOfLines={2}>
         {incident.roadName}
       </Text>
       <View style={styles.locationTypeBadge}>
-        <Ionicons name="business-outline" size={14} color={COLORS.primary} />
+        <Ionicons name="business-outline" size={12} color={COLORS.primary} />
         <Text style={styles.locationTypeText}>{incident.locationType}</Text>
       </View>
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Location Details Section */}
-      <Text style={styles.sectionTitle}>Location Details</Text>
-      <View style={styles.detailsContainer}>
-        <DetailRow label="Division" value={incident.division} icon="location-outline" />
-        {incident.landmark && (
-          <DetailRow label="Landmark" value={incident.landmark} icon="pin-outline" />
-        )}
-        <DetailRow label="Address" value={incident.address} icon="map-outline" />
-      </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Incident Details Section */}
-      <Text style={styles.sectionTitle}>Incident Details</Text>
-      <View style={styles.incidentDetailsGrid}>
-        <View style={styles.gridItem}>
-          <Text style={styles.gridLabel}>Max Water Depth</Text>
-          <Text style={styles.gridValue}>{incident.maxWaterDepth}</Text>
+      {/* Footer: Division | View Details Link */}
+      <View style={styles.cardFooter}>
+        <View style={styles.divisionContainer}>
+          <Ionicons name="location-outline" size={14} color={COLORS.textSecondary} />
+          <Text style={styles.divisionText}>{incident.division}</Text>
         </View>
-        <View style={styles.gridItem}>
-          <Text style={styles.gridLabel}>Approx Area</Text>
-          <Text style={styles.gridValue}>{incident.approxArea}</Text>
-        </View>
-        <View style={[styles.gridItem, styles.gridItemFull]}>
-          <Text style={styles.gridLabel}>Side/Area Affected</Text>
-          <Text style={styles.gridValue}>{incident.affectedArea}</Text>
+        <View style={styles.viewDetailsContainer}>
+          <Text style={styles.viewDetailsText}>View Full Details</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
         </View>
       </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Cause & Impact Section */}
-      <Text style={styles.sectionTitle}>Cause & Impact</Text>
-      <View style={styles.detailsContainer}>
-        <View style={styles.causeImpactRow}>
-          <View style={styles.causeContainer}>
-            <Ionicons name="warning-outline" size={16} color="#FF5722" />
-            <View style={styles.causeTextContainer}>
-              <Text style={styles.causeLabel}>Main Cause</Text>
-              <Text style={styles.causeValue}>{incident.mainCause}</Text>
-            </View>
-          </View>
-          <View style={styles.impactContainer}>
-            <Ionicons name="car-outline" size={16} color="#2196F3" />
-            <View style={styles.impactTextContainer}>
-              <Text style={styles.impactLabel}>Traffic Impact</Text>
-              <Text style={styles.impactValue}>{incident.trafficImpact}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Media Gallery (if available) */}
-      {incident.media && incident.media.length > 0 && (
-        <>
-          <View style={styles.divider} />
-          <Text style={styles.sectionTitle}>Evidence</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.mediaGallery}
-            contentContainerStyle={styles.mediaGalleryContent}
-          >
-            {incident.media.map((media) => (
-              <View key={media.id} style={styles.mediaThumbnail}>
-                <Image source={{ uri: media.uri }} style={styles.mediaImage} />
-                {media.type === 'video' && (
-                  <View style={styles.videoOverlay}>
-                    <Ionicons name="play-circle" size={32} color={COLORS.white} />
-                  </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
-        </>
-      )}
-
-      {/* Status Footer */}
-      <View style={styles.statusFooter}>
-        <View style={styles.statusContainer}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Status: {incident.status}</Text>
-        </View>
-        <Text style={styles.incidentId}>{incident.id}</Text>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
 // Main List Screen
 export default function WaterLoggingListScreen() {
-  const [incidents] = useState<WaterLoggingIncident[]>(MOCK_INCIDENTS);
+  const [activeTab, setActiveTab] = useState<'logging' | 'removal'>('logging');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIncident, setSelectedIncident] = useState<WaterLoggingIncident | null>(null);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+
+  // Filter incidents by tab
+  const tabFilteredIncidents = useMemo(() => {
+    if (activeTab === 'logging') {
+      return MOCK_INCIDENTS.filter((incident) => incident.status === 'Reported');
+    } else {
+      return MOCK_INCIDENTS.filter((incident) => incident.status === 'Cleared');
+    }
+  }, [activeTab]);
+
+  // Filter by search query
+  const filteredIncidents = useMemo(() => {
+    if (searchQuery.trim() === '') {
+      return tabFilteredIncidents;
+    }
+    const query = searchQuery.toLowerCase();
+    return tabFilteredIncidents.filter(
+      (incident) =>
+        incident.roadName.toLowerCase().includes(query) ||
+        incident.landmark?.toLowerCase().includes(query) ||
+        incident.address.toLowerCase().includes(query)
+    );
+  }, [tabFilteredIncidents, searchQuery]);
 
   const handleBackPress = () => {
     router.back();
@@ -376,16 +338,30 @@ export default function WaterLoggingListScreen() {
     router.push('/water-logging/capture');
   };
 
+  const handleCardPress = (incident: WaterLoggingIncident) => {
+    setSelectedIncident(incident);
+    setBottomSheetVisible(true);
+  };
+
+  const handleCloseBottomSheet = () => {
+    setBottomSheetVisible(false);
+    setTimeout(() => setSelectedIncident(null), 300);
+  };
+
   const renderIncidentItem = ({ item }: { item: WaterLoggingIncident }) => (
-    <IncidentCard incident={item} />
+    <IncidentCard incident={item} onPress={() => handleCardPress(item)} />
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="water-outline" size={64} color="#CCCCCC" />
-      <Text style={styles.emptyStateTitle}>No Water Logging Reports</Text>
+      <Text style={styles.emptyStateTitle}>
+        {activeTab === 'logging' ? 'No Active Reports' : 'No Cleared Reports'}
+      </Text>
       <Text style={styles.emptyStateText}>
-        Tap the &quot;Report&quot; button below to create a new water logging report.
+        {activeTab === 'logging'
+          ? 'Tap the &quot;Report&quot; button below to create a new water logging report.'
+          : 'Cleared water logging incidents will appear here.'}
       </Text>
     </View>
   );
@@ -407,9 +383,54 @@ export default function WaterLoggingListScreen() {
         <View style={{ width: 24 }} />
       </View>
 
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'logging' && styles.tabActive]}
+          onPress={() => setActiveTab('logging')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'logging' && styles.tabTextActive]}>
+            Logging Points
+          </Text>
+          {activeTab === 'logging' && <View style={styles.tabIndicator} />}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'removal' && styles.tabActive]}
+          onPress={() => setActiveTab('removal')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'removal' && styles.tabTextActive]}>
+            Removal Points
+          </Text>
+          {activeTab === 'removal' && <View style={styles.tabIndicator} />}
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by road name or place..."
+            placeholderTextColor={COLORS.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* List */}
       <FlatList
-        data={incidents}
+        data={filteredIncidents}
         renderItem={renderIncidentItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -417,15 +438,24 @@ export default function WaterLoggingListScreen() {
         ListEmptyComponent={renderEmptyState}
       />
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleReportPress}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={24} color={COLORS.white} />
-        <Text style={styles.fabText}>Report</Text>
-      </TouchableOpacity>
+      {/* Floating Action Button - Only visible on Logging Points tab */}
+      {activeTab === 'logging' && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleReportPress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={24} color={COLORS.white} />
+          <Text style={styles.fabText}>Report</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Bottom Sheet */}
+      <WaterLoggingDetailsBottomSheet
+        visible={bottomSheetVisible}
+        incident={selectedIncident}
+        onClose={handleCloseBottomSheet}
+      />
     </SafeAreaView>
   );
 }
@@ -443,17 +473,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   backButton: {
     padding: 8,
@@ -466,7 +485,65 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
   },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  tabActive: {
+    // Active tab styling handled by indicator
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  tabTextActive: {
+    color: COLORS.primary,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: COLORS.primary,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+  searchContainer: {
+    backgroundColor: COLORS.cardBackground,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+    paddingVertical: 0,
+  },
   listContent: {
+    flexGrow: 1,
     padding: SPACING.md,
   },
   card: {
@@ -495,7 +572,7 @@ const styles = StyleSheet.create({
   dateTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   dateTimeText: {
     fontSize: 12,
@@ -525,9 +602,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: '#E3F2FD',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     gap: 4,
     marginBottom: 12,
   },
@@ -536,173 +613,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 12,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  detailsContainer: {
-    gap: 6,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  detailIcon: {
-    marginRight: 6,
-  },
-  detailLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginRight: 4,
-  },
-  detailValue: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  incidentDetailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  gridItem: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#F9F9F9',
-    padding: 10,
-    borderRadius: 8,
-  },
-  gridItemFull: {
-    minWidth: '100%',
-  },
-  gridLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  gridValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  causeImpactRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  causeContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFEBEE',
-    padding: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  causeTextContainer: {
-    flex: 1,
-  },
-  causeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#C62828',
-    marginBottom: 2,
-  },
-  causeValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#D32F2F',
-  },
-  impactContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
-    padding: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  impactTextContainer: {
-    flex: 1,
-  },
-  impactLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#1565C0',
-    marginBottom: 2,
-  },
-  impactValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1976D2',
-  },
-  mediaGallery: {
-    marginTop: 4,
-  },
-  mediaGalleryContent: {
-    gap: 8,
-  },
-  mediaThumbnail: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    position: 'relative',
-  },
-  mediaImage: {
-    width: '100%',
-    height: '100%',
-  },
-  videoOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusFooter: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  statusContainer: {
+  divisionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-  },
-  statusText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  incidentId: {
-    fontSize: 11,
+  divisionText: {
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    letterSpacing: 0.5,
+  },
+  viewDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewDetailsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   emptyState: {
     flex: 1,
