@@ -12,7 +12,9 @@ import {
 
 class ApiManager {
   private static instance: ApiManager;
-  private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
+  // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
+  private baseUrl = 'https://pwd.thesst.com/cms/api';
+  private adminBaseUrl = 'https://pwd.thesst.com/admin/api'
 
   private constructor() {}
 
@@ -261,7 +263,7 @@ class ApiManager {
     }
     console.log(token)
     console.log(query)
-    const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/stats?${query}`;
+    const url = `${this.adminBaseUrl}/pwdsewa/inspector/stats?${query}`;
     const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
     return data;
   } catch (error) {
@@ -313,7 +315,7 @@ class ApiManager {
         queryParams.append('end_date',endDate) 
       }
       console.log(queryParams)
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints?${queryParams.toString()}`;
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/complaints?${queryParams.toString()}`;
       console.log(url)
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
@@ -329,7 +331,7 @@ class ApiManager {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/complaints/${complaintId}`;
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/complaints/${complaintId}`;
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
@@ -344,7 +346,7 @@ class ApiManager {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/assignment-options`;
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/assignment-options`;
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
@@ -359,7 +361,7 @@ class ApiManager {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/assign-complaint`;
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/assign-complaint`;
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -377,7 +379,7 @@ class ApiManager {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
-      const url = `https://admin.pwddelhi.thesst.com/api/pwdsewa/inspector/update-complaint-status`;
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/update-complaint-status`;
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),
