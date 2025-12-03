@@ -261,6 +261,8 @@ const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
 export default function ProjectDetailsScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
+  const projectName = params.projectName as string;
+  const projectCode = params.projectCode as string;
 
   //const [activeTab, setActiveTab] = useState<TabName>('Overview');
   const [projectStatus, setProjectStatus] = useState<ProjectStatus>('On Track');
@@ -298,8 +300,10 @@ export default function ProjectDetailsScreen() {
   const [progressHistory, setProgressHistory] = useState<ProgressUpdate[]>([]);
   const [lastProgressUpdate, setLastProgressUpdate] = useState<ProgressUpdate | null>(null);
 
+    const [loading, setLoading] = useState(false);
+  
   // Sample data
-  const projectName = 'National Highway 44 Widening and Resurfacing Project';
+  // const projectName = 'National Highway 44 Widening and Resurfacing Project';
   const [progress, setProgress] = useState(75);
   const startDate = '01-Jan-24';
   const endDate = '31-Dec-24';
@@ -319,6 +323,41 @@ export default function ProjectDetailsScreen() {
   const [activeTab, setActiveTab] = useState<TabName>('Overview');
 
   const tabs: TabName[] = ['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'];
+
+const projectIdD = projectId as number | undefined;
+
+
+useEffect(() => {
+if(projectIdD !== undefined) {
+fetchProjectDetails(projectIdD);
+}
+},[projectIdD])
+
+  const fetchProjectDetails = async(id: number) => {
+    setLoading(true)
+    try {
+      // Use dynamic import to avoid circular dependency
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().getProjectDetails(id);
+
+      console.log("21223321response1111", response);
+      if (response?.success && response?.data) {
+        // setProjectStat(response?.data)
+    setLoading(false)
+
+      } else {
+        // setProjectStat(0)
+    setLoading(false)
+
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+        console.log("21223321", message);
+    setLoading(false)
+
+        
+    }
+  }
 
   const scrollRef = useRef<ScrollView>(null);
   const screenWidth = Dimensions.get('window').width;
@@ -1470,7 +1509,7 @@ const scrollTabIntoView = (index: number) => {
         {/* Middle: Project Info */}
         <View style={styles.headerProjectInfo}>
           <Text style={styles.headerProjectName} numberOfLines={1}>{projectName}</Text>
-          <Text style={styles.headerProjectId}>{projectId}</Text>
+          <Text style={styles.headerProjectId}>{projectCode}</Text>
         </View>
 
         {/* Right: Status Button */}
@@ -1494,6 +1533,13 @@ const scrollTabIntoView = (index: number) => {
         style={styles.tabBarContainer}
         contentContainerStyle={styles.tabBarContent}
       >
+         {loading && (
+                      <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                        <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+                      </View>
+                    )}
+        
+
         {(['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'] as TabName[]).map((tab) => (
           <TouchableOpacity
             key={tab}

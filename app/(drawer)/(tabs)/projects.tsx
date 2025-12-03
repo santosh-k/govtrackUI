@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import Header from '@/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/store';
 
 const COLORS = {
   primary: '#2196F3',
@@ -53,6 +55,7 @@ interface DonutChartProps {
 }
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 
 const DonutChart: React.FC<DonutChartProps> = ({ percentage, color, label }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -141,6 +144,12 @@ const StatCard: React.FC<StatCardProps> = ({
 
 export default function ProjectsDashboardScreen() {
   const insets = useSafeAreaInsets();
+
+  const [projectStat, setProjectStat] =  useState<any | null>(null);
+
+  const [loading, setLoading] = useState(false);
+
+
   const navigateToProjectList = (filter: string) => {
     router.push({
       pathname: '/(drawer)/project-list',
@@ -148,8 +157,53 @@ export default function ProjectsDashboardScreen() {
     });
   };
 
+  const user = useSelector((state: RootState) => state.auth.user);
+const displayDesignation = user?.departments?.[0]?.id as number | undefined;
+
+useEffect(() => {
+  if (displayDesignation !== undefined) {
+    fetchComplaintDetails(displayDesignation);
+  }
+}, [displayDesignation]);
+
+  const stats = projectStat ? {
+    total: projectStat?.total_projects ?? 0,
+  
+  } : {
+    total: 0,
+   
+  };
+
+  const fetchComplaintDetails = async(id: number) => {
+    setLoading(true)
+    try {
+      // Use dynamic import to avoid circular dependency
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().getProjectStatsDetails(id);
+
+      console.log("21223321response", response);
+      if (response?.success && response?.data) {
+        setProjectStat(response?.data)
+    setLoading(false)
+
+      } else {
+        setProjectStat(0)
+    setLoading(false)
+
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+        console.log("21223321", message);
+    setLoading(false)
+
+        
+    }
+  }
+
+
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header title="Projects" />
 
@@ -158,6 +212,13 @@ export default function ProjectsDashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+
+       {loading && (
+              <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+              </View>
+            )}
+
         {/* Search Entry Point */}
         <TouchableOpacity
           style={styles.searchBar}
@@ -176,13 +237,13 @@ export default function ProjectsDashboardScreen() {
           <View style={styles.gridContainer}>
             <StatCard
               title="Total Projects"
-              value="54"
+              value={stats?.total}
               icon="apps-outline"
               backgroundColor="#D4E9F7"
               iconColor="#1976D2"
               onPress={() => navigateToProjectList('All Projects')}
             />
-            <StatCard
+            {/* <StatCard
               title="Maintenance Work"
               value="18"
               icon="build-outline"
@@ -206,14 +267,14 @@ export default function ProjectsDashboardScreen() {
               backgroundColor="#E8D7F1"
               iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
-            />
+            /> */}
             
           </View>
         </View>
 
         {/* Section 2: Financial Summary */}
         <View style={styles.section}>
-          <View style={styles.financialCard}>
+          {/* <View style={styles.financialCard}>
             <View style={styles.donutChartsContainer}>
               <DonutChart
                 percentage={79}
@@ -226,11 +287,11 @@ export default function ProjectsDashboardScreen() {
                 label="Average Project Progress"
               />
             </View>
-          </View>
+          </View> */}
         </View>
 
         {/* Section 3: Project Health Indicators */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Health Indicators</Text>
           <View style={styles.gridContainer}>
             <StatCard
@@ -266,7 +327,7 @@ export default function ProjectsDashboardScreen() {
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />

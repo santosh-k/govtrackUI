@@ -13,6 +13,7 @@ import {
   PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -61,6 +62,9 @@ export default function FilterBottomSheet({
 }: FilterBottomSheetProps) {
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const lastGestureDy = useRef(0);
+  
+
+  const insets= useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -127,7 +131,7 @@ export default function FilterBottomSheet({
       animationType="none"
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
+      <View style={[styles.modalContainer]}>
         {/* Backdrop */}
         <Pressable style={styles.backdrop} onPress={handleBackdropPress} />
 
@@ -137,6 +141,7 @@ export default function FilterBottomSheet({
             styles.bottomSheet,
             {
               transform: [{ translateY }],
+                paddingBottom: insets.bottom
             },
           ]}
           {...panResponder.panHandlers}

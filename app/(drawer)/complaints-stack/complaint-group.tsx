@@ -189,6 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     paddingTop: 8,
+    marginTop: 25
   },
 
   // ---------------- TABS ----------------

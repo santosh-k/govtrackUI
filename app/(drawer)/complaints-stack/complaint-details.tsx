@@ -1131,7 +1131,7 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 100 : 90,
   },
   floatingActionBar: {
-    position: 'absolute',
+    // position: 'absolute',
     // bottom: insets.bottom,
     left: 0,
     right: 0,

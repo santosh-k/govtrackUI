@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,14 @@ import {
   Keyboard,
   Platform,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/store';
+import moment from 'moment';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -36,7 +40,7 @@ const COLORS = {
   statusCompletedBg: '#E3F2FD',
 };
 
-type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
+type ProjectStatus = 'planning' | 'aa approval' | 'technical sanction' | 'tender allotment' | 'work award' | 'working' | 'completed' | 'handovered' | 'dropped';
 
 interface Project {
   id: string;
@@ -59,16 +63,26 @@ interface Project {
 // Helper function to get status colors
 const getStatusColors = (status: ProjectStatus) => {
   switch (status) {
-    case 'On Track':
-      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
-    case 'At Risk':
-      return { bg: COLORS.statusAtRiskBg, text: COLORS.statusAtRisk };
-    case 'Delayed':
-      return { bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed };
-    case 'Completed':
-      return { bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted };
+    case 'planning':
+      return { bg: '#FEF9C3', text: '#854D0E' };
+    case 'aa approval':
+      return { bg: '#DBEAFE', text: '#1E40AF' };
+    case 'technical sanction':
+      return { bg: '#F3E8FF', text: '#6B21A8' };
+    case 'tender allotment':
+      return { bg: '#FFEDD5', text: '#9A3412' };
+       case 'work award':
+      return { bg: '#CCFBF1', text: '#115E59' };
+       case 'working':
+      return { bg: '#DCFCE7', text: '#166534' };
+        case 'completed':
+      return { bg: '#D1FAE5', text: '#065F46' };
+       case 'handovered':
+      return { bg: '#CFFAFE', text: '#155E75' };
+       case 'dropped':
+      return { bg: '#FEE2E2', text: '#991B1B' };
     default:
-      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
+      return { bg: '#E0E7FF', text: '#3730A3' };
   }
 };
 
@@ -80,6 +94,30 @@ interface ProjectCardProps {
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
   const statusColors = getStatusColors(project.status);
 
+  const amountToShow = project.tender_amount 
+  ? project.tender_amount 
+  : project.sanctioned_amount 
+  ? project.sanctioned_amount 
+  : project.estimated_cost;
+
+
+  const hasFinancialProgress = project?.latest_financial_progress && 
+                             Object.keys(project.latest_financial_progress).length > 0;
+
+  const hasTargetDate = project?.target_completion_date != null;
+
+  const formatNumberINR = (num) => {
+  if (num >= 10000000) {
+    return (num / 10000000).toFixed(2) + " Cr";
+  } else if (num >= 100000) {
+    return (num / 100000).toFixed(2) + " Lakh";
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(2) + "K";
+  } else {
+    return num.toString();
+  }
+};
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -88,19 +126,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
     >
       {/* Top Row: Project ID and Status Badge */}
       <View style={styles.cardTopRow}>
-        <Text style={styles.projectId}>{project.id}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-          <Text style={[styles.statusText, { color: statusColors.text }]}>
-            {project.status}
+        <Text style={styles.projectId}>{project?.project_id}</Text>
+         {project?.status != null &&
+        <View style={[styles.statusBadge, { backgroundColor: statusColors.bg , paddingHorizontal: 0}]}>
+         
+          <Text style={[styles.statusText, { color: statusColors.text ,textTransform: 'capitalize', marginHorizontal: 10}]}>
+            {project?.status}
           </Text>
         </View>
+}
+
       </View>
 
       {/* Main Body: Project Name and Type */}
-      <Text style={styles.projectName} numberOfLines={3}>
-        {project.name}
+      <Text style={styles.projectName} >
+        {project?.project_name}
       </Text>
-      <Text style={styles.projectType}>{project.projectType}</Text>
+      <Text style={styles.projectType}>{project?.category?.name}</Text>
 
       {/* Progress Section */}
       <View style={styles.progressSection}>
@@ -108,44 +150,65 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onPress }) => {
           <View
             style={[
               styles.progressBarFill,
-              { width: `${Math.max(0, Math.min(100, project.progress || 0))}%`, backgroundColor: statusColors.text },
+              { width: `${Math.max(0, Math.min(100, project?.latest_physical_progress?.physical_progress_percent || 0))}%`, backgroundColor: statusColors.text },
             ]}
           />
         </View>
-        <Text style={styles.progressText}>{Math.max(0, Math.min(100, project.progress || 0))}%</Text>
+        <Text style={styles.progressText}>{Math.max(0, Math.min(100, project?.latest_physical_progress?.physical_progress_percent || 0))}%</Text>
       </View>
 
       {/* Financials Section - 2x2 Grid */}
-      <View style={styles.financialsSection}>
+      {/* <View style={styles.financialsSection}> */}
         {/* Top Row */}
-        <View style={styles.financialRow}>
-          <View style={styles.financialStatBlockLeft}>
-            <Text style={styles.financialLabel}>Total Cost</Text>
-            <Text style={styles.financialValue}>{project.totalCost}</Text>
-          </View>
-          <View style={styles.financialStatBlockRight}>
-            <Text style={styles.financialLabel}>Expenditure</Text>
-            <Text style={styles.financialValue}>{project.expenditure}</Text>
-          </View>
-        </View>
+
+       
+       {(amountToShow || hasFinancialProgress) && (
+  <View style={styles.financialRow}>
+    {amountToShow && (
+      <View style={styles.financialStatBlockLeft}>
+        <Text style={styles.financialLabel}>Total Cost</Text>
+        <Text style={styles.financialValue}>{formatNumberINR(amountToShow)}</Text>
+      </View>
+    )}
+
+    {hasFinancialProgress && (
+      <View style={styles.financialStatBlockRight}>
+        <Text style={styles.financialLabel}>Expenditure</Text>
+        <Text style={styles.financialValue}>
+          {formatNumberINR(project?.latest_financial_progress?.expenditure_till_date)}
+        </Text>
+      </View>
+    )}
+  </View>
+)}
 
         {/* Bottom Row */}
-        <View style={styles.financialRow}>
-          <View style={styles.financialStatBlockLeft}>
-            <Text style={styles.financialLabel}>Exp. Comp. Date</Text>
-            <Text style={styles.financialValue}>{project.expectedCompletionDate}</Text>
-          </View>
-          <View style={styles.financialStatBlockRight}>
-            <Text style={styles.financialLabel}>Financial Exp.</Text>
-            <Text style={styles.financialValue}>{project.financialExpenditure}</Text>
-          </View>
-        </View>
+      {(hasTargetDate || hasFinancialProgress) && (
+  <View style={styles.financialRow}>
+    {hasTargetDate && (
+      <View style={styles.financialStatBlockLeft}>
+        <Text style={styles.financialLabel}>Exp. Comp. Date</Text>
+        <Text style={styles.financialValue}>
+          {moment(project?.target_completion_date).format('DD-MMM-YY')}
+        </Text>
       </View>
+    )}
+
+    {hasFinancialProgress && (
+      <View style={styles.financialStatBlockRight}>
+        <Text style={styles.financialLabel}>Financial Exp.</Text>
+        <Text style={styles.financialValue}>
+          {`${project?.latest_financial_progress?.cumulative_expenditure_percent}%`}
+        </Text>
+      </View>
+    )}
+  </View>
+)}
 
       {/* Footer Row: Dates and Action */}
       <View style={styles.cardFooter}>
         <Text style={styles.datesText}>
-          Start: {project.startDate} | End: {project.endDate}
+          Start: {moment(project?.start_date).format('DD-MMM-YY')} | End: {moment(project?.end_date).format('DD-MMM-YY')}
         </Text>
           {/* <TouchableOpacity
             style={styles.actionButton}
@@ -321,20 +384,72 @@ export default function ProjectListScreen() {
   const filterProjectType = params.projectType as string || '';
   const filterSearchText = params.searchText as string || '';
 
+  const [projects, setProjects] = useState<any[]>([]);
+const [page, setPage] = useState(1);
+const [limit] = useState(20);
+const [isLoading, setIsLoading] = useState(false);
+const [isListEnd, setIsListEnd] = useState(false); // no more data
+
   const navigateBack = () => {
     router.push('/(drawer)/(tabs)/projects');
   };
 
-  const navigateToProjectDetails = (projectId: string) => {
+  const navigateToProjectDetails = (projectId: string, projectName: string, projectCode: string) => {
+   
     router.push({
       pathname: '/(drawer)/project-details',
-      params: { projectId },
+      params: { projectId ,projectName, projectCode},
     });
   };
 
   const clearSearch = () => {
     setSearchQuery('');
   };
+  const user = useSelector((state: RootState) => state.auth.user);
+
+
+  const displayDesignation = user?.departments?.[0]?.id as number | undefined;
+  
+useEffect(() => {
+  if (displayDesignation !== undefined) {
+    setPage(1);
+    setProjects([]);   // reset list
+    setIsListEnd(false);
+    fetchProjectList(displayDesignation, 1, limit);
+  }
+}, [displayDesignation]);
+  
+  
+  
+   const fetchProjectList = async (id: number, page: number, limit: number) => {
+  if (isLoading || isListEnd) return;
+
+  setIsLoading(true);
+
+  try {
+    const ApiManager = (await import('@/src/services/ApiManager')).default;
+    const response = await ApiManager.getInstance().getProjectList(id, page, limit);
+
+    if (response?.success && response?.data?.length > 0) {
+      setProjects(prev => [...prev, ...response.data]);  // append new page
+    } else {
+      setIsListEnd(true); // no more pages
+    }
+  } catch (error) {
+    console.log("Error fetching projects:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+const loadMore = () => {
+  if (!isLoading && !isListEnd) {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProjectList(displayDesignation!, nextPage, limit);
+  }
+};
 
   // Filter projects based on search query and advanced search filters
   const filteredProjects = useMemo(() => {
@@ -381,9 +496,16 @@ export default function ProjectListScreen() {
   const renderProjectItem = ({ item }: { item: Project }) => (
     <ProjectCard
       project={item}
-      onPress={() => navigateToProjectDetails(item.id)}
+      onPress={() => navigateToProjectDetails(item?.id, item?.project_name, item?.project_id)}
     />
   );
+
+  const renderFooter = () => {
+  if (!isLoading) return null;
+  return (
+    <ActivityIndicator size="small" color="#000" style={{ padding: 16 }} />
+  );
+};
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -445,15 +567,25 @@ export default function ProjectListScreen() {
           </View>
         </View>
 
+         {isLoading && (
+                      <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                        <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+                      </View>
+                    )}
+
         {/* List */}
         <FlatList
-          data={filteredProjects}
+          data={projects}
           renderItem={renderProjectItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={searchQuery.length > 0 ? renderEmptyState : null}
           keyboardShouldPersistTaps="handled"
+           onEndReached={loadMore}
+  onEndReachedThreshold={0.5}
+  ListFooterComponent={renderFooter}
+
         />
       </SafeAreaView>
     </TouchableWithoutFeedback>

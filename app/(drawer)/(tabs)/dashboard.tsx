@@ -18,9 +18,8 @@ const COLORS = {
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView style={[styles.container,{
-      paddingTop: insets.top,
-      paddingBottom: insets.bottom}]}>
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.container,{
+    }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header />
 

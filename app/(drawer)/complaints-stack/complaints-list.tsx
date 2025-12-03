@@ -365,13 +365,21 @@ export default function ComplaintsScreen() {
   }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
 
   // Refetch complaints when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (params.filter) {
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (params.filter) {
+  //       handleFetchComplaints(1, currentStatusParam, false);
+  //     }
+  //   }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
+  // );
+
+
+
+  useEffect(() => {
+ if (params.filter) {
         handleFetchComplaints(1, currentStatusParam, false);
       }
-    }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
-  );
+  },[params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
 
   // Handle incoming filter parameter from dashboard
   useEffect(() => {

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -34,6 +34,9 @@ export const extractSearchData = (text?: string): string => {
     .join("|");
 };
 export default function SearchComplaintScreen() {
+
+    const insets = useSafeAreaInsets();
+  
   const [complaintName, setComplaintName] = useState('');
   const [complaintNumber, setComplaintNumber] = useState('');
   const [location, setLocation] = useState('');
@@ -79,7 +82,9 @@ export default function SearchComplaintScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container,{
+    
+    }]} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
@@ -235,7 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   bottomButtonContainer: {
-    position: 'absolute',
+    // position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,

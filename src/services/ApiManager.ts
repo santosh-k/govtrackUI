@@ -14,7 +14,8 @@ class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
   private baseUrl = 'https://pwd.thesst.com/cms/api';
-  private adminBaseUrl = 'https://pwd.thesst.com/admin/api'
+  private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
+  private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
 
   private constructor() {}
 
@@ -69,6 +70,9 @@ class ApiManager {
     // attach token header
     const headers = new Headers(options.headers);
     const token = this.getToken();
+
+    
+
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
     if (!(options.body instanceof FormData)) {
@@ -287,7 +291,12 @@ class ApiManager {
     endDate?: string
   ): Promise<any> {
     try {
+
+
       const token = this.getToken();
+
+
+
       if (!token) throw new Error('No authentication token available');
 
       // Build query parameters
@@ -325,6 +334,39 @@ class ApiManager {
     }
   }
 
+
+ public async getProjectList(
+     department_id?: string | number,
+  
+    page: number = 1,
+    limit: number = 20,
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/projects/search?department_id=${department_id}&page=${page}&limit=${limit}`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
   /** ---------------- COMPLAINT DETAILS (EXTERNAL ADMIN API) ---------------- */
   public async getComplaintDetails(complaintId: string): Promise<any> {
     try {
@@ -332,6 +374,36 @@ class ApiManager {
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminBaseUrl}/pwdsewa/inspector/complaints/${complaintId}`;
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+    public async getProjectStatsDetails(departmentid: number): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/dashboard/kpi?department_id=${departmentid}`;
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+    public async getProjectDetails(id: number): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/projects/${id}?format=json`;
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {

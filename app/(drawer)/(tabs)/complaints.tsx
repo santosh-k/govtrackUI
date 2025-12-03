@@ -340,7 +340,7 @@ export default function ComplaintDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
 
       {/* Header */}
@@ -372,8 +372,12 @@ export default function ComplaintDashboardScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterPillsContainer}
+        contentContainerStyle={[styles.filterPillsContainer,{
+          paddingHorizontal: '4%'
+        }]}
         style={styles.filterPillsScroll}
+        bounces={false}
+      
       >
          <TouchableOpacity
           style={[
@@ -461,6 +465,7 @@ export default function ComplaintDashboardScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         {loading && (
           <View style={{ alignItems: 'center', marginVertical: 32 }}>
@@ -903,10 +908,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginHorizontal: 8,
-    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    // marginHorizontal: 8,
+    // marginTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
