@@ -22,10 +22,12 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.santoshpwd.pwddelhiapp"
     },
     "web": {
       "bundler": "metro",
@@ -54,6 +56,13 @@
     "experiments": {
       "typedRoutes": true,
       "baseUrl": ""
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "575f97cf-fd59-4588-90b7-a64d2fd764bc"
+      }
+    },
+    "owner": "santoshpwd"
   }
 }

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import ProjectFilterBottomSheet, { ProjectFilters } from '@/components/ProjectFilterBottomSheet';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -23,6 +24,7 @@ const COLORS = {
   border: '#E0E0E0',
   progressBackground: '#E8E8E8',
   searchBarBackground: '#F0F0F0',
+  primary: '#FF9800',
   // Status colors
   statusOnTrack: '#4CAF50',
   statusOnTrackBg: '#E8F5E9',
@@ -32,9 +34,13 @@ const COLORS = {
   statusDelayedBg: '#FFEBEE',
   statusCompleted: '#2196F3',
   statusCompletedBg: '#E3F2FD',
+  statusOnHold: '#9E9E9E',
+  statusOnHoldBg: '#F5F5F5',
+  statusNotStarted: '#607D8B',
+  statusNotStartedBg: '#ECEFF1',
 };
 
-type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
+type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed' | 'On Hold' | 'Not Started';
 
 interface Project {
   id: string;
@@ -52,6 +58,12 @@ interface Project {
   department?: string;
   division?: string;
   subDivision?: string;
+  circle?: string;
+  sector?: string;
+  subSector?: string;
+  fundingType?: string;
+  workType?: string;
+  budgetInCrores?: number;
 }
 
 // Helper function to get status colors
@@ -65,6 +77,10 @@ const getStatusColors = (status: ProjectStatus) => {
       return { bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed };
     case 'Completed':
       return { bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted };
+    case 'On Hold':
+      return { bg: COLORS.statusOnHoldBg, text: COLORS.statusOnHold };
+    case 'Not Started':
+      return { bg: COLORS.statusNotStartedBg, text: COLORS.statusNotStarted };
     default:
       return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
   }
@@ -168,10 +184,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹3.8 Cr',
       expectedCompletionDate: '31-Mar-25',
       financialExpenditure: '76%',
-      zone: 'North Zone',
-      department: 'Road Department',
-      division: 'NH Division',
-      subDivision: 'NH-44 Sub-Division',
+      zone: 'Zone 1 - North Delhi',
+      department: 'Roads & Bridges Department',
+      division: 'North Division',
+      subDivision: 'North Sub-Division A',
+      circle: 'Circle 1 - Civil Lines',
+      sector: 'Roads & Highways',
+      subSector: 'National Highways',
+      fundingType: 'Central Government Grant',
+      workType: 'New Construction',
+      budgetInCrores: 5.0,
     },
     {
       id: 'PRJ-2024-002',
@@ -185,10 +207,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹4.1 Cr',
       expectedCompletionDate: '15-Jan-25',
       financialExpenditure: '50%',
-      zone: 'Central Zone',
-      department: 'Bridge Department',
-      division: 'City Bridge Division',
-      subDivision: 'Central Sub-Division',
+      zone: 'Zone 5 - Central Delhi',
+      department: 'Roads & Bridges Department',
+      division: 'Central Division',
+      subDivision: 'Central Sub-Division A',
+      circle: 'Circle 5 - Chandni Chowk',
+      sector: 'Roads & Highways',
+      subSector: 'Flyovers & Bridges',
+      fundingType: 'State Budget',
+      workType: 'Repair & Maintenance',
+      budgetInCrores: 8.2,
     },
     {
       id: 'PRJ-2024-003',
@@ -202,10 +230,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹2.5 Cr',
       expectedCompletionDate: '30-Jun-24',
       financialExpenditure: '100%',
-      zone: 'South Zone',
+      zone: 'Zone 2 - South Delhi',
       department: 'Electrical Department',
-      division: 'Street Lighting Division',
-      subDivision: 'South Sub-Division',
+      division: 'South Division',
+      subDivision: 'South Sub-Division A',
+      circle: 'Circle 8 - Dwarka',
+      sector: 'Electrical & Power',
+      subSector: 'Street Lighting',
+      fundingType: 'Smart City Mission',
+      workType: 'Upgradation',
+      budgetInCrores: 2.5,
     },
     {
       id: 'PRJ-2024-004',
@@ -219,6 +253,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹4.2 Cr',
       expectedCompletionDate: '31-Dec-24',
       financialExpenditure: '35%',
+      zone: 'Zone 3 - East Delhi',
+      department: 'Water Supply Department',
+      division: 'East Division',
+      subDivision: 'East Sub-Division A',
+      circle: 'Circle 6 - Shahdara',
+      sector: 'Water Resources',
+      subSector: 'Water Supply Networks',
+      fundingType: 'World Bank Loan',
+      workType: 'Expansion',
+      budgetInCrores: 12.0,
     },
     {
       id: 'PRJ-2024-005',
@@ -232,6 +276,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹2.9 Cr',
       expectedCompletionDate: '15-Oct-24',
       financialExpenditure: '64%',
+      zone: 'Zone 4 - West Delhi',
+      department: 'Building Department',
+      division: 'West Division',
+      subDivision: 'West Sub-Division A',
+      circle: 'Circle 7 - Rohini',
+      sector: 'Buildings & Infrastructure',
+      subSector: 'Schools & Colleges',
+      fundingType: 'State Budget',
+      workType: 'Renovation',
+      budgetInCrores: 4.5,
     },
     {
       id: 'PRJ-2024-006',
@@ -245,6 +299,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹6.0 Cr',
       expectedCompletionDate: '20-Sep-24',
       financialExpenditure: '88%',
+      zone: 'Zone 7 - New Delhi',
+      department: 'Roads & Bridges Department',
+      division: 'Special Projects Division',
+      subDivision: 'Central Sub-Division B',
+      circle: 'Circle 2 - Karol Bagh',
+      sector: 'Roads & Highways',
+      subSector: 'City Roads',
+      fundingType: 'PPP (Public-Private Partnership)',
+      workType: 'New Construction',
+      budgetInCrores: 6.8,
     },
     {
       id: 'PRJ-2024-007',
@@ -258,6 +322,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹1.9 Cr',
       expectedCompletionDate: '15-Nov-24',
       financialExpenditure: '59%',
+      zone: 'Zone 6 - Suburban Delhi',
+      department: 'Drainage Department',
+      division: 'Maintenance Division',
+      subDivision: 'North Sub-Division B',
+      circle: 'Circle 3 - Paharganj',
+      sector: 'Sanitation & Drainage',
+      subSector: 'Stormwater Drains',
+      fundingType: 'Municipal Funds',
+      workType: 'Repair & Maintenance',
+      budgetInCrores: 3.2,
     },
     {
       id: 'PRJ-2024-008',
@@ -271,6 +345,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹2.3 Cr',
       expectedCompletionDate: '30-Oct-24',
       financialExpenditure: '31%',
+      zone: 'Zone 5 - Central Delhi',
+      department: 'Horticulture Department',
+      division: 'Central Division',
+      subDivision: 'Central Sub-Division A',
+      circle: 'Circle 4 - Sadar Bazaar',
+      sector: 'Green Spaces & Parks',
+      subSector: 'Government Buildings',
+      fundingType: 'State Budget',
+      workType: 'New Construction',
+      budgetInCrores: 7.5,
     },
     {
       id: 'PRJ-2024-009',
@@ -284,6 +368,16 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹7.8 Cr',
       expectedCompletionDate: '31-Dec-25',
       financialExpenditure: '43%',
+      zone: 'Zone 3 - East Delhi',
+      department: 'Roads & Bridges Department',
+      division: 'Construction Division',
+      subDivision: 'East Sub-Division B',
+      circle: 'Circle 6 - Shahdara',
+      sector: 'Roads & Highways',
+      subSector: 'Flyovers & Bridges',
+      fundingType: 'ADB Loan',
+      workType: 'New Construction',
+      budgetInCrores: 18.0,
     },
     {
       id: 'PRJ-2024-010',
@@ -297,12 +391,85 @@ const ALL_PROJECTS: Project[] = [
       expenditure: '₹3.8 Cr',
       expectedCompletionDate: '30-May-24',
       financialExpenditure: '100%',
+      zone: 'Zone 7 - New Delhi',
+      department: 'Urban Development Department',
+      division: 'Special Projects Division',
+      subDivision: 'Central Sub-Division B',
+      circle: 'Circle 5 - Chandni Chowk',
+      sector: 'Buildings & Infrastructure',
+      subSector: 'Government Buildings',
+      fundingType: 'Central Government Grant',
+      workType: 'Restoration',
+      budgetInCrores: 3.8,
+    },
+    {
+      id: 'PRJ-2024-011',
+      name: 'Hospital Wing Expansion Project',
+      projectType: 'Building Construction',
+      status: 'On Hold',
+      progress: 15,
+      startDate: '01-Apr-24',
+      endDate: '31-Mar-25',
+      totalCost: '₹25.0 Cr',
+      expenditure: '₹4.0 Cr',
+      expectedCompletionDate: '30-Jun-25',
+      financialExpenditure: '16%',
+      zone: 'Zone 2 - South Delhi',
+      department: 'Building Department',
+      division: 'South Division',
+      subDivision: 'South Sub-Division B',
+      circle: 'Circle 8 - Dwarka',
+      sector: 'Buildings & Infrastructure',
+      subSector: 'Hospitals & Healthcare',
+      fundingType: 'JICA Loan',
+      workType: 'Expansion',
+      budgetInCrores: 25.0,
+    },
+    {
+      id: 'PRJ-2024-012',
+      name: 'Smart Traffic Management System',
+      projectType: 'Infrastructure Development',
+      status: 'Not Started',
+      progress: 0,
+      startDate: '01-Jul-24',
+      endDate: '30-Jun-25',
+      totalCost: '₹15.0 Cr',
+      expenditure: '₹0.0 Cr',
+      expectedCompletionDate: '30-Jun-25',
+      financialExpenditure: '0%',
+      zone: 'Zone 1 - North Delhi',
+      department: 'Public Works Department',
+      division: 'North Division',
+      subDivision: 'North Sub-Division A',
+      circle: 'Circle 1 - Civil Lines',
+      sector: 'Urban Development',
+      subSector: 'City Roads',
+      fundingType: 'Smart City Mission',
+      workType: 'New Construction',
+      budgetInCrores: 15.0,
     },
   ];
+
+const emptyFilters: ProjectFilters = {
+  department: '',
+  zone: '',
+  circle: '',
+  division: '',
+  subDivision: '',
+  sector: '',
+  subSector: '',
+  status: '',
+  fundingType: '',
+  workType: '',
+  budgetMin: '',
+  budgetMax: '',
+};
 
 export default function ProjectListScreen() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<ProjectFilters>(emptyFilters);
 
   // Get filter params from advanced search
   const filterZone = params.zone as string || '';
@@ -327,11 +494,36 @@ export default function ProjectListScreen() {
     setSearchQuery('');
   };
 
-  // Filter projects based on search query and advanced search filters
+  const handleApplyFilters = (filters: ProjectFilters) => {
+    setActiveFilters(filters);
+  };
+
+  const handleResetFilters = () => {
+    setActiveFilters(emptyFilters);
+  };
+
+  // Count active filters for badge
+  const getActiveFilterCount = (): number => {
+    let count = 0;
+    if (activeFilters.department) count++;
+    if (activeFilters.zone) count++;
+    if (activeFilters.circle) count++;
+    if (activeFilters.division) count++;
+    if (activeFilters.subDivision) count++;
+    if (activeFilters.sector) count++;
+    if (activeFilters.subSector) count++;
+    if (activeFilters.status) count++;
+    if (activeFilters.fundingType) count++;
+    if (activeFilters.workType) count++;
+    if (activeFilters.budgetMin || activeFilters.budgetMax) count++;
+    return count;
+  };
+
+  // Filter projects based on search query, advanced search filters, and bottom sheet filters
   const filteredProjects = useMemo(() => {
     let projects = ALL_PROJECTS;
 
-    // Apply advanced search filters
+    // Apply advanced search filters (from navigation params)
     if (filterZone) {
       projects = projects.filter((project) => project.zone === filterZone);
     }
@@ -356,6 +548,56 @@ export default function ProjectListScreen() {
       });
     }
 
+    // Apply bottom sheet filters
+    if (activeFilters.department) {
+      projects = projects.filter((project) => project.department === activeFilters.department);
+    }
+    if (activeFilters.zone) {
+      projects = projects.filter((project) => project.zone === activeFilters.zone);
+    }
+    if (activeFilters.circle) {
+      projects = projects.filter((project) => project.circle === activeFilters.circle);
+    }
+    if (activeFilters.division) {
+      projects = projects.filter((project) => project.division === activeFilters.division);
+    }
+    if (activeFilters.subDivision) {
+      projects = projects.filter((project) => project.subDivision === activeFilters.subDivision);
+    }
+    if (activeFilters.sector) {
+      projects = projects.filter((project) => project.sector === activeFilters.sector);
+    }
+    if (activeFilters.subSector) {
+      projects = projects.filter((project) => project.subSector === activeFilters.subSector);
+    }
+    if (activeFilters.status) {
+      projects = projects.filter((project) => project.status === activeFilters.status);
+    }
+    if (activeFilters.fundingType) {
+      projects = projects.filter((project) => project.fundingType === activeFilters.fundingType);
+    }
+    if (activeFilters.workType) {
+      projects = projects.filter((project) => project.workType === activeFilters.workType);
+    }
+
+    // Budget range filter
+    if (activeFilters.budgetMin) {
+      const minBudget = parseFloat(activeFilters.budgetMin);
+      if (!isNaN(minBudget)) {
+        projects = projects.filter((project) =>
+          project.budgetInCrores !== undefined && project.budgetInCrores >= minBudget
+        );
+      }
+    }
+    if (activeFilters.budgetMax) {
+      const maxBudget = parseFloat(activeFilters.budgetMax);
+      if (!isNaN(maxBudget)) {
+        projects = projects.filter((project) =>
+          project.budgetInCrores !== undefined && project.budgetInCrores <= maxBudget
+        );
+      }
+    }
+
     // Apply local search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
@@ -367,7 +609,7 @@ export default function ProjectListScreen() {
     }
 
     return projects;
-  }, [searchQuery, filterZone, filterDepartment, filterDivision, filterSubDivision, filterProjectType, filterSearchText]);
+  }, [searchQuery, filterZone, filterDepartment, filterDivision, filterSubDivision, filterProjectType, filterSearchText, activeFilters]);
 
   const renderProjectItem = ({ item }: { item: Project }) => (
     <ProjectCard
@@ -403,6 +645,18 @@ export default function ProjectListScreen() {
               <Ionicons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Projects List</Text>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setIsFilterVisible(true)}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="options-outline" size={24} color={COLORS.text} />
+              {getActiveFilterCount() > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{getActiveFilterCount()}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
 
@@ -443,8 +697,17 @@ export default function ProjectListScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={searchQuery.length > 0 ? renderEmptyState : null}
+          ListEmptyComponent={(searchQuery.length > 0 || getActiveFilterCount() > 0) ? renderEmptyState : null}
           keyboardShouldPersistTaps="handled"
+        />
+
+        {/* Filter Bottom Sheet */}
+        <ProjectFilterBottomSheet
+          visible={isFilterVisible}
+          onClose={() => setIsFilterVisible(false)}
+          onApply={handleApplyFilters}
+          onReset={handleResetFilters}
+          currentFilters={activeFilters}
         />
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -475,6 +738,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
     flex: 1,
+  },
+  filterButton: {
+    padding: 8,
+    marginRight: -8,
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   // Search Bar Styles
   searchContainer: {
