@@ -8,6 +8,7 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+build/
 
 # Native
 .kotlin/
@@ -45,3 +46,23 @@ app-example
 .fastshot-logs/
 examples/
 CLAUDE.md
+
+# Android
+android/app/build/
+android/.gradle/
+android/app/src/main/assets/shell-app.bundle
+android/app/src/main/assets/shell-app.bundle.map
+
+# iOS
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+
+# EAS build outputs
+*.apk
+*.aab
+*.ipa
+
+# Xcode
+*.xcworkspace
+*.xcframework
