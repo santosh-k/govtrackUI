@@ -1,0 +1,294 @@
+[
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_arrow_down.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_arrow_down.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_elements_lib_module_assets_searchicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_elements_lib_module_assets_searchicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_evilicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_evilicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_splashscreen_logo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable-mdpi/splashscreen_logo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_entypo.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_entypo.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_node_modules_reactnavigation_elements_lib_module_assets_clearicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxxhdpi/node_modules_reactnavigation_elements_lib_module_assets_clearicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_ionicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_ionicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxhdpi/node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_sitemap.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_sitemap.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_node_modules_reactnavigation_elements_lib_module_assets_closeicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxhdpi/node_modules_reactnavigation_elements_lib_module_assets_closeicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_materialicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_materialicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxxhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxxhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_node_modules_reactnavigation_elements_lib_module_assets_backicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xhdpi/node_modules_reactnavigation_elements_lib_module_assets_backicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_foundation.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_foundation.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_node_modules_reactnavigation_elements_lib_module_assets_clearicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xhdpi/node_modules_reactnavigation_elements_lib_module_assets_clearicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_regular.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_regular.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_forward.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_forward.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_brands.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_brands.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_solid.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome5_solid.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-hdpi_splashscreen_logo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable-hdpi/splashscreen_logo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable_rn_edit_text_material.xml.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable/rn_edit_text_material.xml"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_node_modules_reactnavigation_elements_lib_module_assets_backicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxxhdpi/node_modules_reactnavigation_elements_lib_module_assets_backicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_node_modules_reactnavigation_elements_lib_module_assets_clearicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxhdpi/node_modules_reactnavigation_elements_lib_module_assets_clearicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-mdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-mdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_assets_images_pwdlogo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/assets_images_pwdlogo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_node_modules_reactnavigation_elements_lib_module_assets_backicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxhdpi/node_modules_reactnavigation_elements_lib_module_assets_backicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_elements_lib_module_assets_closeicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_elements_lib_module_assets_closeicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_node_modules_reactnavigation_elements_lib_module_assets_closeicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xhdpi/node_modules_reactnavigation_elements_lib_module_assets_closeicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_node_modules_reactnavigation_elements_lib_module_assets_searchicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxhdpi/node_modules_reactnavigation_elements_lib_module_assets_searchicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_materialcommunityicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_materialcommunityicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_unmatched.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_unmatched.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_regular.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_regular.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_error.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_error.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_zocial.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_zocial.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_splashscreen_logo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable-xhdpi/splashscreen_logo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_elements_lib_module_assets_clearicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_elements_lib_module_assets_clearicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontisto.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontisto.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxhdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxhdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_pkg.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_pkg.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_elements_lib_module_assets_backicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_elements_lib_module_assets_backicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_keep.xml.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/keep.xml"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_simplelineicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_simplelineicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_node_modules_reactnavigation_elements_lib_module_assets_closeicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxxhdpi/node_modules_reactnavigation_elements_lib_module_assets_closeicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_brands.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_brands.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_splashscreen_logo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable-xxxhdpi/splashscreen_logo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xhdpi/node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxhdpi_splashscreen_logo.png.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/drawable-xxhdpi/splashscreen_logo.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_solid.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_fontawesome6_solid.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_exporouter_assets_file.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_exporouter_assets_file.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_antdesign.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_antdesign.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_feather.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_feather.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_node_modules_reactnavigation_elements_lib_module_assets_searchicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxxhdpi/node_modules_reactnavigation_elements_lib_module_assets_searchicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xxxhdpi_node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xxxhdpi/node_modules_reactnavigation_drawer_lib_module_views_assets_toggledrawericon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-mdpi_node_modules_reactnavigation_elements_lib_module_assets_backiconmask.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-mdpi/node_modules_reactnavigation_elements_lib_module_assets_backiconmask.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/drawable-xhdpi_node_modules_reactnavigation_elements_lib_module_assets_searchicon.png.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/drawable-xhdpi/node_modules_reactnavigation_elements_lib_module_assets_searchicon.png"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/raw_node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_octicons.ttf.flat",
+        "source": "com.surajspx.pwddelhiapp-res-96:/raw/node_modules_expo_vectoricons_build_vendor_reactnativevectoricons_fonts_octicons.ttf"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-hdpi_ic_launcher_foreground.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-hdpi/ic_launcher_foreground.webp"
+    },
+    {
+        "merged": "com.surajspx.pwddelhiapp-release-104:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.surajspx.pwddelhiapp-main-105:/mipmap-hdpi/ic_launcher.webp"
+    }
+]

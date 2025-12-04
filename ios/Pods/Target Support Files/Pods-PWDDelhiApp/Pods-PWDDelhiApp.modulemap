@@ -1,0 +1,6 @@
+module Pods_PWDDelhiApp {
+  umbrella header "Pods-PWDDelhiApp-umbrella.h"
+
+  export *
+  module * { export * }
+}

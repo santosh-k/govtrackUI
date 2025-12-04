@@ -1,0 +1,27 @@
+{
+  "installationFolder": "/Users/spxmac032/Documents/ReactNativeProject/govtrack/node_modules/react-native-worklets/android/build/intermediates/prefab_package/debug/prefab",
+  "gradlePath": ":react-native-worklets",
+  "packageInfo": {
+    "packageName": "react-native-worklets",
+    "packageVersion": "0.5.1",
+    "packageSchemaVersion": 2,
+    "packageDependencies": [],
+    "modules": [
+      {
+        "moduleName": "worklets",
+        "moduleHeaders": "/Users/spxmac032/Documents/ReactNativeProject/govtrack/node_modules/react-native-worklets/android/build/prefab-headers/worklets",
+        "moduleExportLibraries": [],
+        "abis": [
+          {
+            "abiName": "arm64-v8a",
+            "abiApi": 24,
+            "abiNdkMajor": 27,
+            "abiStl": "c++_shared",
+            "abiLibrary": "/Users/spxmac032/Documents/ReactNativeProject/govtrack/node_modules/react-native-worklets/android/build/intermediates/cxx/Debug/e531q196/obj/arm64-v8a/libworklets.so",
+            "abiAndroidGradleBuildJsonFile": "/Users/spxmac032/Documents/ReactNativeProject/govtrack/node_modules/react-native-worklets/android/.cxx/Debug/e531q196/arm64-v8a/android_gradle_build.json"
+          }
+        ]
+      }
+    ]
+  }
+}

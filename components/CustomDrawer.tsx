@@ -23,7 +23,6 @@ const COLORS = {
   textSecondary: '#666666',
   primary: '#2196F3',
   border: '#eeeeeeff',
-  logoutButton: '#FF851B',
 };
 
 interface MenuItem {
@@ -34,13 +33,54 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { id: 'home', label: 'Home', icon: 'home-outline', route: '/(drawer)/(tabs)/dashboard' },
-  { id: 'complaints', label: 'Complaints', icon: 'document-text-outline', route: '/(drawer)/(tabs)/complaints' },
-  { id: 'projects', label: 'Projects', icon: 'folder-outline', route: '/(drawer)/(tabs)/projects' },
-  { id: 'my-task', label: 'My Task', icon: 'checkmark-done-outline', route: '/(drawer)/(tabs)/tasks?tab=my-tasks' },
-  { id: 'assign-task', label: 'Assign Task', icon: 'add-circle-outline', route: '/(drawer)/(tabs)/tasks?tab=assigned-by-me' },
-  { id: 'my-profile', label: 'My Profile', icon: 'person-outline', route: '/(drawer)/profile' },
-  { id: 'settings', label: 'Settings', icon: 'settings-outline', route: '/(drawer)/settings' },
+  {
+    id: 'home',
+    label: 'Home',
+    icon: 'home-outline',
+    route: '/(drawer)/(tabs)/dashboard'
+  },
+  {
+    id: 'project-inspections',
+    label: 'Project Inspections',
+    icon: 'clipboard-outline',
+    route: '/(drawer)/advanced-project-search'
+  },
+  {
+    id: 'assets-inspections',
+    label: 'Assets Inspections',
+    icon: 'business-outline',
+    route: '/(drawer)/search-asset'
+  },
+  {
+    id: 'water-logging-point',
+    label: 'Water Logging Point',
+    icon: 'water-outline',
+    route: '/water-logging/list'
+  },
+  {
+    id: 'water-logging-removal',
+    label: 'Water Logging Removal',
+    icon: 'water-outline',
+    route: '/(drawer)/water-logging-removal'
+  },
+  {
+    id: 'street-light-inspection',
+    label: 'Street Light Inspections',
+    icon: 'bulb-outline',
+    route: '/(drawer)/street-light-inspection'
+  },
+  {
+    id: 'my-profile',
+    label: 'My Profile',
+    icon: 'person-outline',
+    route: '/(drawer)/profile'
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: 'settings-outline',
+    route: '/(drawer)/settings'
+  },
 ];
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
@@ -95,7 +135,12 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             >
               <Ionicons name={item.icon} size={24} color={COLORS.text} />
               <Text style={styles.menuItemText}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} style={styles.chevronIcon} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS.textSecondary}
+                style={styles.chevronIcon}
+              />
             </TouchableOpacity>
           ))}
         </View>
