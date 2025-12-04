@@ -1,0 +1,8 @@
+/Users/spxmac032/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+  -C \
+  /Users/spxmac032/Documents/ReactNativeProject/govtrack/android/app/.cxx/RelWithDebInfo/6t6k6137/x86 \
+  appmodules \
+  react_codegen_RNCSlider \
+  react_codegen_rnscreens \
+  react_codegen_rnsvg \
+  react_codegen_safeareacontext
