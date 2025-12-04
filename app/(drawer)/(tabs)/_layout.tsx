@@ -15,7 +15,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   // Ensure minimum bottom padding on Android to avoid nav bar overlap
-  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 16) : insets.bottom;
+  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 4) : insets.bottom;
 
   // Compute tab bar height including padding
   const tabBarHeight = 60 + bottomPadding;

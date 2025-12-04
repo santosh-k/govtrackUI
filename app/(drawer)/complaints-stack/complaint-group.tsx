@@ -169,7 +169,9 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
       <FlatList
         data={complaintData}
         renderItem={renderRow}
-        keyExtractor={(item) => item.category_id.toString()}
+        keyExtractor={(item, index) =>
+  item?.category_id ? item.category_id.toString() : index.toString()
+}
         showsVerticalScrollIndicator={false}
         scrollEnabled={false}
         ListEmptyComponent={

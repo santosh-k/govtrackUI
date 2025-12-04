@@ -110,7 +110,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ message, type, onPress }) => {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const userName = 'Er Sabir Ali';
+  const userName = 'Deepak Kumar';
   const currentDate = getCurrentDate();
 
   // Navigation handlers
