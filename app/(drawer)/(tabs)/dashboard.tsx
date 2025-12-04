@@ -139,19 +139,16 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <Header />
+      <Header
+        greeting={`Welcome, ${userName}`}
+        subtitle={currentDate}
+      />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Section - Welcome & Date */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Welcome, {userName}</Text>
-          <Text style={styles.dateText}>{currentDate}</Text>
-        </View>
-
         {/* Snapshot Grid */}
         <View style={styles.gridContainer}>
           {/* Projects Card */}
@@ -261,29 +258,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  welcomeSection: {
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-  },
-  welcomeText: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: COLORS.text,
-    letterSpacing: -0.5,
-  },
-  dateText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    marginTop: 4,
+    paddingTop: 16,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 8,
   },
   snapshotCard: {
     width: cardWidth,
