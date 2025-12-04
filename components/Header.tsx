@@ -19,17 +19,24 @@ const COLORS = {
 
 interface HeaderProps {
   title?: string;
+  /** Greeting text for dashboard mode (e.g., "Welcome, Er Sabir Ali") */
+  greeting?: string;
+  /** Subtitle text for dashboard mode (e.g., "Mon, 25 Sep 2024") */
+  subtitle?: string;
 }
 
-export default function Header({ title }: HeaderProps) {
+export default function Header({ title, greeting, subtitle }: HeaderProps) {
   const navigation = useNavigation();
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  // Greeting mode: displays welcome message and date
+  const isGreetingMode = Boolean(greeting);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isGreetingMode && styles.containerGreeting]}>
       {/* Left: Hamburger Menu Icon */}
       <TouchableOpacity
         style={styles.menuButton}
@@ -39,15 +46,23 @@ export default function Header({ title }: HeaderProps) {
         <Ionicons name="menu" size={28} color={COLORS.iconColor} />
       </TouchableOpacity>
 
-      {/* Center: Title (optional) */}
-      {title && (
+      {/* Greeting Mode: Welcome message and date */}
+      {isGreetingMode && (
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greetingText}>{greeting}</Text>
+          {subtitle && <Text style={styles.subtitleText}>{subtitle}</Text>}
+        </View>
+      )}
+
+      {/* Center: Title (standard mode, when no greeting) */}
+      {!isGreetingMode && title && (
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{title}</Text>
         </View>
       )}
 
-      {/* Right: User Welcome */}
-      
+      {/* Right: Spacer for balance (only needed in greeting mode) */}
+      {isGreetingMode && <View style={styles.rightSpacer} />}
     </View>
   );
 }
@@ -74,6 +89,9 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  containerGreeting: {
+    paddingVertical: 14,
+  },
   menuButton: {
     padding: 8,
     marginLeft: -8,
@@ -89,6 +107,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.text,
+  },
+  greetingContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  greetingText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -0.3,
+  },
+  subtitleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  rightSpacer: {
+    width: 36,
   },
   userContainer: {
     alignItems: 'flex-end',
