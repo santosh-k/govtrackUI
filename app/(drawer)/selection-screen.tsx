@@ -30,7 +30,7 @@ interface SelectionItem {
   name: string;
 }
 
-type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes';
+type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes' | 'assetCategories' | 'locationTypes' | 'affectedAreas' | 'waterLoggingCauses' | 'trafficImpacts' | 'severities';
 
 export default function SelectionScreen() {
   const params = useLocalSearchParams();
@@ -63,9 +63,16 @@ export default function SelectionScreen() {
 
   const handleSelectItem = (item: SelectionItem) => {
     // Navigate back to the calling screen with the selected value
-    const pathname = returnTo
-      ? (`/(drawer)/${returnTo}` as any)
-      : '/(drawer)/advanced-project-search';
+    // If returnTo starts with '/', it's a full path (don't prepend drawer)
+    // Otherwise, it's a drawer-relative path
+    let pathname: any;
+    if (returnTo) {
+      pathname = returnTo.startsWith('/')
+        ? returnTo
+        : `/(drawer)/${returnTo}`;
+    } else {
+      pathname = '/(drawer)/advanced-project-search';
+    }
 
     // Preserve all params except the selection-specific ones
     const { title: _title, dataKey: _dataKey, currentValue: _currentValue, returnField: _returnField, returnTo: _returnTo, ...restParams } = params;
