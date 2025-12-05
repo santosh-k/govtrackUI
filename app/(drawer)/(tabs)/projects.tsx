@@ -243,7 +243,7 @@ useEffect(() => {
               iconColor="#1976D2"
               onPress={() => navigateToProjectList('All Projects')}
             />
-            {/* <StatCard
+             <StatCard
               title="Maintenance Work"
               value="18"
               icon="build-outline"
@@ -267,14 +267,14 @@ useEffect(() => {
               backgroundColor="#E8D7F1"
               iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
-            /> */}
+            /> 
             
           </View>
         </View>
 
         {/* Section 2: Financial Summary */}
         <View style={styles.section}>
-          {/* <View style={styles.financialCard}>
+           <View style={styles.financialCard}>
             <View style={styles.donutChartsContainer}>
               <DonutChart
                 percentage={79}
@@ -287,11 +287,11 @@ useEffect(() => {
                 label="Average Project Progress"
               />
             </View>
-          </View> */}
+          </View> 
         </View>
 
         {/* Section 3: Project Health Indicators */}
-        {/* <View style={styles.section}>
+         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Health Indicators</Text>
           <View style={styles.gridContainer}>
             <StatCard
@@ -327,7 +327,7 @@ useEffect(() => {
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
-        </View> */}
+        </View> 
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />

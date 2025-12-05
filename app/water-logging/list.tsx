@@ -15,7 +15,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   FlatList,
@@ -29,6 +28,7 @@ import WaterLoggingDetailsBottomSheet, {
   WaterLoggingIncident,
 } from '@/components/WaterLoggingDetailsBottomSheet';
 import WaterLoggingStatusUpdateSheet from '@/components/WaterLoggingStatusUpdateSheet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Initial Mock Data
 const INITIAL_MOCK_INCIDENTS: WaterLoggingIncident[] = [
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 48,
     right: 24,
     flexDirection: 'row',
     alignItems: 'center',

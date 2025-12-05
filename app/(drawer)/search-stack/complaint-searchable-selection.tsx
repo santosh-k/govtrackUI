@@ -34,7 +34,7 @@ interface Item {
   designation?: string;
 }
 
-export default function SearchableSelectionScreen() {
+export default function ComplaintSearchableSelectionScreen() {
   const params = useLocalSearchParams();
   const title = params.title as string;
   const itemsParam = params.items as string;

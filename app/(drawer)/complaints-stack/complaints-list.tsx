@@ -5,6 +5,7 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
+  FlatList,
   TextInput,
   TouchableOpacity,
   Platform,
@@ -220,6 +221,8 @@ export default function ComplaintsScreen() {
   const [searchQuery, setSearchQueryLocal] = useState('');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [currentStatusParam, setCurrentStatusParam] = useState<string>('');
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextPageToLoad, setNextPageToLoad] = useState(2);
 
   // Clear all previous filters and search data on mount or when params change
   useEffect(() => {
@@ -227,6 +230,9 @@ export default function ComplaintsScreen() {
     
     // Clear complaints from Redux
     dispatch({ type: 'complaints/clearComplaints' });
+    
+    // Reset pagination tracking
+    setNextPageToLoad(2);
     
     // Clear all local filter states
     setSearchQueryLocal('');
@@ -328,8 +334,12 @@ export default function ComplaintsScreen() {
     console.log('Start Date == ', start_date)
     console.log('End Date == ', end_date)
     console.log('All Params == ', params)
-    // Always clear complaints before new fetch to avoid stale data
-    dispatch({ type: 'complaints/clearComplaints' });
+    
+    // Only clear complaints when starting a new filter/search (page 1), not for infinite scroll
+    if (page === 1 && !isInfiniteScroll) {
+      dispatch({ type: 'complaints/clearComplaints' });
+    }
+    
     dispatch(
       fetchComplaints({
         stats_filter,
@@ -364,23 +374,13 @@ export default function ComplaintsScreen() {
     }
   }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
 
-  // Refetch complaints when screen comes into focus
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (params.filter) {
-  //       handleFetchComplaints(1, currentStatusParam, false);
-  //     }
-  //   }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
-  // );
-
-
-
-  useEffect(() => {
- if (params.filter) {
+  /* useFocusEffect(
+    useCallback(() => {
+      if (params.filter) {
         handleFetchComplaints(1, currentStatusParam, false);
       }
-  },[params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
-
+    }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
+  ); */
   // Handle incoming filter parameter from dashboard
   useEffect(() => {
     if (params.filter) {
@@ -445,6 +445,18 @@ export default function ComplaintsScreen() {
       handleFetchComplaints(1, currentStatusParam, false);
     }
   }, [selectedCategoryId, selectedCategory]);
+
+  // Reset loading state when complaints finish loading
+  useEffect(() => {
+    if (!loading && isLoadingMore) {
+      setIsLoadingMore(false);
+      // Update nextPageToLoad for the next pagination request
+      if (pagination && pagination.page) {
+        setNextPageToLoad(pagination.page + 1);
+        console.log('Updated nextPageToLoad to:', pagination.page + 1);
+      }
+    }
+  }, [loading, isLoadingMore, pagination]);
 
   // Transform API complaints to display format
   const transformedComplaints = useMemo(() => {
@@ -615,6 +627,9 @@ export default function ComplaintsScreen() {
     setSelectedDepartmentId(tempSelectedDepartmentId);
     setFilterSheetVisible(false);
 
+    // Reset pagination when applying filters
+    setNextPageToLoad(2);
+
     // Fetch complaints with new filters (reset to page 1)
     // Use tempSelected*Id directly because React state updates are async
     const stats_filter = getApiStatus(params.filter as string) || 'total';
@@ -766,15 +781,28 @@ export default function ComplaintsScreen() {
   };
 
   // Handle infinite scroll
-  const handleInfiniteScroll = () => {
-    if (pagination && pagination.has_next && !loading) {
-      handleFetchComplaints(currentPage + 1, undefined, true);
+  const handleInfiniteScroll = useCallback(() => {
+    // Prevent duplicate requests
+    if (isLoadingMore || loading) {
+      console.log('Already loading, skipping infinite scroll');
+      return;
     }
-  };
+    
+    // Check if there are more pages to load
+    if (pagination && pagination.has_next) {
+      console.log('Loading next page:', nextPageToLoad);
+      setIsLoadingMore(true);
+      handleFetchComplaints(nextPageToLoad, currentStatusParam, true);
+    } else {
+      console.log('No more pages. has_next:', pagination?.has_next);
+    }
+  }, [pagination, nextPageToLoad, isLoadingMore, loading, currentStatusParam]);
 
   // Handle search query change
   const handleSearchChange = (text: string) => {
     setSearchQueryLocal(text);
+    // Reset pagination when searching
+    setNextPageToLoad(2);
     if (text.trim()) {
       // Reset to page 1 when searching
       dispatch(setSearchQuery(text));
@@ -941,46 +969,29 @@ export default function ComplaintsScreen() {
       )}
 
       {/* Complaints List */}
-      <ScrollView
+      <FlatList
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={({ nativeEvent }) => {
-          const paddingToBottom = 20;
-          if (
-            nativeEvent.layoutMeasurement.height +
-            nativeEvent.contentOffset.y >=
-            nativeEvent.contentSize.height - paddingToBottom
-          ) {
-            handleInfiniteScroll();
-          }
+        data={filteredComplaints}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item: complaint }) => (
+          <ComplaintCard
+            complaint={complaint}
+            onPress={() => handleComplaintPress(complaint)}
+            onCopy={copyToClipboard}
+          />
+        )}
+        ListFooterComponent={() => {
+          if (filteredComplaints.length === 0) return null;
+          return loading ? (
+            <View style={styles.bottomLoadingContainer}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.bottomLoadingText}>Loading more complaints...</Text>
+            </View>
+          ) : null;
         }}
-        scrollEventThrottle={400}
-      >
-        {filteredComplaints.length > 0 ? (
-          <>
-            {filteredComplaints.map((complaint) => (
-              <ComplaintCard
-                key={complaint.id}
-                complaint={complaint}
-                onPress={() => handleComplaintPress(complaint)}
-                onCopy={copyToClipboard}
-              />
-            ))}
-
-            {/* Loading indicator at bottom for infinite scroll */}
-            {loading && (
-              <View style={styles.bottomLoadingContainer}>
-                {Platform.OS === 'android' ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                ) : (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                )}
-                <Text style={styles.bottomLoadingText}>Loading more complaints...</Text>
-              </View>
-            )}
-          </>
-        ) : (
+        ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={80} color={COLORS.textLight} />
             <Text style={styles.emptyStateText}>No complaints found</Text>
@@ -989,7 +1000,14 @@ export default function ComplaintsScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+        onEndReached={() => {
+          console.log('Reached end of list');
+          handleInfiniteScroll();
+        }}
+        onEndReachedThreshold={0.3}
+        scrollEventThrottle={300}
+        removeClippedSubviews={true}
+      />
 
       {/* Filter Bottom Sheet */}
       <FilterBottomSheet

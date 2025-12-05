@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { selectFilterOptions } from '@/src/store/complaintsSlice';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -34,16 +36,97 @@ export const extractSearchData = (text?: string): string => {
     .join("|");
 };
 export default function SearchComplaintScreen() {
-
     const insets = useSafeAreaInsets();
+    const filterOptions = useSelector(selectFilterOptions);
   
   const [complaintName, setComplaintName] = useState('');
   const [complaintNumber, setComplaintNumber] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedZone, setSelectedZone] = useState('');
+  const [selectedCircle, setSelectedCircle] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('');
+  const [selectedZoneId, setSelectedZoneId] = useState<string | number | null>(null);
+  const [selectedCircleId, setSelectedCircleId] = useState<string | number | null>(null);
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string | number | null>(null);
+
+  // Setup global callback for selection from other screens
+  useEffect(() => {
+    global.searchSelectionCallback = (type: string, value: any) => {
+      if (type === 'zone') {
+        if (value && typeof value === 'object') {
+          setSelectedZone(String(value.name || ''));
+          setSelectedZoneId(value.id ?? null);
+        } else {
+          setSelectedZone(String(value || ''));
+          setSelectedZoneId(null);
+        }
+      } else if (type === 'circle') {
+        if (value && typeof value === 'object') {
+          setSelectedCircle(String(value.name || ''));
+          setSelectedCircleId(value.id ?? null);
+        } else {
+          setSelectedCircle(String(value || ''));
+          setSelectedCircleId(null);
+        }
+      } else if (type === 'division') {
+        if (value && typeof value === 'object') {
+          setSelectedDivision(String(value.name || ''));
+          setSelectedDivisionId(value.id ?? null);
+        } else {
+          setSelectedDivision(String(value || ''));
+          setSelectedDivisionId(null);
+        }
+      }
+    };
+  }, []);
 
   const goBack = () => {
     // Simply go back to previous screen (dashboard)
     router.back();
+  };
+
+  const handleZonePress = () => {
+    const zones = filterOptions?.zones || [];
+    router.push({
+      pathname: '/search-stack/complaint-searchable-selection',
+      params: { 
+        title: 'Select Zone',
+        type: 'zone',
+        items: JSON.stringify(zones),
+        selected: selectedZone,
+        fromSearch: 'true',
+      },
+    });
+  };
+
+  const handleCirclePress = () => {
+    // Circles can be fetched from API or use empty array for now
+    const circles = (filterOptions as any)?.circles || [];
+    router.replace({
+      pathname: '/search-stack/complaint-searchable-selection',
+      params: { 
+        title: 'Select Circle',
+        type: 'circle',
+        items: JSON.stringify(circles),
+        selected: selectedCircle,
+        fromSearch: 'true',
+      },
+    });
+  };
+
+  const handleDivisionPress = () => {
+    // Divisions can be fetched from API or use empty array for now
+    const divisions = (filterOptions as any)?.divisions || [];
+    router.replace({
+      pathname: '/search-stack/complaint-searchable-selection',
+      params: { 
+        title: 'Select Division',
+        type: 'division',
+        items: JSON.stringify(divisions),
+        selected: selectedDivision,
+        fromSearch: 'true',
+      },
+    });
   };
 
   const handleFindComplaints = () => {
@@ -69,10 +152,27 @@ export default function SearchComplaintScreen() {
       params.searchData = '';
     }
 
+    // Add zone, circle, and division IDs if selected
+    if (selectedZoneId) {
+      params.zoneId = selectedZoneId;
+    }
+    if (selectedCircleId) {
+      params.circleId = selectedCircleId;
+    }
+    if (selectedDivisionId) {
+      params.divisionId = selectedDivisionId;
+    }
+
     // Reset fields
     setComplaintName('');
     setComplaintNumber('');
     setLocation('');
+    setSelectedZone('');
+    setSelectedCircle('');
+    setSelectedDivision('');
+    setSelectedZoneId(null);
+    setSelectedCircleId(null);
+    setSelectedDivisionId(null);
 
     console.log('Find Complaints - Params:', params);
     router.push({
@@ -109,6 +209,51 @@ export default function SearchComplaintScreen() {
           <Text style={styles.formSubtitle}>
             Fill one or more fields to search for complaints
           </Text>
+
+          {/* Zone Section */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionTitle}>Zone</Text>
+            <TouchableOpacity
+              style={styles.selectionRow}
+              onPress={handleZonePress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.selectionLabel}>
+                {selectedZone || 'All Zones'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Circle Section */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionTitle}>Circle</Text>
+            <TouchableOpacity
+              style={styles.selectionRow}
+              onPress={handleCirclePress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.selectionLabel}>
+                {selectedCircle || 'All Circles'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Division Section */}
+          <View style={styles.filterSection}>
+            <Text style={styles.sectionTitle}>Division</Text>
+            <TouchableOpacity
+              style={styles.selectionRow}
+              onPress={handleDivisionPress}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.selectionLabel}>
+                {selectedDivision || 'All Divisions'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
           {/* TEXT INPUT 1 */}
           <View style={styles.inputGroup}>
@@ -273,5 +418,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  filterSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+   selectionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  selectionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+    flex: 1,
   },
 });

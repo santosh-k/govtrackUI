@@ -189,9 +189,9 @@ const getStatusColors = (status: ProjectStatus) => {
 // Animated Donut Chart Component
 const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
   percentage,
-  size = 180
+  size = 120
 }) => {
-  const strokeWidth = 16;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -2361,7 +2361,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   donutPercentage: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.text,
   },

@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/theme';
 
 interface SpeedDialAction {
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   },
   mainFab: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 48,
     right: 24,
     width: 48,
     height: 48,
