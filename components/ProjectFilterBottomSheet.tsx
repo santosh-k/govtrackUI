@@ -373,27 +373,29 @@ export default function ProjectFilterBottomSheet({
 
         <Animated.View
           style={[styles.bottomSheet, { transform: [{ translateY }] }]}
-          {...panResponder.panHandlers}
         >
-          <View style={styles.handleBar} />
+          {/* Gesture area - only handle bar and header respond to drag gestures */}
+          <View {...panResponder.panHandlers}>
+            <View style={styles.handleBar} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>Filter Projects</Text>
-              {getActiveFilterCount() > 0 && (
-                <View style={styles.filterCountBadge}>
-                  <Text style={styles.filterCountText}>{getActiveFilterCount()}</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity onPress={handleReset} style={styles.resetHeaderButton}>
-                <Text style={styles.resetHeaderText}>Reset</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
-                <Ionicons name="close" size={26} color={COLORS.text} />
-              </TouchableOpacity>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.headerTitle}>Filter Projects</Text>
+                {getActiveFilterCount() > 0 && (
+                  <View style={styles.filterCountBadge}>
+                    <Text style={styles.filterCountText}>{getActiveFilterCount()}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.headerRight}>
+                <TouchableOpacity onPress={handleReset} style={styles.resetHeaderButton}>
+                  <Text style={styles.resetHeaderText}>Reset</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
+                  <Ionicons name="close" size={26} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
