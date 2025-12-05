@@ -310,6 +310,30 @@ export default function ProjectDetailsScreen() {
   const estimatedCost = '₹4.5 Cr';
   const expectedCompletionDate = '31-Mar-25';
 
+  // Project Information Data
+  const projectInfo = {
+    // Location
+    zone: 'Zone 1 - North Delhi',
+    circle: 'Circle 1 - Civil Lines',
+    division: 'Division A',
+    subDivision: 'Sub-Division A1',
+    // Classification
+    sector: 'Roads & Highways',
+    subSector: 'National Highways',
+    natureOfWork: 'Widening & Strengthening',
+    workType: 'New Construction',
+    category: 'Infrastructure',
+    // Administrative
+    agency: 'PWD Delhi',
+    projectInCharge: 'Er. Amit Kumar',
+    // Constituency
+    mpConstituency: 'Chandni Chowk',
+    mlaConstituency: 'Model Town',
+    // Technical (Road-specific)
+    roadLength: '12.5 km',
+    lanes: '6 Lanes',
+  };
+
   // Calculate remaining cost dynamically
   const remainingCostRaw = totalCostRaw - expenditureRaw;
   const remainingCost = `₹${remainingCostRaw.toFixed(1)} Cr`;
@@ -1027,6 +1051,119 @@ export default function ProjectDetailsScreen() {
             </View>
           </View>
         </View>
+      </View>
+
+      {/* Project Information Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Project Information</Text>
+
+        {/* Location Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons name="location-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoSectionTitle}>Location</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Zone</Text>
+            <Text style={styles.infoValue}>{projectInfo.zone}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Circle</Text>
+            <Text style={styles.infoValue}>{projectInfo.circle}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Division</Text>
+            <Text style={styles.infoValue}>{projectInfo.division}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sub-Division</Text>
+            <Text style={styles.infoValue}>{projectInfo.subDivision}</Text>
+          </View>
+        </View>
+
+        {/* Classification Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons name="folder-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoSectionTitle}>Classification</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sector</Text>
+            <Text style={styles.infoValue}>{projectInfo.sector}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sub-Sector</Text>
+            <Text style={styles.infoValue}>{projectInfo.subSector}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Nature of Work</Text>
+            <Text style={styles.infoValue}>{projectInfo.natureOfWork}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Work Type</Text>
+            <Text style={styles.infoValue}>{projectInfo.workType}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Category</Text>
+            <Text style={styles.infoValue}>{projectInfo.category}</Text>
+          </View>
+        </View>
+
+        {/* Administrative Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons name="briefcase-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoSectionTitle}>Administrative</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Agency</Text>
+            <Text style={styles.infoValue}>{projectInfo.agency}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Project In Charge</Text>
+            <Text style={styles.infoValue}>{projectInfo.projectInCharge}</Text>
+          </View>
+        </View>
+
+        {/* Constituency Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons name="people-outline" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoSectionTitle}>Constituency</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>MP Constituency</Text>
+            <Text style={styles.infoValue}>{projectInfo.mpConstituency}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>MLA Constituency</Text>
+            <Text style={styles.infoValue}>{projectInfo.mlaConstituency}</Text>
+          </View>
+        </View>
+
+        {/* Technical Section (Conditional) */}
+        {(projectInfo.roadLength || projectInfo.lanes) && (
+          <>
+            <View style={styles.infoSectionHeader}>
+              <Ionicons name="construct-outline" size={16} color={COLORS.textSecondary} />
+              <Text style={styles.infoSectionTitle}>Technical Details</Text>
+            </View>
+            <View style={styles.infoGrid}>
+              {projectInfo.roadLength && (
+                <View style={styles.infoGridItem}>
+                  <Text style={styles.infoLabel}>Road Length</Text>
+                  <Text style={styles.infoValue}>{projectInfo.roadLength}</Text>
+                </View>
+              )}
+              {projectInfo.lanes && (
+                <View style={styles.infoGridItem}>
+                  <Text style={styles.infoLabel}>No. of Lanes</Text>
+                  <Text style={styles.infoValue}>{projectInfo.lanes}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
       </View>
 
       {/* Status & Actions Card - Now Purely Informational */}
@@ -2367,6 +2504,45 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 17,
     fontWeight: '700',
+    color: COLORS.text,
+  },
+  // Project Information Card Styles
+  infoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginLeft: 6,
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  infoGridItem: {
+    width: '48%',
+    marginHorizontal: '1%',
+    marginBottom: 14,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textLight,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.text,
   },
   // Status & Actions Card Styles
