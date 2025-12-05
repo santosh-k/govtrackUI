@@ -46,6 +46,7 @@
         "android.permission.POST_NOTIFICATIONS"
       ],
       "package": "com.surajspx.pwddelhiapp"
+
     },
     "web": {
       "bundler": "metro",
@@ -89,6 +90,7 @@
     ],
     "experiments": {
       "typedRoutes": true
+
     },
     "extra": {
       "router": {},
@@ -97,5 +99,6 @@
       }
 
     }
+
   }
 }
