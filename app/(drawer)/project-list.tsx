@@ -569,7 +569,7 @@ const loadMore = () => {
 
          {isLoading && (
                       <View style={{ alignItems: 'center', marginVertical: 32 }}>
-                        <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+                        <Text style={{ color: COLORS.textSecondary }}>Loading Projects...</Text>
                       </View>
                     )}
 
