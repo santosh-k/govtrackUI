@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,14 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import Svg, { Circle } from 'react-native-svg';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useLocalSearchParams} from 'expo-router';
+import Svg, {Circle} from 'react-native-svg';
 import Header from '@/components/Header';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/src/store';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSelector} from 'react-redux';
+import {RootState} from '@/src/store';
 
 const COLORS = {
   primary: '#2196F3',
@@ -36,7 +36,7 @@ const COLORS = {
   yellow: '#FFC107',
 };
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 const cardWidth = (width - 48) / 2; // 2 columns with padding
 
 interface StatCardProps {
@@ -56,8 +56,7 @@ interface DonutChartProps {
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-
-const DonutChart: React.FC<DonutChartProps> = ({ percentage, color, label }) => {
+const DonutChart: React.FC<DonutChartProps> = ({percentage, color, label}) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
   const size = 96;
   const strokeWidth = 8;
@@ -126,10 +125,9 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      style={[styles.statCard, { backgroundColor }]}
+      style={[styles.statCard, {backgroundColor}]}
       onPress={onPress}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       {/* Top: Minimalist icon with unique color */}
       <Ionicons name={icon} size={40} color={iconColor} />
 
@@ -145,62 +143,58 @@ const StatCard: React.FC<StatCardProps> = ({
 export default function ProjectsDashboardScreen() {
   const insets = useSafeAreaInsets();
 
-  const [projectStat, setProjectStat] =  useState<any | null>(null);
+  const [projectStat, setProjectStat] = useState<any | null>(null);
 
   const [loading, setLoading] = useState(false);
-
 
   const navigateToProjectList = (filter: string) => {
     router.push({
       pathname: '/(drawer)/project-list',
-      params: { filter },
+      params: {filter},
     });
   };
 
   const user = useSelector((state: RootState) => state.auth.user);
-const displayDesignation = user?.departments?.[0]?.id as number | undefined;
+  const displayDesignation = user?.departments?.[0]?.id as number | undefined;
 
-useEffect(() => {
-  if (displayDesignation !== undefined) {
-    fetchComplaintDetails(displayDesignation);
-  }
-}, [displayDesignation]);
+  useEffect(() => {
+    if (displayDesignation !== undefined) {
+      fetchComplaintDetails(displayDesignation);
+    }
+  }, [displayDesignation]);
 
-  const stats = projectStat ? {
-    total: projectStat?.total_projects ?? 0,
-  
-  } : {
-    total: 0,
-   
-  };
+  const stats = projectStat
+    ? {
+        total: projectStat?.total_projects ?? 0,
+      }
+    : {
+        total: 0,
+      };
 
-  const fetchComplaintDetails = async(id: number) => {
-    setLoading(true)
+  const fetchComplaintDetails = async (id: number) => {
+    setLoading(true);
     try {
       // Use dynamic import to avoid circular dependency
       const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getProjectStatsDetails(id);
+      const response = await ApiManager.getInstance().getProjectStatsDetails(
+        id,
+      );
 
-      console.log("21223321response", response);
+      console.log('21223321response', response);
       if (response?.success && response?.data) {
-        setProjectStat(response?.data)
-    setLoading(false)
-
+        setProjectStat(response?.data);
+        setLoading(false);
       } else {
-        setProjectStat(0)
-    setLoading(false)
-
+        setProjectStat(0);
+        setLoading(false);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-        console.log("21223321", message);
-    setLoading(false)
-
-        
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      console.log('21223321', message);
+      setLoading(false);
     }
-  }
-
-
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -210,26 +204,23 @@ useEffect(() => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-
-       {loading && (
-              <View style={{ alignItems: 'center', marginVertical: 32 }}>
-                <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
-              </View>
-            )}
+        showsVerticalScrollIndicator={false}>
+        {loading && (
+          <View style={{alignItems: 'center', marginVertical: 32}}>
+            <Text style={{color: COLORS.textSecondary}}>Loading stats...</Text>
+          </View>
+        )}
 
         {/* Search Entry Point */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.searchBar}
           onPress={() => router.push('/(drawer)/advanced-project-search')}
-          activeOpacity={0.7}
-        >
+          activeOpacity={0.7}>
           <Ionicons name="search" size={20} color={COLORS.textSecondary} />
           <Text style={styles.searchPlaceholder}>
             Search by Project Name, ID, or Location...
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Section 1: Project Categories */}
         <View style={styles.section}>
@@ -268,7 +259,6 @@ useEffect(() => {
               iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
             /> */}
-            
           </View>
         </View>
 
@@ -350,6 +340,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 16,
+    marginTop: 5,
   },
   sectionTitle: {
     fontSize: 20,
@@ -362,7 +353,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
@@ -411,7 +402,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
