@@ -30,7 +30,7 @@ interface SelectionItem {
   name: string;
 }
 
-type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes' | 'assetCategories' | 'locationTypes' | 'affectedAreas' | 'waterLoggingCauses' | 'trafficImpacts' | 'severities';
+type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes' | 'assetCategories' | 'locationTypes' | 'affectedAreas' | 'waterLoggingCauses' | 'trafficImpacts' | 'severities' | 'circles' | 'sectors' | 'subSectors' | 'fundingTypes' | 'workTypes' | 'projectStatuses';
 
 export default function SelectionScreen() {
   const params = useLocalSearchParams();

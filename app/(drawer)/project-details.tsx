@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   View,
   Text,
@@ -15,28 +15,32 @@ import {
   Animated,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import Svg, { Circle } from 'react-native-svg';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useFocusEffect, useLocalSearchParams} from 'expo-router';
+import Svg, {Circle} from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
-import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import {
+  GestureHandlerRootView,
+  PinchGestureHandler,
+  State,
+} from 'react-native-gesture-handler';
 import SpeedDialFAB from '@/components/SpeedDialFAB';
 import AddMediaSheet from '@/components/AddMediaSheet';
+import moment from 'moment';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 // Zoomable Image Component
-const ZoomableImage: React.FC<{ uri: string }> = ({ uri }) => {
+const ZoomableImage: React.FC<{uri: string}> = ({uri}) => {
   const scale = useRef(new Animated.Value(1)).current;
   const baseScale = useRef(1);
 
-  const onPinchEvent = Animated.event(
-    [{ nativeEvent: { scale: scale } }],
-    { useNativeDriver: true }
-  );
+  const onPinchEvent = Animated.event([{nativeEvent: {scale: scale}}], {
+    useNativeDriver: true,
+  });
 
   const onPinchStateChange = (event: any) => {
     if (event.nativeEvent.oldState === State.ACTIVE) {
@@ -64,12 +68,11 @@ const ZoomableImage: React.FC<{ uri: string }> = ({ uri }) => {
   return (
     <PinchGestureHandler
       onGestureEvent={onPinchEvent}
-      onHandlerStateChange={onPinchStateChange}
-    >
+      onHandlerStateChange={onPinchStateChange}>
       <Animated.View style={[styles.zoomableContainer]}>
         <Animated.Image
-          source={{ uri }}
-          style={[styles.fullImage, { transform: [{ scale: animatedScale }] }]}
+          source={{uri}}
+          style={[styles.fullImage, {transform: [{scale: animatedScale}]}]}
           resizeMode="contain"
         />
       </Animated.View>
@@ -104,7 +107,12 @@ const COLORS = {
 };
 
 type ProjectStatus = 'On Track' | 'At Risk' | 'Delayed' | 'Completed';
-type TabName = 'Overview' | 'Media' | 'Inspections' | 'Bottlenecks' | 'Activity';
+type TabName =
+  | 'Overview'
+  | 'Media'
+  | 'Inspections'
+  | 'Bottlenecks'
+  | 'Activity';
 type InspectionStatus = 'Passed' | 'Failed' | 'Pending';
 type Priority = 'High' | 'Medium' | 'Low';
 type MediaFilterType = 'Photos' | 'Videos' | 'Documents';
@@ -174,24 +182,24 @@ interface Bottleneck {
 const getStatusColors = (status: ProjectStatus) => {
   switch (status) {
     case 'On Track':
-      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
+      return {bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack};
     case 'At Risk':
-      return { bg: COLORS.statusAtRiskBg, text: COLORS.statusAtRisk };
+      return {bg: COLORS.statusAtRiskBg, text: COLORS.statusAtRisk};
     case 'Delayed':
-      return { bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed };
+      return {bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed};
     case 'Completed':
-      return { bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted };
+      return {bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted};
     default:
-      return { bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack };
+      return {bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack};
   }
 };
 
 // Animated Donut Chart Component
-const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
+const DonutChart: React.FC<{percentage: number; size?: number}> = ({
   percentage,
-  size = 180
+  size = 120,
 }) => {
-  const strokeWidth = 16;
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -207,7 +215,7 @@ const DonutChart: React.FC<{ percentage: number; size?: number }> = ({
     }).start();
 
     // Animate the text display
-    const listener = animatedValue.addListener(({ value }) => {
+    const listener = animatedValue.addListener(({value}) => {
       setDisplayPercentage(Math.round(value));
     });
 
@@ -277,10 +285,14 @@ export default function ProjectDetailsScreen() {
   const [progressRemarks, setProgressRemarks] = useState('');
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [showInspectionDetails, setShowInspectionDetails] = useState(false);
-  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [selectedInspection, setSelectedInspection] =
+    useState<Inspection | null>(null);
   const [showBottleneckDetails, setShowBottleneckDetails] = useState(false);
-  const [selectedBottleneck, setSelectedBottleneck] = useState<Bottleneck | null>(null);
+  const [selectedBottleneck, setSelectedBottleneck] =
+    useState<Bottleneck | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [projectNameItem, setProjectNameItem] = useState<string>('');
+  const [projectCodeItem, setProjectCodeItem] = useState<string>('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // Media tab states
@@ -289,19 +301,28 @@ export default function ProjectDetailsScreen() {
   const [showUploadSheet, setShowUploadSheet] = useState(false);
 
   // Status update enhancement states
-  const [capturedLocation, setCapturedLocation] = useState<LocationData | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<LocationData | null>(
+    null,
+  );
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [statusAttachments, setStatusAttachments] = useState<MediaItem[]>([]);
-  const [activityHistory, setActivityHistory] = useState<StatusUpdateActivity[]>([]);
+  const [activityHistory, setActivityHistory] = useState<
+    StatusUpdateActivity[]
+  >([]);
   const [viewerMediaItems, setViewerMediaItems] = useState<MediaItem[]>([]);
 
-  // Progress update enhancement states
-  const [progressAttachments, setProgressAttachments] = useState<MediaItem[]>([]);
-  const [progressHistory, setProgressHistory] = useState<ProgressUpdate[]>([]);
-  const [lastProgressUpdate, setLastProgressUpdate] = useState<ProgressUpdate | null>(null);
+  const [projectData, setProjectData] = useState(null);
 
-    const [loading, setLoading] = useState(false);
-  
+  // Progress update enhancement states
+  const [progressAttachments, setProgressAttachments] = useState<MediaItem[]>(
+    [],
+  );
+  const [progressHistory, setProgressHistory] = useState<ProgressUpdate[]>([]);
+  const [lastProgressUpdate, setLastProgressUpdate] =
+    useState<ProgressUpdate | null>(null);
+
+  const [loading, setLoading] = useState(false);
+
   // Sample data
   // const projectName = 'National Highway 44 Widening and Resurfacing Project';
   const [progress, setProgress] = useState(75);
@@ -314,91 +335,188 @@ export default function ProjectDetailsScreen() {
   const estimatedCost = '₹4.5 Cr';
   const expectedCompletionDate = '31-Mar-25';
 
+  // Project Information Data
+  const projectInfo = {
+    // Location
+    zone: 'Zone 1 - North Delhi',
+    circle: 'Circle 1 - Civil Lines',
+    division: 'Division A',
+    subDivision: 'Sub-Division A1',
+    // Classification
+    sector: 'Roads & Highways',
+    subSector: 'National Highways',
+    natureOfWork: 'Widening & Strengthening',
+    workType: 'New Construction',
+    category: 'Infrastructure',
+    // Administrative
+    agency: 'PWD Delhi',
+    projectInCharge: 'Er. Amit Kumar',
+    // Constituency
+    mpConstituency: 'Chandni Chowk',
+    mlaConstituency: 'Model Town',
+    // Technical (Road-specific)
+    roadLength: '12.5 km',
+    lanes: '6 Lanes',
+  };
+
   // Calculate remaining cost dynamically
   const remainingCostRaw = totalCostRaw - expenditureRaw;
   const remainingCost = `₹${remainingCostRaw.toFixed(1)} Cr`;
-  const budgetUtilizationPercentage = Math.round((expenditureRaw / totalCostRaw) * 100);
+  const budgetUtilizationPercentage = Math.round(
+    (expenditureRaw / totalCostRaw) * 100,
+  );
 
   // Tab Layout
   const [activeTab, setActiveTab] = useState<TabName>('Overview');
 
-  const tabs: TabName[] = ['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'];
+  const tabs: TabName[] = [
+    'Overview',
+    'Media',
+    'Inspections',
+    'Bottlenecks',
+    'Activity',
+  ];
 
-const projectIdD = projectId as number | undefined;
+  const projectIdD = projectId as string;
 
+  useFocusEffect(
+    useCallback(() => {
+      setProjectNameItem(params?.projectName as string);
+      setProjectCodeItem(params?.projectCode as string);
+      if (!projectIdD || projectIdD === 'undefined') return;
+      fetchProjectDetails(projectIdD, 'Overview');
+    }, [projectIdD]),
+  );
 
-useEffect(() => {
-if(projectIdD !== undefined) {
-fetchProjectDetails(projectIdD);
-}
-},[projectIdD])
-
-  const fetchProjectDetails = async(id: number) => {
-    setLoading(true)
+  const fetchProjectDetails = async (id: string, tab: string) => {
+    setLoading(true);
     try {
       // Use dynamic import to avoid circular dependency
       const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getProjectDetails(id);
+      const response = await ApiManager.getInstance().getProjectDetail(
+        id,
+        tab.toLowerCase(),
+      );
 
-      console.log("21223321response1111", response);
       if (response?.success && response?.data) {
+        console.log('dhdhdsdsd', JSON.stringify(response));
+
+        setProjectData(response?.data);
         // setProjectStat(response?.data)
-    setLoading(false)
-
+        setLoading(false);
       } else {
+        setProjectData(null);
         // setProjectStat(0)
-    setLoading(false)
-
+        setLoading(false);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-        console.log("21223321", message);
-    setLoading(false)
-
-        
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      console.log('21223321', message);
+      setLoading(false);
+      setProjectData(null);
     }
-  }
+  };
 
   const scrollRef = useRef<ScrollView>(null);
   const screenWidth = Dimensions.get('window').width;
   const tabScrollRef = useRef<ScrollView>(null);
 
   const handleTabPress = (tab: TabName) => {
-  const index = tabs.indexOf(tab);
-  scrollRef.current?.scrollTo({ x: index * screenWidth, animated: true });
-  setActiveTab(tab);
-  scrollTabIntoView(index);
-  }; 
+    const index = tabs.indexOf(tab);
+    scrollRef.current?.scrollTo({x: index * screenWidth, animated: true});
+    setActiveTab(tab);
+    scrollTabIntoView(index);
+    fetchProjectDetails(projectIdD, tab);
+  };
 
   const handleSwipeEnd = (e: any) => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
     setActiveTab(tabs[newIndex]);
     scrollTabIntoView(newIndex);
   };
-const scrollTabIntoView = (index: number) => {
-  const TAB_WIDTH = 100; // adjust if your tab width is wider/narrower
-  const offset = TAB_WIDTH * index - screenWidth / 2 + TAB_WIDTH / 2;
+  const scrollTabIntoView = (index: number) => {
+    const TAB_WIDTH = 100; // adjust if your tab width is wider/narrower
+    const offset = TAB_WIDTH * index - screenWidth / 2 + TAB_WIDTH / 2;
 
-  tabScrollRef.current?.scrollTo({
-    x: Math.max(0, offset),
-    animated: true,
-  });
-};
+    tabScrollRef.current?.scrollTo({
+      x: Math.max(0, offset),
+      animated: true,
+    });
+  };
   // Initialize media items with mixed content
   useEffect(() => {
     const initialMedia: MediaItem[] = [
-      { id: '1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Photo+1' },
-      { id: '2', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1' },
-      { id: '3', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Photo+2' },
-      { id: '4', type: 'document', uri: 'https://example.com/project-plan.pdf', filename: 'Project_Plan_2024.pdf' },
-      { id: '5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Site+Photo+3' },
-      { id: '6', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2' },
-      { id: '7', type: 'document', uri: 'https://example.com/safety-report.pdf', filename: 'Safety_Report.pdf' },
-      { id: '8', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Site+Photo+4' },
-      { id: '9', type: 'document', uri: 'https://example.com/budget.xlsx', filename: 'Budget_Analysis.xlsx' },
-      { id: '10', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Site+Photo+5' },
-      { id: '11', type: 'video', uri: 'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3', thumbnail: 'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3' },
-      { id: '12', type: 'document', uri: 'https://example.com/inspection.pdf', filename: 'Inspection_Report_Dec.pdf' },
+      {
+        id: '1',
+        type: 'image',
+        uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Photo+1',
+      },
+      {
+        id: '2',
+        type: 'video',
+        uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1',
+        thumbnail:
+          'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Video+1',
+      },
+      {
+        id: '3',
+        type: 'image',
+        uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Photo+2',
+      },
+      {
+        id: '4',
+        type: 'document',
+        uri: 'https://example.com/project-plan.pdf',
+        filename: 'Project_Plan_2024.pdf',
+      },
+      {
+        id: '5',
+        type: 'image',
+        uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Site+Photo+3',
+      },
+      {
+        id: '6',
+        type: 'video',
+        uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2',
+        thumbnail:
+          'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Video+2',
+      },
+      {
+        id: '7',
+        type: 'document',
+        uri: 'https://example.com/safety-report.pdf',
+        filename: 'Safety_Report.pdf',
+      },
+      {
+        id: '8',
+        type: 'image',
+        uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Site+Photo+4',
+      },
+      {
+        id: '9',
+        type: 'document',
+        uri: 'https://example.com/budget.xlsx',
+        filename: 'Budget_Analysis.xlsx',
+      },
+      {
+        id: '10',
+        type: 'image',
+        uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Site+Photo+5',
+      },
+      {
+        id: '11',
+        type: 'video',
+        uri: 'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3',
+        thumbnail:
+          'https://via.placeholder.com/400x300/3F51B5/FFFFFF?text=Video+3',
+      },
+      {
+        id: '12',
+        type: 'document',
+        uri: 'https://example.com/inspection.pdf',
+        filename: 'Inspection_Report_Dec.pdf',
+      },
     ];
     setAllMediaItems(initialMedia);
   }, []);
@@ -412,11 +530,26 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Senior Civil Engineer',
       inspectorDepartment: 'Quality Assurance Department',
       status: 'Passed',
-      description: 'Structural integrity assessment completed. All load-bearing elements inspected and found compliant with approved drawings. Concrete strength test results satisfactory. Foundation work meets specifications with proper reinforcement placement.',
+      description:
+        'Structural integrity assessment completed. All load-bearing elements inspected and found compliant with approved drawings. Concrete strength test results satisfactory. Foundation work meets specifications with proper reinforcement placement.',
       media: [
-        { id: 'm1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Foundation+Check' },
-        { id: 'm2', type: 'image', uri: 'https://via.placeholder.com/400x300/8BC34A/FFFFFF?text=Reinforcement' },
-        { id: 'm3', type: 'video', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video', thumbnail: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video' },
+        {
+          id: 'm1',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Foundation+Check',
+        },
+        {
+          id: 'm2',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/8BC34A/FFFFFF?text=Reinforcement',
+        },
+        {
+          id: 'm3',
+          type: 'video',
+          uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video',
+          thumbnail:
+            'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Video',
+        },
       ],
     },
     {
@@ -427,10 +560,20 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Chief Safety Officer',
       inspectorDepartment: 'Safety & Compliance Division',
       status: 'Pending',
-      description: 'Safety equipment inspection in progress. Awaiting certification documents for new scaffolding installation. Worker safety gear compliance check scheduled for completion by end of week...',
+      description:
+        'Safety equipment inspection in progress. Awaiting certification documents for new scaffolding installation. Worker safety gear compliance check scheduled for completion by end of week...',
       media: [
-        { id: 'm4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Safety+Gear' },
-        { id: 'm5', type: 'document', uri: 'https://example.com/safety-checklist.pdf', filename: 'Safety_Checklist.pdf' },
+        {
+          id: 'm4',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Safety+Gear',
+        },
+        {
+          id: 'm5',
+          type: 'document',
+          uri: 'https://example.com/safety-checklist.pdf',
+          filename: 'Safety_Checklist.pdf',
+        },
       ],
     },
     {
@@ -441,12 +584,31 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Lead Architect',
       inspectorDepartment: 'Design & Planning',
       status: 'Passed',
-      description: 'Architectural finish inspection completed successfully. All interior plastering work meets quality standards. Paint application uniform and defect-free. Door and window installations aligned with specifications.',
+      description:
+        'Architectural finish inspection completed successfully. All interior plastering work meets quality standards. Paint application uniform and defect-free. Door and window installations aligned with specifications.',
       media: [
-        { id: 'm6', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Interior+Work' },
-        { id: 'm7', type: 'image', uri: 'https://via.placeholder.com/400x300/03A9F4/FFFFFF?text=Plastering' },
-        { id: 'm8', type: 'image', uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Finishing' },
-        { id: 'm9', type: 'video', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough', thumbnail: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough' },
+        {
+          id: 'm6',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Interior+Work',
+        },
+        {
+          id: 'm7',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/03A9F4/FFFFFF?text=Plastering',
+        },
+        {
+          id: 'm8',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/00BCD4/FFFFFF?text=Finishing',
+        },
+        {
+          id: 'm9',
+          type: 'video',
+          uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough',
+          thumbnail:
+            'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Walkthrough',
+        },
       ],
     },
     {
@@ -457,12 +619,32 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Structural Engineer',
       inspectorDepartment: 'Structural Engineering Wing',
       status: 'Failed',
-      description: 'Critical defects identified in column alignment on third floor. Reinforcement spacing does not comply with structural drawings. Immediate corrective action required. Recommend re-inspection after remedial work completion...',
+      description:
+        'Critical defects identified in column alignment on third floor. Reinforcement spacing does not comply with structural drawings. Immediate corrective action required. Recommend re-inspection after remedial work completion...',
       media: [
-        { id: 'm10', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Defect+1' },
-        { id: 'm11', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Defect+2' },
-        { id: 'm12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video' },
-        { id: 'm13', type: 'document', uri: 'https://example.com/defect-report.pdf', filename: 'Defect_Report_Nov22.pdf' },
+        {
+          id: 'm10',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Defect+1',
+        },
+        {
+          id: 'm11',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Defect+2',
+        },
+        {
+          id: 'm12',
+          type: 'video',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video',
+          thumbnail:
+            'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Issue+Video',
+        },
+        {
+          id: 'm13',
+          type: 'document',
+          uri: 'https://example.com/defect-report.pdf',
+          filename: 'Defect_Report_Nov22.pdf',
+        },
       ],
     },
     {
@@ -473,7 +655,8 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Electrical Engineer',
       inspectorDepartment: 'MEP Services',
       status: 'Passed',
-      description: 'Electrical installation inspection completed. All wiring properly insulated and compliant with electrical codes. Distribution boards correctly labeled and earthing system verified.',
+      description:
+        'Electrical installation inspection completed. All wiring properly insulated and compliant with electrical codes. Distribution boards correctly labeled and earthing system verified.',
       media: [],
     },
     {
@@ -484,9 +667,14 @@ const scrollTabIntoView = (index: number) => {
       inspectorPosition: 'Plumbing Engineer',
       inspectorDepartment: 'MEP Services',
       status: 'Passed',
-      description: 'Plumbing and drainage system inspection successful. All pipes pressure tested without leakage. Sanitary fittings properly installed and functional. Water supply lines meet specifications.',
+      description:
+        'Plumbing and drainage system inspection successful. All pipes pressure tested without leakage. Sanitary fittings properly installed and functional. Water supply lines meet specifications.',
       media: [
-        { id: 'm14', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Plumbing' },
+        {
+          id: 'm14',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Plumbing',
+        },
       ],
     },
   ];
@@ -500,11 +688,25 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Central Department',
       date: '10-Dec-24',
       priority: 'High',
-      description: 'Critical delay in cement delivery affecting foundation work. Supplier has confirmed a 2-week delay due to transportation issues. This will impact the project timeline significantly. Need immediate alternative supplier arrangements.',
+      description:
+        'Critical delay in cement delivery affecting foundation work. Supplier has confirmed a 2-week delay due to transportation issues. This will impact the project timeline significantly. Need immediate alternative supplier arrangements.',
       media: [
-        { id: 'bn1', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Delayed+Materials' },
-        { id: 'bn2', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Stock+Empty' },
-        { id: 'bn3', type: 'document', uri: 'https://example.com/supplier-letter.pdf', filename: 'Supplier_Delay_Notice.pdf' },
+        {
+          id: 'bn1',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Delayed+Materials',
+        },
+        {
+          id: 'bn2',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Stock+Empty',
+        },
+        {
+          id: 'bn3',
+          type: 'document',
+          uri: 'https://example.com/supplier-letter.pdf',
+          filename: 'Supplier_Delay_Notice.pdf',
+        },
       ],
     },
     {
@@ -515,10 +717,21 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Operations Division',
       date: '05-Dec-24',
       priority: 'Medium',
-      description: 'Heavy rainfall for the past week has halted outdoor construction activities. Ground conditions are not suitable for concrete pouring. Weather forecast shows continued rain for next 3-4 days. Work schedule needs to be revised.',
+      description:
+        'Heavy rainfall for the past week has halted outdoor construction activities. Ground conditions are not suitable for concrete pouring. Weather forecast shows continued rain for next 3-4 days. Work schedule needs to be revised.',
       media: [
-        { id: 'bn4', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Rain+Impact' },
-        { id: 'bn5', type: 'video', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded', thumbnail: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded' },
+        {
+          id: 'bn4',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Rain+Impact',
+        },
+        {
+          id: 'bn5',
+          type: 'video',
+          uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded',
+          thumbnail:
+            'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Site+Flooded',
+        },
       ],
     },
     {
@@ -529,7 +742,8 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Mechanical Wing',
       date: '01-Dec-24',
       priority: 'Low',
-      description: 'Routine maintenance required for excavator and crane equipment. Scheduled maintenance will take 2 days. Impact on overall timeline is minimal as this can be done during off-peak hours.',
+      description:
+        'Routine maintenance required for excavator and crane equipment. Scheduled maintenance will take 2 days. Impact on overall timeline is minimal as this can be done during off-peak hours.',
       media: [],
     },
     {
@@ -540,10 +754,20 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Human Resources',
       date: '28-Nov-24',
       priority: 'High',
-      description: 'Shortage of skilled masons and welders impacting construction speed. Current team is overworked. Need to hire 10 additional skilled workers urgently to maintain project schedule.',
+      description:
+        'Shortage of skilled masons and welders impacting construction speed. Current team is overworked. Need to hire 10 additional skilled workers urgently to maintain project schedule.',
       media: [
-        { id: 'bn6', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Understaffed' },
-        { id: 'bn7', type: 'document', uri: 'https://example.com/staffing-report.pdf', filename: 'Staffing_Analysis_Nov.pdf' },
+        {
+          id: 'bn6',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Understaffed',
+        },
+        {
+          id: 'bn7',
+          type: 'document',
+          uri: 'https://example.com/staffing-report.pdf',
+          filename: 'Staffing_Analysis_Nov.pdf',
+        },
       ],
     },
     {
@@ -554,9 +778,15 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Legal & Compliance',
       date: '22-Nov-24',
       priority: 'Medium',
-      description: 'Environmental clearance permit for next phase is pending with municipal authorities. Application submitted 3 weeks ago. Follow-up meetings scheduled. May cause delay if not approved within next 10 days.',
+      description:
+        'Environmental clearance permit for next phase is pending with municipal authorities. Application submitted 3 weeks ago. Follow-up meetings scheduled. May cause delay if not approved within next 10 days.',
       media: [
-        { id: 'bn8', type: 'document', uri: 'https://example.com/permit-application.pdf', filename: 'Permit_Application.pdf' },
+        {
+          id: 'bn8',
+          type: 'document',
+          uri: 'https://example.com/permit-application.pdf',
+          filename: 'Permit_Application.pdf',
+        },
       ],
     },
     {
@@ -567,12 +797,32 @@ const scrollTabIntoView = (index: number) => {
       reporterDepartment: 'Quality Assurance',
       date: '15-Nov-24',
       priority: 'High',
-      description: 'Recent concrete batch (Batch 204) failed strength tests. Approximately 200 cubic meters affected. Need to investigate root cause and potentially remove and replace affected concrete. Major cost and time implications.',
+      description:
+        'Recent concrete batch (Batch 204) failed strength tests. Approximately 200 cubic meters affected. Need to investigate root cause and potentially remove and replace affected concrete. Major cost and time implications.',
       media: [
-        { id: 'bn9', type: 'image', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Failed+Test' },
-        { id: 'bn10', type: 'image', uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Sample+Analysis' },
-        { id: 'bn11', type: 'document', uri: 'https://example.com/test-report.pdf', filename: 'Concrete_Test_Report_Batch204.pdf' },
-        { id: 'bn12', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection' },
+        {
+          id: 'bn9',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Failed+Test',
+        },
+        {
+          id: 'bn10',
+          type: 'image',
+          uri: 'https://via.placeholder.com/400x300/E91E63/FFFFFF?text=Sample+Analysis',
+        },
+        {
+          id: 'bn11',
+          type: 'document',
+          uri: 'https://example.com/test-report.pdf',
+          filename: 'Concrete_Test_Report_Batch204.pdf',
+        },
+        {
+          id: 'bn12',
+          type: 'video',
+          uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection',
+          thumbnail:
+            'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Site+Inspection',
+        },
       ],
     },
   ];
@@ -584,7 +834,8 @@ const scrollTabIntoView = (index: number) => {
         id: 'prog-1',
         progress: 75,
         previousProgress: 60,
-        remarks: 'Completed Phase 3 successfully. All major milestones achieved.',
+        remarks:
+          'Completed Phase 3 successfully. All major milestones achieved.',
         updatedBy: 'Er Sabir Ali',
         designation: 'Assistant Engineer',
         timestamp: '15-Dec-24 at 2:30 PM',
@@ -602,25 +853,35 @@ const scrollTabIntoView = (index: number) => {
         id: '1',
         status: 'On Track',
         previousStatus: 'At Risk',
-        remarks: 'All critical issues have been resolved. Material delivery is now on schedule and weather conditions have improved significantly.',
+        remarks:
+          'All critical issues have been resolved. Material delivery is now on schedule and weather conditions have improved significantly.',
         updatedBy: 'Er Sabir Ali',
         designation: 'Assistant Engineer',
         timestamp: '15-Dec-24 at 2:30 PM',
         location: {
           latitude: 28.6139,
-          longitude: 77.2090,
+          longitude: 77.209,
           timestamp: Date.now(),
         },
         attachments: [
-          { id: 'a1', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Update+1' },
-          { id: 'a2', type: 'image', uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Site+Update+2' },
+          {
+            id: 'a1',
+            type: 'image',
+            uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Site+Update+1',
+          },
+          {
+            id: 'a2',
+            type: 'image',
+            uri: 'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Site+Update+2',
+          },
         ],
       },
       {
         id: '2',
         status: 'At Risk',
         previousStatus: 'On Track',
-        remarks: 'Material delivery has been delayed by 3 days due to supply chain issues. Monitoring situation closely.',
+        remarks:
+          'Material delivery has been delayed by 3 days due to supply chain issues. Monitoring situation closely.',
         updatedBy: 'Rajesh Kumar',
         designation: 'Project Manager',
         timestamp: '10-Dec-24 at 10:15 AM',
@@ -630,21 +891,40 @@ const scrollTabIntoView = (index: number) => {
           timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
         },
         attachments: [
-          { id: 'a3', type: 'image', uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Delayed+Materials' },
+          {
+            id: 'a3',
+            type: 'image',
+            uri: 'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Delayed+Materials',
+          },
         ],
       },
       {
         id: '3',
         status: 'On Track',
         previousStatus: undefined,
-        remarks: 'Project commenced successfully. All equipment and materials are in place. Team is fully mobilized.',
+        remarks:
+          'Project commenced successfully. All equipment and materials are in place. Team is fully mobilized.',
         updatedBy: 'Priya Sharma',
         designation: 'Senior Engineer',
         timestamp: '01-Dec-24 at 9:00 AM',
         attachments: [
-          { id: 'a4', type: 'image', uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Project+Start+1' },
-          { id: 'a5', type: 'image', uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Project+Start+2' },
-          { id: 'a6', type: 'video', uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video', thumbnail: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video' },
+          {
+            id: 'a4',
+            type: 'image',
+            uri: 'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Project+Start+1',
+          },
+          {
+            id: 'a5',
+            type: 'image',
+            uri: 'https://via.placeholder.com/400x300/9C27B0/FFFFFF?text=Project+Start+2',
+          },
+          {
+            id: 'a6',
+            type: 'video',
+            uri: 'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video',
+            thumbnail:
+              'https://via.placeholder.com/400x300/F44336/FFFFFF?text=Opening+Video',
+          },
         ],
       },
     ];
@@ -666,9 +946,12 @@ const scrollTabIntoView = (index: number) => {
   const handleCaptureLocation = async () => {
     setIsCapturingLocation(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const {status} = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location permission is required to capture your current location.');
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to capture your current location.',
+        );
         setIsCapturingLocation(false);
         return;
       }
@@ -687,19 +970,15 @@ const scrollTabIntoView = (index: number) => {
   };
 
   const handleAddStatusAttachment = async () => {
-    Alert.alert(
-      'Add Media',
-      'Choose an option',
-      [
-        { text: 'Take Photo or Video', onPress: () => takeStatusPhoto() },
-        { text: 'Choose from Gallery', onPress: () => pickStatusFromGallery() },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Add Media', 'Choose an option', [
+      {text: 'Take Photo or Video', onPress: () => takeStatusPhoto()},
+      {text: 'Choose from Gallery', onPress: () => pickStatusFromGallery()},
+      {text: 'Cancel', style: 'cancel'},
+    ]);
   };
 
   const takeStatusPhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    const {status} = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Camera permission is required');
       return;
@@ -723,7 +1002,7 @@ const scrollTabIntoView = (index: number) => {
   };
 
   const pickStatusFromGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Gallery permission is required');
       return;
@@ -758,14 +1037,16 @@ const scrollTabIntoView = (index: number) => {
       remarks: statusComment,
       updatedBy: 'Current User',
       designation: 'Engineer',
-      timestamp: new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }).replace(',', ' at'),
+      timestamp: new Date()
+        .toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+        .replace(',', ' at'),
       location: capturedLocation || undefined,
       attachments: statusAttachments,
     };
@@ -801,19 +1082,15 @@ const scrollTabIntoView = (index: number) => {
   };
 
   const handleAddProgressAttachment = async () => {
-    Alert.alert(
-      'Add Media',
-      'Choose an option',
-      [
-        { text: 'Take Photo or Video', onPress: () => takeProgressPhoto() },
-        { text: 'Choose from Gallery', onPress: () => pickProgressFromGallery() },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Add Media', 'Choose an option', [
+      {text: 'Take Photo or Video', onPress: () => takeProgressPhoto()},
+      {text: 'Choose from Gallery', onPress: () => pickProgressFromGallery()},
+      {text: 'Cancel', style: 'cancel'},
+    ]);
   };
 
   const takeProgressPhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    const {status} = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Camera permission is required');
       return;
@@ -837,7 +1114,7 @@ const scrollTabIntoView = (index: number) => {
   };
 
   const pickProgressFromGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Gallery permission is required');
       return;
@@ -878,14 +1155,16 @@ const scrollTabIntoView = (index: number) => {
       remarks: progressRemarks,
       updatedBy: 'Current User',
       designation: 'Engineer',
-      timestamp: new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }).replace(',', ' at'),
+      timestamp: new Date()
+        .toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+        .replace(',', ' at'),
       attachments: progressAttachments,
     };
 
@@ -1004,12 +1283,29 @@ const scrollTabIntoView = (index: number) => {
 
   const statusColors = getStatusColors(projectStatus);
 
+  const formatNumberINR = (num: number | string | undefined | null) => {
+    if (num == null) return '';
+    const value =
+      typeof num === 'string'
+        ? parseFloat(num.toString().replace(/[^0-9.-]+/g, ''))
+        : Number(num);
+    if (isNaN(value)) return String(num);
+    if (value >= 10000000) {
+      return (value / 10000000).toFixed(2) + ' Cr';
+    } else if (value >= 100000) {
+      return (value / 100000).toFixed(2) + ' Lakh';
+    } else if (value >= 1000) {
+      return (value / 1000).toFixed(2) + ' K';
+    } else {
+      return value.toString();
+    }
+  };
+
   const renderOverviewTab = () => (
     <ScrollView
       style={styles.tabContent}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.overviewContent}
-    >
+      contentContainerStyle={styles.overviewContent}>
       {/* Progress Card */}
       <View style={styles.card}>
         <View style={styles.cardTitleRow}>
@@ -1017,23 +1313,41 @@ const scrollTabIntoView = (index: number) => {
           <TouchableOpacity
             style={styles.updateButton}
             onPress={handleUpdateProgressPress}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add-circle-outline" size={18} color={COLORS.saffron} />
+            activeOpacity={0.7}>
+            <Ionicons
+              name="add-circle-outline"
+              size={18}
+              color={COLORS.saffron}
+            />
             <Text style={styles.updateButtonText}>Update</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.progressCardContent}>
-          <DonutChart percentage={progress} />
+          <DonutChart
+            percentage={Number(projectData?.progress?.physical?.percent)}
+          />
           <View style={styles.datesContainer}>
+            {/* {projectData?.progress?.startDate != null && ( */}
             <View style={styles.dateRow}>
               <Text style={styles.dateLabel}>Start Date:</Text>
-              <Text style={styles.dateValue}>{startDate}</Text>
+              <Text style={styles.dateValue}>
+                {moment(projectData?.progress?.startDate, 'DD/M/YYYY').format(
+                  'DD-MMM-YY',
+                )}
+              </Text>
             </View>
-            <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>End Date:</Text>
-              <Text style={styles.dateValue}>{endDate}</Text>
-            </View>
+            {/* )} */}
+            {projectData?.progress?.endDate != null && (
+              <View style={styles.dateRow}>
+                <Text style={styles.dateLabel}>End Date:</Text>
+                <Text style={styles.dateValue}>
+                  {' '}
+                  {moment(projectData?.progress?.endDate, 'DD/M/YYYY').format(
+                    'DD-MMM-YY',
+                  )}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -1046,7 +1360,14 @@ const scrollTabIntoView = (index: number) => {
         {/* Primary Visual Indicator - Budget Utilization */}
         <View style={styles.budgetUtilizationSection}>
           <Text style={styles.budgetSummaryText}>
-            {expenditure} Spent of {totalCost} Total Cost
+            {`₹${formatNumberINR(
+              projectData?.financial?.remainingCost?.value,
+            )}`}{' '}
+            Spent of{' '}
+            {`₹${formatNumberINR(
+              projectData?.financial?.sanctionedAmount?.value,
+            )}`}{' '}
+            Total Cost
           </Text>
 
           {/* Progress Bar with Percentage Overlay */}
@@ -1055,13 +1376,13 @@ const scrollTabIntoView = (index: number) => {
               <View
                 style={[
                   styles.budgetProgressBarFill,
-                  { width: `${budgetUtilizationPercentage}%` }
+                  {width: `${projectData?.financial?.utilizationPercent}%`},
                 ]}
               />
             </View>
             <View style={styles.budgetPercentageOverlay}>
               <Text style={styles.budgetPercentageText}>
-                {budgetUtilizationPercentage}% Utilized
+                {projectData?.financial?.utilizationPercent}% Utilized
               </Text>
             </View>
           </View>
@@ -1076,11 +1397,17 @@ const scrollTabIntoView = (index: number) => {
           <View style={styles.financialColumn}>
             <View style={styles.statBlock}>
               <Text style={styles.statLabel}>Remaining Cost</Text>
-              <Text style={styles.statValue}>{remainingCost}</Text>
+              <Text style={styles.statValue}>
+                {`₹${formatNumberINR(
+                  projectData?.financial?.remainingCost?.value,
+                )}`}
+              </Text>
             </View>
             <View style={styles.statBlock}>
               <Text style={styles.statLabel}>Estimated Cost</Text>
-              <Text style={styles.statValue}>{estimatedCost}</Text>
+              <Text style={styles.statValue}>{`₹${formatNumberINR(
+                projectData?.financial?.estimatedCost?.value,
+              )}`}</Text>
             </View>
           </View>
 
@@ -1088,14 +1415,187 @@ const scrollTabIntoView = (index: number) => {
           <View style={styles.financialColumn}>
             <View style={styles.statBlock}>
               <Text style={styles.statLabel}>Expenditure</Text>
-              <Text style={styles.statValue}>{expenditure}</Text>
+              <Text style={styles.statValue}>{`₹${formatNumberINR(
+                projectData?.financial?.expenditure?.value,
+              )}`}</Text>
             </View>
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>Exp. Comp. Date</Text>
-              <Text style={styles.statValue}>{expectedCompletionDate}</Text>
-            </View>
+
+            {projectData?.financial?.lastUpdated != null && (
+              <View style={styles.statBlock}>
+                <Text style={styles.statLabel}>Exp. Comp. Date</Text>
+                <Text style={styles.statValue}>
+                  {moment(
+                    projectData?.financial?.lastUpdated,
+                    'DD/M/YYYY',
+                  ).format('DD-MMM-YY')}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
+      </View>
+
+      {/* Project Information Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Project Information</Text>
+
+        {/* Location Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons
+            name="location-outline"
+            size={16}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.infoSectionTitle}>Location</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Zone</Text>
+            <Text style={styles.infoValue}>{projectData?.location?.zone}</Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Circle</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.location?.circle}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Division</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.location?.division}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sub-Division</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.location?.subDivision}
+            </Text>
+          </View>
+        </View>
+
+        {/* Classification Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons
+            name="folder-outline"
+            size={16}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.infoSectionTitle}>Classification</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sector</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.classification?.sector}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Sub-Sector</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.classification?.subSector}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Nature of Work</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.classification?.natureOfWork}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Work Type</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.classification?.workType}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Category</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.classification?.category}
+            </Text>
+          </View>
+        </View>
+
+        {/* Administrative Section */}
+        <View style={styles.infoSectionHeader}>
+          <Ionicons
+            name="briefcase-outline"
+            size={16}
+            color={COLORS.textSecondary}
+          />
+          <Text style={styles.infoSectionTitle}>Administrative</Text>
+        </View>
+        <View style={styles.infoGrid}>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Agency</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.administrative?.agency}
+            </Text>
+          </View>
+          <View style={styles.infoGridItem}>
+            <Text style={styles.infoLabel}>Project In Charge</Text>
+            <Text style={styles.infoValue}>
+              {projectData?.administrative?.projectInCharge?.name}
+            </Text>
+          </View>
+        </View>
+
+        {/* Constituency Section */}
+        {projectData?.constituency?.mpConstituency ||
+        projectData?.constituency?.mlaConstituency ? (
+          <>
+            <View style={styles.infoSectionHeader}>
+              <Ionicons
+                name="people-outline"
+                size={16}
+                color={COLORS.textSecondary}
+              />
+              <Text style={styles.infoSectionTitle}>Constituency</Text>
+            </View>
+
+            <View style={styles.infoGrid}>
+              <View style={styles.infoGridItem}>
+                <Text style={styles.infoLabel}>MP Constituency</Text>
+                <Text style={styles.infoValue}>
+                  {projectData?.constituency?.mpConstituency}
+                </Text>
+              </View>
+              <View style={styles.infoGridItem}>
+                <Text style={styles.infoLabel}>MLA Constituency</Text>
+                <Text style={styles.infoValue}>
+                  {projectData?.constituency?.mlaConstituency}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        {/* Technical Section (Conditional) */}
+        {projectData?.asset?.type === 'road' && (
+          <>
+            {projectData?.technicalDetails?.roadLength && (
+              <>
+                <View style={styles.infoSectionHeader}>
+                  <Ionicons
+                    name="construct-outline"
+                    size={16}
+                    color={COLORS.textSecondary}
+                  />
+                  <Text style={styles.infoSectionTitle}>Technical Details</Text>
+                </View>
+                <View style={styles.infoGrid}>
+                  {projectData?.technicalDetails?.roadLength && (
+                    <View style={styles.infoGridItem}>
+                      <Text style={styles.infoLabel}>Road Length</Text>
+                      <Text style={styles.infoValue}>
+                        {projectData?.technicalDetails?.roadLength?.formatted}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+          </>
+        )}
       </View>
 
       {/* Status & Actions Card - Now Purely Informational */}
@@ -1105,12 +1605,31 @@ const scrollTabIntoView = (index: number) => {
           <View style={styles.statusSection}>
             <Text style={styles.statusSectionTitle}>Inspections</Text>
             <View style={styles.statusStatsContainer}>
-              <Text style={styles.statusStatText}>Total: <Text style={styles.statusStatValue}>12</Text></Text>
               <Text style={styles.statusStatText}>
-                Overdue: <Text style={[styles.statusStatValue, styles.warningText]}>2</Text>
+                Total:{' '}
+                <Text style={styles.statusStatValue}>
+                  {projectData?.inspections?.total}
+                </Text>
               </Text>
-              <Text style={styles.statusLastUpdateText}>Last Update: 24-Jul-24, 10:30 AM</Text>
-              <Text style={styles.statusLastUpdateByText}>By: Er Sabir Ali</Text>
+              <Text style={styles.statusStatText}>
+                Overdue:{' '}
+                <Text style={[styles.statusStatValue, styles.warningText]}>
+                  {projectData?.inspections?.overdue}
+                </Text>
+              </Text>
+              {projectData?.inspections?.latest?.date != null && (
+                <Text style={styles.statusLastUpdateText}>
+                  {`Last Update: ${moment(
+                    projectData?.inspections?.latest?.date,
+                    'DD/MM/YYYY',
+                  ).format('DD-MMM-YY')}`}
+                </Text>
+              )}
+              {projectData?.inspections?.latest?.inspector != null && (
+                <Text style={styles.statusLastUpdateByText}>
+                  {`By: ${projectData?.inspections?.latest?.inspector}`}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -1121,12 +1640,32 @@ const scrollTabIntoView = (index: number) => {
           <View style={styles.statusSection}>
             <Text style={styles.statusSectionTitle}>Bottlenecks</Text>
             <View style={styles.statusStatsContainer}>
-              <Text style={styles.statusStatText}>Total: <Text style={styles.statusStatValue}>5</Text></Text>
               <Text style={styles.statusStatText}>
-                High Priority: <Text style={[styles.statusStatValue, styles.warningText]}>1</Text>
+                Total:{' '}
+                <Text style={styles.statusStatValue}>
+                  {projectData?.bottlenecks?.total}
+                </Text>
               </Text>
-              <Text style={styles.statusLastUpdateText}>Last Update: 23-Jul-24, 05:15 PM</Text>
-              <Text style={styles.statusLastUpdateByText}>By: Test User</Text>
+              <Text style={styles.statusStatText}>
+                High Priority:{' '}
+                <Text style={[styles.statusStatValue, styles.warningText]}>
+                  {projectData?.bottlenecks?.highPriority}
+                </Text>
+              </Text>
+              {projectData?.bottlenecks?.latest?.date != null && (
+                <Text style={styles.statusLastUpdateText}>
+                  {`Last Update: ${moment(
+                    projectData?.bottlenecks?.latest?.date,
+                    'DD/MM/YYYY',
+                  ).format('DD-MMM-YY')}`}
+                </Text>
+              )}
+              {projectData?.bottlenecks?.latest?.reportedBy != null && (
+                <Text
+                  style={
+                    styles.statusLastUpdateByText
+                  }>{`By: ${projectData?.bottlenecks?.latest?.reportedBy}`}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -1142,25 +1681,34 @@ const scrollTabIntoView = (index: number) => {
         {/* Media Grid */}
         {filteredMedia.length === 0 ? (
           <View style={styles.emptyMediaState}>
-            <Ionicons name="images-outline" size={64} color={COLORS.textLight} />
+            <Ionicons
+              name="images-outline"
+              size={64}
+              color={COLORS.textLight}
+            />
             <Text style={styles.emptyMediaTitle}>No {mediaFilter} Yet</Text>
-            <Text style={styles.emptyMediaText}>Tap the + button to upload</Text>
+            <Text style={styles.emptyMediaText}>
+              Tap the + button to upload
+            </Text>
           </View>
         ) : (
           <FlatList
             data={filteredMedia}
             numColumns={3}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => (
+            keyExtractor={item => item.id}
+            renderItem={({item, index}) => (
               <TouchableOpacity
                 style={styles.mediaThumbnail}
                 onPress={() => handleMediaPress(item, index)}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 {item.type === 'document' ? (
                   <View style={styles.documentThumbnail}>
                     <Ionicons
-                      name={item.filename?.endsWith('.pdf') ? 'document-text' : 'document'}
+                      name={
+                        item.filename?.endsWith('.pdf')
+                          ? 'document-text'
+                          : 'document'
+                      }
                       size={40}
                       color={COLORS.primary}
                     />
@@ -1170,7 +1718,10 @@ const scrollTabIntoView = (index: number) => {
                   </View>
                 ) : (
                   <>
-                    <Image source={{ uri: item.uri }} style={styles.thumbnailImage} />
+                    <Image
+                      source={{uri: item.uri}}
+                      style={styles.thumbnailImage}
+                    />
                     {item.type === 'video' && (
                       <View style={styles.playIconOverlay}>
                         <Ionicons name="play-circle" size={40} color="white" />
@@ -1188,24 +1739,28 @@ const scrollTabIntoView = (index: number) => {
         {/* Bottom Segmented Control Switcher */}
         <View style={styles.segmentedControlContainer}>
           <View style={styles.segmentedControl}>
-            {(['Photos', 'Videos', 'Documents'] as MediaFilterType[]).map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                style={[
-                  styles.segmentedControlSegment,
-                  mediaFilter === filter && styles.segmentedControlSegmentActive
-                ]}
-                onPress={() => setMediaFilter(filter)}
-                activeOpacity={0.8}
-              >
-                <Text style={[
-                  styles.segmentedControlText,
-                  mediaFilter === filter && styles.segmentedControlTextActive
-                ]}>
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {(['Photos', 'Videos', 'Documents'] as MediaFilterType[]).map(
+              filter => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.segmentedControlSegment,
+                    mediaFilter === filter &&
+                      styles.segmentedControlSegmentActive,
+                  ]}
+                  onPress={() => setMediaFilter(filter)}
+                  activeOpacity={0.8}>
+                  <Text
+                    style={[
+                      styles.segmentedControlText,
+                      mediaFilter === filter &&
+                        styles.segmentedControlTextActive,
+                    ]}>
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              ),
+            )}
           </View>
         </View>
       </View>
@@ -1215,13 +1770,13 @@ const scrollTabIntoView = (index: number) => {
   const getInspectionStatusColor = (status: InspectionStatus) => {
     switch (status) {
       case 'Passed':
-        return { bg: '#E8F5E9', text: '#2E7D32' };
+        return {bg: '#E8F5E9', text: '#2E7D32'};
       case 'Failed':
-        return { bg: '#FFEBEE', text: '#C62828' };
+        return {bg: '#FFEBEE', text: '#C62828'};
       case 'Pending':
-        return { bg: '#FFF3E0', text: '#E65100' };
+        return {bg: '#FFF3E0', text: '#E65100'};
       default:
-        return { bg: '#E8F5E9', text: '#2E7D32' };
+        return {bg: '#E8F5E9', text: '#2E7D32'};
     }
   };
 
@@ -1239,13 +1794,13 @@ const scrollTabIntoView = (index: number) => {
   const getPriorityColor = (priority: Priority) => {
     switch (priority) {
       case 'High':
-        return { bg: COLORS.priorityHigh, text: '#FFFFFF' };
+        return {bg: COLORS.priorityHigh, text: '#FFFFFF'};
       case 'Medium':
-        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+        return {bg: COLORS.priorityMedium, text: '#FFFFFF'};
       case 'Low':
-        return { bg: COLORS.priorityLow, text: '#FFFFFF' };
+        return {bg: COLORS.priorityLow, text: '#FFFFFF'};
       default:
-        return { bg: COLORS.priorityMedium, text: '#FFFFFF' };
+        return {bg: COLORS.priorityMedium, text: '#FFFFFF'};
     }
   };
 
@@ -1260,39 +1815,53 @@ const scrollTabIntoView = (index: number) => {
     setShowMediaViewer(true);
   };
 
-  const renderInspectionCard = ({ item }: { item: Inspection }) => {
+  const renderInspectionCard = ({item}: {item: Inspection}) => {
     const statusColors = getInspectionStatusColor(item.status);
-    const descriptionPreview = item.description.length > 80
-      ? item.description.substring(0, 80) + '...'
-      : item.description;
+    const descriptionPreview =
+      item?.description?.length > 80
+        ? item?.description?.substring(0, 80) + '...'
+        : item?.description;
 
     // Filter only visual media (images and videos) for thumbnail preview
-    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
-    const hasMedia = visualMedia.length > 0;
-    const displayMedia = visualMedia.slice(0, 3);
-    const remainingCount = visualMedia.length - 3;
+    const visualMedia = item?.media?.filter(
+      m => m.type === 'image' || m.type === 'video',
+    );
+    const hasMedia = visualMedia?.length > 0;
+    const displayMedia = visualMedia?.slice(0, 3);
+    const remainingCount = visualMedia?.length - 3;
 
     return (
       <TouchableOpacity
         style={styles.inspectionCard}
         onPress={() => handleInspectionPress(item)}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         {/* Header with Date and Status */}
         <View style={styles.inspectionCardHeader}>
-          <Text style={styles.inspectionDate}>{item.date}</Text>
-          <View style={[styles.inspectionStatusBadge, { backgroundColor: statusColors.bg }]}>
-            <Text style={[styles.inspectionStatusText, { color: statusColors.text }]}>
-              {item.status}
+          <Text style={styles.inspectionDate}>
+            {moment(item?.scheduledDate).format('DD-MMM-YY')}
+          </Text>
+          <View
+            style={[
+              styles.inspectionStatusBadge,
+              {backgroundColor: statusColors.bg},
+            ]}>
+            <Text
+              style={[
+                styles.inspectionStatusText,
+                {color: statusColors.text, textTransform: 'capitalize'},
+              ]}>
+              {item?.status}
             </Text>
           </View>
         </View>
 
         {/* Title/Heading */}
-        <Text style={styles.inspectionTitle}>{item.title}</Text>
+        <Text style={styles.inspectionTitle}>{item?.title}</Text>
 
         {/* Description Preview */}
-        <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
+        {item?.description != null && (
+          <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
+        )}
 
         {/* Media Thumbnail Preview Gallery */}
         {hasMedia && (
@@ -1300,12 +1869,13 @@ const scrollTabIntoView = (index: number) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.inspectionMediaPreview}
-            contentContainerStyle={styles.inspectionMediaPreviewContent}
-          >
+            contentContainerStyle={styles.inspectionMediaPreviewContent}>
             {displayMedia.map((media, index) => (
               <View key={media.id} style={styles.inspectionThumbnailWrapper}>
                 <Image
-                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  source={{
+                    uri: media.type === 'video' ? media.thumbnail : media.uri,
+                  }}
                   style={styles.inspectionThumbnail}
                 />
                 {media.type === 'video' && (
@@ -1318,7 +1888,9 @@ const scrollTabIntoView = (index: number) => {
             {remainingCount > 0 && (
               <View style={styles.inspectionThumbnailWrapper}>
                 <View style={styles.remainingCountOverlay}>
-                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                  <Text style={styles.remainingCountText}>
+                    +{remainingCount}
+                  </Text>
                 </View>
               </View>
             )}
@@ -1326,13 +1898,13 @@ const scrollTabIntoView = (index: number) => {
         )}
 
         {/* Inspector Details */}
-        <View style={styles.inspectorSection}>
+        {/* <View style={styles.inspectorSection}>
           <Text style={styles.inspectorName}>
             by <Text style={styles.inspectorNameBold}>{item.inspector}</Text>
           </Text>
           <Text style={styles.inspectorMeta}>{item.inspectorPosition}</Text>
           <Text style={styles.inspectorMeta}>{item.inspectorDepartment}</Text>
-        </View>
+        </View> */}
       </TouchableOpacity>
     );
   };
@@ -1340,8 +1912,8 @@ const scrollTabIntoView = (index: number) => {
   const renderInspectionsTab = () => (
     <View style={styles.tabContent}>
       <FlatList
-        data={inspections}
-        keyExtractor={(item) => item.id}
+        data={projectData?.items}
+        keyExtractor={item => item.id}
         renderItem={renderInspectionCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -1349,14 +1921,17 @@ const scrollTabIntoView = (index: number) => {
     </View>
   );
 
-  const renderBottleneckCard = ({ item }: { item: Bottleneck }) => {
+  const renderBottleneckCard = ({item}: {item: Bottleneck}) => {
     const priorityColors = getPriorityColor(item.priority);
-    const descriptionPreview = item.description.length > 80
-      ? item.description.substring(0, 80) + '...'
-      : item.description;
+    const descriptionPreview =
+      item.description.length > 80
+        ? item.description.substring(0, 80) + '...'
+        : item.description;
 
     // Filter only visual media (images and videos) for thumbnail preview
-    const visualMedia = item.media.filter(m => m.type === 'image' || m.type === 'video');
+    const visualMedia = item.media.filter(
+      m => m.type === 'image' || m.type === 'video',
+    );
     const hasMedia = visualMedia.length > 0;
     const displayMedia = visualMedia.slice(0, 3);
     const remainingCount = visualMedia.length - 3;
@@ -1365,13 +1940,16 @@ const scrollTabIntoView = (index: number) => {
       <TouchableOpacity
         style={styles.bottleneckCard}
         onPress={() => handleBottleneckPress(item)}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         {/* Header with Date and Priority */}
         <View style={styles.bottleneckCardHeader}>
           <Text style={styles.bottleneckDate}>{item.date}</Text>
-          <View style={[styles.priorityBadge, { backgroundColor: priorityColors.bg }]}>
-            <Text style={[styles.priorityText, { color: priorityColors.text }]}>
+          <View
+            style={[
+              styles.priorityBadge,
+              {backgroundColor: priorityColors.bg},
+            ]}>
+            <Text style={[styles.priorityText, {color: priorityColors.text}]}>
               {item.priority}
             </Text>
           </View>
@@ -1389,12 +1967,13 @@ const scrollTabIntoView = (index: number) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.bottleneckMediaPreview}
-            contentContainerStyle={styles.bottleneckMediaPreviewContent}
-          >
+            contentContainerStyle={styles.bottleneckMediaPreviewContent}>
             {displayMedia.map((media, index) => (
               <View key={media.id} style={styles.bottleneckThumbnailWrapper}>
                 <Image
-                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                  source={{
+                    uri: media.type === 'video' ? media.thumbnail : media.uri,
+                  }}
                   style={styles.bottleneckThumbnail}
                 />
                 {media.type === 'video' && (
@@ -1407,7 +1986,9 @@ const scrollTabIntoView = (index: number) => {
             {remainingCount > 0 && (
               <View style={styles.bottleneckThumbnailWrapper}>
                 <View style={styles.remainingCountOverlay}>
-                  <Text style={styles.remainingCountText}>+{remainingCount}</Text>
+                  <Text style={styles.remainingCountText}>
+                    +{remainingCount}
+                  </Text>
                 </View>
               </View>
             )}
@@ -1430,7 +2011,7 @@ const scrollTabIntoView = (index: number) => {
     <View style={styles.tabContent}>
       <FlatList
         data={bottlenecks}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         renderItem={renderBottleneckCard}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -1444,13 +2025,15 @@ const scrollTabIntoView = (index: number) => {
         <View style={styles.emptyActivityState}>
           <Ionicons name="time-outline" size={64} color={COLORS.textLight} />
           <Text style={styles.emptyActivityTitle}>No Activity Yet</Text>
-          <Text style={styles.emptyActivityText}>Status updates will appear here</Text>
+          <Text style={styles.emptyActivityText}>
+            Status updates will appear here
+          </Text>
         </View>
       ) : (
         <FlatList
           data={activityHistory}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => {
+          keyExtractor={item => item.id}
+          renderItem={({item, index}) => {
             const statusColors = getStatusColors(item.status);
             const isLast = index === activityHistory.length - 1;
 
@@ -1458,7 +2041,12 @@ const scrollTabIntoView = (index: number) => {
               <View style={styles.timelineItem}>
                 {/* Timeline Line and Node */}
                 <View style={styles.timelineLineContainer}>
-                  <View style={[styles.timelineNode, { backgroundColor: statusColors.text }]} />
+                  <View
+                    style={[
+                      styles.timelineNode,
+                      {backgroundColor: statusColors.text},
+                    ]}
+                  />
                   {!isLast && <View style={styles.timelineLine} />}
                 </View>
 
@@ -1466,7 +2054,11 @@ const scrollTabIntoView = (index: number) => {
                 <View style={styles.activityCard}>
                   {/* 1. Status Change Header */}
                   <View style={styles.activityHeader}>
-                    <Text style={[styles.activityStatusText, { color: statusColors.text }]}>
+                    <Text
+                      style={[
+                        styles.activityStatusText,
+                        {color: statusColors.text},
+                      ]}>
                       Status changed to {item.status}
                     </Text>
                   </View>
@@ -1478,7 +2070,9 @@ const scrollTabIntoView = (index: number) => {
 
                   {/* 3. "Updated By" Information Footer */}
                   <Text style={styles.activityMeta}>
-                    by <Text style={styles.activityAuthor}>{item.updatedBy}</Text> ({item.designation}) on {item.timestamp}
+                    by{' '}
+                    <Text style={styles.activityAuthor}>{item.updatedBy}</Text>{' '}
+                    ({item.designation}) on {item.timestamp}
                   </Text>
                 </View>
               </View>
@@ -1491,9 +2085,24 @@ const scrollTabIntoView = (index: number) => {
     </View>
   );
 
-  return (
+  return loading ? (
+    //  {loading && (
+    <View
+      style={{
+        alignItems: 'center',
+        // marginVertical: 32,
+        flex: 1,
+        justifyContent: 'center',
+      }}>
+      <Text style={{color: COLORS.textSecondary}}>Loading stats...</Text>
+    </View>
+  ) : (
+    // )}
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.cardBackground}
+      />
 
       {/* Unified Header */}
       <View style={styles.unifiedHeader}>
@@ -1501,27 +2110,42 @@ const scrollTabIntoView = (index: number) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={goBack}
-          activeOpacity={0.6}
-        >
+          activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
 
         {/* Middle: Project Info */}
+        {/* <View style={styles.headerProjectInfo}>
+          <Text style={styles.headerProjectName} numberOfLines={1}>
+            {projectData?.projectName}
+          </Text>
+          <Text style={styles.headerProjectId}>{projectData?.projectId}</Text>
+        </View> */}
+
         <View style={styles.headerProjectInfo}>
-          <Text style={styles.headerProjectName} numberOfLines={1}>{projectName}</Text>
-          <Text style={styles.headerProjectId}>{projectCode}</Text>
+          <Text style={styles.headerProjectName} numberOfLines={1}>
+            {projectNameItem}
+          </Text>
+          <Text style={styles.headerProjectId}>{projectCodeItem}</Text>
         </View>
 
         {/* Right: Status Button */}
         <TouchableOpacity
-          style={[styles.headerStatusButton, { backgroundColor: statusColors.bg }]}
+          style={[
+            styles.headerStatusButton,
+            {backgroundColor: statusColors.bg},
+          ]}
           onPress={handleStatusPress}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.headerStatusText, { color: statusColors.text }]}>
+          activeOpacity={0.7}>
+          <Text style={[styles.headerStatusText, {color: statusColors.text}]}>
             {projectStatus}
           </Text>
-          <Ionicons name="chevron-down" size={14} color={statusColors.text} style={styles.headerChevronIcon} />
+          <Ionicons
+            name="chevron-down"
+            size={14}
+            color={statusColors.text}
+            style={styles.headerChevronIcon}
+          />
         </TouchableOpacity>
       </View>
 
@@ -1531,23 +2155,26 @@ const scrollTabIntoView = (index: number) => {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.tabBarContainer}
-        contentContainerStyle={styles.tabBarContent}
-      >
-         {loading && (
-                      <View style={{ alignItems: 'center', marginVertical: 32 }}>
-                        <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
-                      </View>
-                    )}
-        
-
-        {(['Overview', 'Media', 'Inspections', 'Bottlenecks', 'Activity'] as TabName[]).map((tab) => (
+        contentContainerStyle={styles.tabBarContent}>
+        {(
+          [
+            'Overview',
+            'Media',
+            'Inspections',
+            'Bottlenecks',
+            'Activity',
+          ] as TabName[]
+        ).map(tab => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
             onPress={() => handleTabPress(tab)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+            activeOpacity={0.7}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab && styles.activeTabText,
+              ]}>
               {tab}
             </Text>
           </TouchableOpacity>
@@ -1560,27 +2187,29 @@ const scrollTabIntoView = (index: number) => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleSwipeEnd}
-      >
-        <View style={{ width: screenWidth }}>
-          {renderOverviewTab()}
-        </View>
-        <View style={{ width: screenWidth }}>
-          {renderMediaTab()}
-        </View>
-        <View style={{ width: screenWidth }}>
-          {renderInspectionsTab()}
-        </View>
-        <View style={{ width: screenWidth }}>
-          {renderBottlenecksTab()}
-        </View>
-        <View style={{ width: screenWidth }}>
-          {renderActivityTab()}
-        </View>
+        onMomentumScrollEnd={handleSwipeEnd}>
+        {activeTab === 'Overview' && (
+          <View style={{width: screenWidth}}>{renderOverviewTab()}</View>
+        )}
+        {activeTab === 'Media' && (
+          <View style={{width: screenWidth}}>{renderMediaTab()}</View>
+        )}
+        {activeTab === 'Inspections' && (
+          <View style={{width: screenWidth}}>{renderInspectionsTab()}</View>
+        )}
+        {activeTab === 'Bottlenecks' && (
+          <View style={{width: screenWidth}}>{renderBottlenecksTab()}</View>
+        )}
+        {activeTab === 'Activity' && (
+          <View style={{width: screenWidth}}>{renderActivityTab()}</View>
+        )}
       </ScrollView>
 
       {/* Speed Dial FAB - Show on Overview, Media, Inspections, and Bottlenecks tabs */}
-      {(activeTab === 'Overview' || activeTab === 'Media' || activeTab === 'Inspections' || activeTab === 'Bottlenecks') && (
+      {(activeTab === 'Overview' ||
+        activeTab === 'Media' ||
+        activeTab === 'Inspections' ||
+        activeTab === 'Bottlenecks') && (
         <SpeedDialFAB
           actions={[
             {
@@ -1591,34 +2220,38 @@ const scrollTabIntoView = (index: number) => {
             {
               icon: 'warning-outline',
               label: 'Add Bottleneck',
-              onPress: () => router.push({
-                pathname: '/(drawer)/create-bottleneck',
-                params: { projectId, returnTab: activeTab },
-              }),
+              onPress: () =>
+                router.push({
+                  pathname: '/(drawer)/create-bottleneck',
+                  params: {projectId, returnTab: activeTab},
+                }),
             },
             {
               icon: 'checkmark-circle-outline',
               label: 'Create Task',
-              onPress: () => router.push({
-                pathname: '/(drawer)/create-task',
-                params: { projectId, returnTab: activeTab },
-              }),
+              onPress: () =>
+                router.push({
+                  pathname: '/(drawer)/create-task',
+                  params: {projectId, returnTab: activeTab},
+                }),
             },
             {
               icon: 'document-text-outline',
               label: 'Create Complaint',
-              onPress: () => router.push({
-                pathname: '/(drawer)/create-complaint',
-                params: { projectId, returnTab: activeTab },
-              }),
+              onPress: () =>
+                router.push({
+                  pathname: '/(drawer)/create-complaint',
+                  params: {projectId, returnTab: activeTab},
+                }),
             },
             {
               icon: 'clipboard-outline',
               label: 'New Inspection',
-              onPress: () => router.push({
-                pathname: '/(drawer)/create-inspection',
-                params: { projectId, returnTab: activeTab },
-              }),
+              onPress: () =>
+                router.push({
+                  pathname: '/(drawer)/create-inspection',
+                  params: {projectId, returnTab: activeTab},
+                }),
             },
           ]}
         />
@@ -1629,8 +2262,7 @@ const scrollTabIntoView = (index: number) => {
         visible={showStatusModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowStatusModal(false)}
-      >
+        onRequestClose={() => setShowStatusModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.statusUpdateBottomSheet}>
             <View style={styles.sheetHeader}>
@@ -1643,20 +2275,29 @@ const scrollTabIntoView = (index: number) => {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.inputLabel}>Select Status</Text>
               <View style={styles.statusOptions}>
-                {(['On Track', 'At Risk', 'Delayed', 'Completed'] as ProjectStatus[]).map((status) => (
+                {(
+                  [
+                    'On Track',
+                    'At Risk',
+                    'Delayed',
+                    'Completed',
+                  ] as ProjectStatus[]
+                ).map(status => (
                   <TouchableOpacity
                     key={status}
                     style={[
                       styles.statusOption,
                       newStatus === status && styles.selectedStatusOption,
-                      { borderColor: getStatusColors(status).text }
+                      {borderColor: getStatusColors(status).text},
                     ]}
-                    onPress={() => setNewStatus(status)}
-                  >
-                    <Text style={[
-                      styles.statusOptionText,
-                      newStatus === status && { color: getStatusColors(status).text }
-                    ]}>
+                    onPress={() => setNewStatus(status)}>
+                    <Text
+                      style={[
+                        styles.statusOptionText,
+                        newStatus === status && {
+                          color: getStatusColors(status).text,
+                        },
+                      ]}>
                       {status}
                     </Text>
                   </TouchableOpacity>
@@ -1679,12 +2320,11 @@ const scrollTabIntoView = (index: number) => {
               <TouchableOpacity
                 style={[
                   styles.locationButton,
-                  capturedLocation && styles.locationButtonSuccess
+                  capturedLocation && styles.locationButtonSuccess,
                 ]}
                 onPress={handleCaptureLocation}
                 disabled={isCapturingLocation}
-                activeOpacity={0.7}
-              >
+                activeOpacity={0.7}>
                 {isCapturingLocation ? (
                   <ActivityIndicator color={COLORS.primary} size="small" />
                 ) : (
@@ -1694,11 +2334,14 @@ const scrollTabIntoView = (index: number) => {
                       size={20}
                       color={capturedLocation ? COLORS.success : COLORS.primary}
                     />
-                    <Text style={[
-                      styles.locationButtonText,
-                      capturedLocation && styles.locationButtonTextSuccess
-                    ]}>
-                      {capturedLocation ? 'Location Captured' : 'Capture Current Location'}
+                    <Text
+                      style={[
+                        styles.locationButtonText,
+                        capturedLocation && styles.locationButtonTextSuccess,
+                      ]}>
+                      {capturedLocation
+                        ? 'Location Captured'
+                        : 'Capture Current Location'}
                     </Text>
                   </>
                 )}
@@ -1709,9 +2352,12 @@ const scrollTabIntoView = (index: number) => {
               <TouchableOpacity
                 style={styles.addAttachmentButton}
                 onPress={handleAddStatusAttachment}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="camera-outline" size={24} color={COLORS.textSecondary} />
+                activeOpacity={0.7}>
+                <Ionicons
+                  name="camera-outline"
+                  size={24}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.addAttachmentText}>Add Photo or Video</Text>
               </TouchableOpacity>
 
@@ -1720,21 +2366,34 @@ const scrollTabIntoView = (index: number) => {
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  style={styles.attachmentScrollView}
-                >
-                  {statusAttachments.map((attachment) => (
-                    <View key={attachment.id} style={styles.attachmentThumbContainer}>
-                      <Image source={{ uri: attachment.uri }} style={styles.attachmentThumb} />
+                  style={styles.attachmentScrollView}>
+                  {statusAttachments.map(attachment => (
+                    <View
+                      key={attachment.id}
+                      style={styles.attachmentThumbContainer}>
+                      <Image
+                        source={{uri: attachment.uri}}
+                        style={styles.attachmentThumb}
+                      />
                       <TouchableOpacity
                         style={styles.removeAttachmentButton}
-                        onPress={() => handleRemoveStatusAttachment(attachment.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Ionicons name="close-circle" size={24} color={COLORS.statusDelayed} />
+                        onPress={() =>
+                          handleRemoveStatusAttachment(attachment.id)
+                        }
+                        activeOpacity={0.8}>
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color={COLORS.statusDelayed}
+                        />
                       </TouchableOpacity>
                       {attachment.type === 'video' && (
                         <View style={styles.attachmentVideoIndicator}>
-                          <Ionicons name="play-circle" size={20} color="white" />
+                          <Ionicons
+                            name="play-circle"
+                            size={20}
+                            color="white"
+                          />
                         </View>
                       )}
                     </View>
@@ -1743,7 +2402,9 @@ const scrollTabIntoView = (index: number) => {
               )}
             </ScrollView>
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveStatus}>
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveStatus}>
               <Text style={styles.saveButtonText}>Update</Text>
             </TouchableOpacity>
           </View>
@@ -1755,8 +2416,7 @@ const scrollTabIntoView = (index: number) => {
         visible={showInspectionDetails}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowInspectionDetails(false)}
-      >
+        onRequestClose={() => setShowInspectionDetails(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.inspectionDetailsBottomSheet}>
             {/* Grabber Handle */}
@@ -1771,22 +2431,36 @@ const scrollTabIntoView = (index: number) => {
 
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
+              contentContainerStyle={{paddingBottom: 20}}>
               {selectedInspection && (
                 <>
                   {/* Summary Section */}
                   <View style={styles.inspectionDetailsSummary}>
                     <View style={styles.inspectionDetailsRow}>
-                      <Text style={styles.inspectionDetailsDate}>{selectedInspection.date}</Text>
-                      <View style={[
-                        styles.inspectionStatusBadge,
-                        { backgroundColor: getInspectionStatusColor(selectedInspection.status).bg }
-                      ]}>
-                        <Text style={[
-                          styles.inspectionStatusText,
-                          { color: getInspectionStatusColor(selectedInspection.status).text }
+                      <Text style={styles.inspectionDetailsDate}>
+                        {moment(selectedInspection?.scheduledDate).format(
+                          'DD-MMM-YY',
+                        )}
+                      </Text>
+                      <View
+                        style={[
+                          styles.inspectionStatusBadge,
+                          {
+                            backgroundColor: getInspectionStatusColor(
+                              selectedInspection.status,
+                            ).bg,
+                          },
                         ]}>
+                        <Text
+                          style={[
+                            styles.inspectionStatusText,
+                            {
+                              color: getInspectionStatusColor(
+                                selectedInspection.status,
+                              ).text,
+                              textTransform: 'capitalize',
+                            },
+                          ]}>
                           {selectedInspection.status}
                         </Text>
                       </View>
@@ -1794,43 +2468,69 @@ const scrollTabIntoView = (index: number) => {
                   </View>
 
                   {/* Description Section */}
-                  <View style={styles.inspectionDetailsSection}>
-                    <Text style={styles.inspectionDetailsSectionTitle}>Remarks & Observations</Text>
-                    <Text style={styles.inspectionDetailsDescription}>{selectedInspection.description}</Text>
-                  </View>
+                  {selectedInspection.description != null && (
+                    <View style={styles.inspectionDetailsSection}>
+                      <Text style={styles.inspectionDetailsSectionTitle}>
+                        Remarks & Observations
+                      </Text>
+                      <Text style={styles.inspectionDetailsDescription}>
+                        {selectedInspection.description}
+                      </Text>
+                    </View>
+                  )}
 
                   {/* Media Gallery Section */}
-                  {selectedInspection.media.length > 0 && (
+                  {selectedInspection?.media?.length > 0 && (
                     <View style={styles.inspectionDetailsSection}>
-                      <Text style={styles.inspectionDetailsSectionTitle}>Attached Media</Text>
+                      <Text style={styles.inspectionDetailsSectionTitle}>
+                        Attached Media
+                      </Text>
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        style={styles.inspectionMediaGallery}
-                      >
-                        {selectedInspection.media.map((media, index) => (
+                        style={styles.inspectionMediaGallery}>
+                        {selectedInspection?.media?.map((media, index) => (
                           <TouchableOpacity
-                            key={media.id}
+                            key={media?.id}
                             style={styles.inspectionMediaThumbnail}
-                            onPress={() => handleInspectionMediaPress(selectedInspection.media, index)}
-                            activeOpacity={0.7}
-                          >
-                            {media.type === 'document' ? (
+                            onPress={() =>
+                              handleInspectionMediaPress(
+                                selectedInspection?.media,
+                                index,
+                              )
+                            }
+                            activeOpacity={0.7}>
+                            {media?.type === 'document' ? (
                               <View style={styles.documentThumbnail}>
-                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
-                                <Text style={styles.documentFilename} numberOfLines={2}>
-                                  {media.filename || 'Document'}
+                                <Ionicons
+                                  name="document-text"
+                                  size={40}
+                                  color={COLORS.primary}
+                                />
+                                <Text
+                                  style={styles.documentFilename}
+                                  numberOfLines={2}>
+                                  {media?.filename || 'Document'}
                                 </Text>
                               </View>
                             ) : (
                               <>
                                 <Image
-                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  source={{
+                                    uri:
+                                      media?.type === 'video'
+                                        ? media?.thumbnail
+                                        : media?.uri,
+                                  }}
                                   style={styles.inspectionMediaThumbnailImage}
                                 />
-                                {media.type === 'video' && (
+                                {media?.type === 'video' && (
                                   <View style={styles.videoPlayIcon}>
-                                    <Ionicons name="play-circle" size={32} color="white" />
+                                    <Ionicons
+                                      name="play-circle"
+                                      size={32}
+                                      color="white"
+                                    />
                                   </View>
                                 )}
                               </>
@@ -1842,12 +2542,22 @@ const scrollTabIntoView = (index: number) => {
                   )}
 
                   {/* Inspector Section */}
-                  <View style={styles.inspectionDetailsSection}>
-                    <Text style={styles.inspectionDetailsSectionTitle}>Inspector</Text>
-                    <Text style={styles.inspectionDetailsInspectorName}>{selectedInspection.inspector}</Text>
-                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorPosition}</Text>
-                    <Text style={styles.inspectionDetailsMeta}>{selectedInspection.inspectorDepartment}</Text>
-                  </View>
+                  {selectedInspection?.inspector != null && (
+                    <View style={styles.inspectionDetailsSection}>
+                      <Text style={styles.inspectionDetailsSectionTitle}>
+                        Inspector
+                      </Text>
+                      <Text style={styles.inspectionDetailsInspectorName}>
+                        {selectedInspection.inspector}
+                      </Text>
+                      <Text style={styles.inspectionDetailsMeta}>
+                        {selectedInspection.inspectorPosition}
+                      </Text>
+                      <Text style={styles.inspectionDetailsMeta}>
+                        {selectedInspection.inspectorDepartment}
+                      </Text>
+                    </View>
+                  )}
                 </>
               )}
             </ScrollView>
@@ -1860,8 +2570,7 @@ const scrollTabIntoView = (index: number) => {
         visible={showBottleneckDetails}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowBottleneckDetails(false)}
-      >
+        onRequestClose={() => setShowBottleneckDetails(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.bottleneckDetailsBottomSheet}>
             {/* Grabber Handle */}
@@ -1876,22 +2585,33 @@ const scrollTabIntoView = (index: number) => {
 
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
+              contentContainerStyle={{paddingBottom: 20}}>
               {selectedBottleneck && (
                 <>
                   {/* Summary Section */}
                   <View style={styles.bottleneckDetailsSummary}>
                     <View style={styles.bottleneckDetailsRow}>
-                      <Text style={styles.bottleneckDetailsDate}>{selectedBottleneck.date}</Text>
-                      <View style={[
-                        styles.priorityBadge,
-                        { backgroundColor: getPriorityColor(selectedBottleneck.priority).bg }
-                      ]}>
-                        <Text style={[
-                          styles.priorityText,
-                          { color: getPriorityColor(selectedBottleneck.priority).text }
+                      <Text style={styles.bottleneckDetailsDate}>
+                        {selectedBottleneck.date}
+                      </Text>
+                      <View
+                        style={[
+                          styles.priorityBadge,
+                          {
+                            backgroundColor: getPriorityColor(
+                              selectedBottleneck.priority,
+                            ).bg,
+                          },
                         ]}>
+                        <Text
+                          style={[
+                            styles.priorityText,
+                            {
+                              color: getPriorityColor(
+                                selectedBottleneck.priority,
+                              ).text,
+                            },
+                          ]}>
                           {selectedBottleneck.priority}
                         </Text>
                       </View>
@@ -1900,42 +2620,66 @@ const scrollTabIntoView = (index: number) => {
 
                   {/* Description Section */}
                   <View style={styles.bottleneckDetailsSection}>
-                    <Text style={styles.bottleneckDetailsSectionTitle}>Description</Text>
-                    <Text style={styles.bottleneckDetailsDescription}>{selectedBottleneck.description}</Text>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>
+                      Description
+                    </Text>
+                    <Text style={styles.bottleneckDetailsDescription}>
+                      {selectedBottleneck.description}
+                    </Text>
                   </View>
 
                   {/* Media Gallery Section */}
                   {selectedBottleneck.media.length > 0 && (
                     <View style={styles.bottleneckDetailsSection}>
-                      <Text style={styles.bottleneckDetailsSectionTitle}>Attached Media</Text>
+                      <Text style={styles.bottleneckDetailsSectionTitle}>
+                        Attached Media
+                      </Text>
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        style={styles.bottleneckMediaGallery}
-                      >
+                        style={styles.bottleneckMediaGallery}>
                         {selectedBottleneck.media.map((media, index) => (
                           <TouchableOpacity
                             key={media.id}
                             style={styles.bottleneckMediaThumbnail}
-                            onPress={() => handleBottleneckMediaPress(selectedBottleneck.media, index)}
-                            activeOpacity={0.7}
-                          >
+                            onPress={() =>
+                              handleBottleneckMediaPress(
+                                selectedBottleneck.media,
+                                index,
+                              )
+                            }
+                            activeOpacity={0.7}>
                             {media.type === 'document' ? (
                               <View style={styles.documentThumbnail}>
-                                <Ionicons name="document-text" size={40} color={COLORS.primary} />
-                                <Text style={styles.documentFilename} numberOfLines={2}>
+                                <Ionicons
+                                  name="document-text"
+                                  size={40}
+                                  color={COLORS.primary}
+                                />
+                                <Text
+                                  style={styles.documentFilename}
+                                  numberOfLines={2}>
                                   {media.filename || 'Document'}
                                 </Text>
                               </View>
                             ) : (
                               <>
                                 <Image
-                                  source={{ uri: media.type === 'video' ? media.thumbnail : media.uri }}
+                                  source={{
+                                    uri:
+                                      media.type === 'video'
+                                        ? media.thumbnail
+                                        : media.uri,
+                                  }}
                                   style={styles.bottleneckMediaThumbnailImage}
                                 />
                                 {media.type === 'video' && (
                                   <View style={styles.videoPlayIcon}>
-                                    <Ionicons name="play-circle" size={32} color="white" />
+                                    <Ionicons
+                                      name="play-circle"
+                                      size={32}
+                                      color="white"
+                                    />
                                   </View>
                                 )}
                               </>
@@ -1948,10 +2692,18 @@ const scrollTabIntoView = (index: number) => {
 
                   {/* Reporter Section */}
                   <View style={styles.bottleneckDetailsSection}>
-                    <Text style={styles.bottleneckDetailsSectionTitle}>Reported By</Text>
-                    <Text style={styles.bottleneckDetailsReporterName}>{selectedBottleneck.reportedBy}</Text>
-                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterPosition}</Text>
-                    <Text style={styles.bottleneckDetailsMeta}>{selectedBottleneck.reporterDepartment}</Text>
+                    <Text style={styles.bottleneckDetailsSectionTitle}>
+                      Reported By
+                    </Text>
+                    <Text style={styles.bottleneckDetailsReporterName}>
+                      {selectedBottleneck.reportedBy}
+                    </Text>
+                    <Text style={styles.bottleneckDetailsMeta}>
+                      {selectedBottleneck.reporterPosition}
+                    </Text>
+                    <Text style={styles.bottleneckDetailsMeta}>
+                      {selectedBottleneck.reporterDepartment}
+                    </Text>
                   </View>
                 </>
               )}
@@ -1965,14 +2717,12 @@ const scrollTabIntoView = (index: number) => {
         visible={showMediaViewer}
         transparent={false}
         animationType="fade"
-        onRequestClose={() => setShowMediaViewer(false)}
-      >
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        onRequestClose={() => setShowMediaViewer(false)}>
+        <GestureHandlerRootView style={{flex: 1}}>
           <View style={styles.mediaViewerContainer}>
             <TouchableOpacity
               style={styles.closeMediaButton}
-              onPress={() => setShowMediaViewer(false)}
-            >
+              onPress={() => setShowMediaViewer(false)}>
               <Ionicons name="close" size={32} color="white" />
             </TouchableOpacity>
 
@@ -1986,14 +2736,14 @@ const scrollTabIntoView = (index: number) => {
                 offset: width * index,
                 index,
               })}
-              renderItem={({ item }) => (
+              renderItem={({item}) => (
                 <View style={styles.mediaViewerItem}>
                   {item.type === 'image' ? (
                     <ZoomableImage uri={item.uri} />
                   ) : (
                     <>
                       <Image
-                        source={{ uri: item.uri }}
+                        source={{uri: item.uri}}
                         style={styles.fullImage}
                         resizeMode="contain"
                       />
@@ -2004,7 +2754,7 @@ const scrollTabIntoView = (index: number) => {
                   )}
                 </View>
               )}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               showsHorizontalScrollIndicator={false}
             />
           </View>
@@ -2016,26 +2766,26 @@ const scrollTabIntoView = (index: number) => {
         visible={showAddInspectionModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowAddInspectionModal(false)}
-      >
+        onRequestClose={() => setShowAddInspectionModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.bottomSheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Add New Inspection</Text>
-              <TouchableOpacity onPress={() => setShowAddInspectionModal(false)}>
+              <TouchableOpacity
+                onPress={() => setShowAddInspectionModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.placeholderFormText}>
-              Form to add new inspection would go here with fields for inspector name, date, and status.
+              Form to add new inspection would go here with fields for inspector
+              name, date, and status.
             </Text>
             <TouchableOpacity
               style={styles.saveButton}
               onPress={() => {
                 setShowAddInspectionModal(false);
                 Alert.alert('Success', 'Inspection added successfully');
-              }}
-            >
+              }}>
               <Text style={styles.saveButtonText}>Save Inspection</Text>
             </TouchableOpacity>
           </View>
@@ -2047,8 +2797,7 @@ const scrollTabIntoView = (index: number) => {
         visible={showAddProgressModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowAddProgressModal(false)}
-      >
+        onRequestClose={() => setShowAddProgressModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.progressBottomSheet}>
             {/* Grabber Handle */}
@@ -2061,7 +2810,9 @@ const scrollTabIntoView = (index: number) => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.progressScrollContent}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.progressScrollContent}>
               {/* 1. Refined Progress Slider Section */}
               <View style={styles.progressSliderSection}>
                 <Text style={styles.compactPercentageText}>{newProgress}%</Text>
@@ -2090,32 +2841,48 @@ const scrollTabIntoView = (index: number) => {
               <TouchableOpacity
                 style={styles.attachmentTile}
                 onPress={handleAddProgressAttachment}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="attach-outline" size={20} color={COLORS.textSecondary} />
-                <Text style={styles.attachmentTileText}>Add Photo, Video, or File</Text>
+                activeOpacity={0.7}>
+                <Ionicons
+                  name="attach-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.attachmentTileText}>
+                  Add Photo, Video, or File
+                </Text>
               </TouchableOpacity>
 
               {/* 3. Thumbnail Gallery (Dynamic - Only shows when files are attached) */}
               {progressAttachments.length > 0 && (
                 <View style={styles.thumbnailGallery}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                  >
-                    {progressAttachments.map((attachment) => (
-                      <View key={attachment.id} style={styles.galleryThumbContainer}>
-                        <Image source={{ uri: attachment.uri }} style={styles.galleryThumb} />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {progressAttachments.map(attachment => (
+                      <View
+                        key={attachment.id}
+                        style={styles.galleryThumbContainer}>
+                        <Image
+                          source={{uri: attachment.uri}}
+                          style={styles.galleryThumb}
+                        />
                         <TouchableOpacity
                           style={styles.removeThumbButton}
-                          onPress={() => handleRemoveProgressAttachment(attachment.id)}
-                          activeOpacity={0.8}
-                        >
-                          <Ionicons name="close-circle" size={22} color="white" />
+                          onPress={() =>
+                            handleRemoveProgressAttachment(attachment.id)
+                          }
+                          activeOpacity={0.8}>
+                          <Ionicons
+                            name="close-circle"
+                            size={22}
+                            color="white"
+                          />
                         </TouchableOpacity>
                         {attachment.type === 'video' && (
                           <View style={styles.galleryVideoOverlay}>
-                            <Ionicons name="play-circle" size={28} color="white" />
+                            <Ionicons
+                              name="play-circle"
+                              size={28}
+                              color="white"
+                            />
                           </View>
                         )}
                       </View>
@@ -2146,7 +2913,12 @@ const scrollTabIntoView = (index: number) => {
                 {lastProgressUpdate ? (
                   <View style={styles.lastUpdateInfo}>
                     <Text style={styles.lastUpdateText}>
-                      by <Text style={styles.lastUpdateAuthor}>{lastProgressUpdate.updatedBy}</Text> ({lastProgressUpdate.designation}) on {lastProgressUpdate.timestamp}
+                      by{' '}
+                      <Text style={styles.lastUpdateAuthor}>
+                        {lastProgressUpdate.updatedBy}
+                      </Text>{' '}
+                      ({lastProgressUpdate.designation}) on{' '}
+                      {lastProgressUpdate.timestamp}
                     </Text>
                     {lastProgressUpdate.remarks && (
                       <Text style={styles.lastUpdateRemarks}>
@@ -2155,18 +2927,22 @@ const scrollTabIntoView = (index: number) => {
                     )}
                   </View>
                 ) : (
-                  <Text style={styles.noUpdateText}>No previous updates recorded.</Text>
+                  <Text style={styles.noUpdateText}>
+                    No previous updates recorded.
+                  </Text>
                 )}
               </View>
             </ScrollView>
 
             {/* Save Button */}
             <TouchableOpacity
-              style={[styles.progressSaveButton, isSavingProgress && styles.disabledButton]}
+              style={[
+                styles.progressSaveButton,
+                isSavingProgress && styles.disabledButton,
+              ]}
               onPress={handleSaveProgress}
               disabled={isSavingProgress}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               {isSavingProgress ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
@@ -2202,10 +2978,11 @@ const scrollTabIntoView = (index: number) => {
                 },
               ],
             },
-          ]}
-        >
+          ]}>
           <Ionicons name="checkmark-circle" size={24} color="white" />
-          <Text style={styles.successToastText}>Progress updated successfully!</Text>
+          <Text style={styles.successToastText}>
+            Progress updated successfully!
+          </Text>
         </Animated.View>
       )}
     </SafeAreaView>
@@ -2258,7 +3035,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -2314,7 +3091,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
@@ -2361,7 +3138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   donutPercentage: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.text,
   },
@@ -2464,6 +3241,45 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
+  // Project Information Card Styles
+  infoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginLeft: 6,
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  infoGridItem: {
+    width: '48%',
+    marginHorizontal: '1%',
+    marginBottom: 14,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textLight,
+    marginBottom: 4,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
   // Status & Actions Card Styles
   statusActionsContainer: {
     flexDirection: 'row',
@@ -2522,7 +3338,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 3,
@@ -2536,7 +3352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 3,
@@ -2622,7 +3438,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
@@ -2641,7 +3457,7 @@ const styles = StyleSheet.create({
   segmentedControlSegmentActive: {
     backgroundColor: '#D0D0D0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
@@ -2664,7 +3480,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
@@ -2763,7 +3579,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
@@ -3101,7 +3917,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 16,
     shadowColor: COLORS.saffron,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
@@ -3127,7 +3943,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
@@ -3412,7 +4228,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginLeft: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,

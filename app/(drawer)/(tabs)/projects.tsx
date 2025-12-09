@@ -212,7 +212,7 @@ export default function ProjectsDashboardScreen() {
         )}
 
         {/* Search Entry Point */}
-        {/* <TouchableOpacity
+        <TouchableOpacity
           style={styles.searchBar}
           onPress={() => router.push('/(drawer)/advanced-project-search')}
           activeOpacity={0.7}>
@@ -220,7 +220,7 @@ export default function ProjectsDashboardScreen() {
           <Text style={styles.searchPlaceholder}>
             Search by Project Name, ID, or Location...
           </Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
         {/* Section 1: Project Categories */}
         <View style={styles.section}>
@@ -234,7 +234,7 @@ export default function ProjectsDashboardScreen() {
               iconColor="#1976D2"
               onPress={() => navigateToProjectList('All Projects')}
             />
-            {/* <StatCard
+            <StatCard
               title="Maintenance Work"
               value="18"
               icon="build-outline"
@@ -250,7 +250,7 @@ export default function ProjectsDashboardScreen() {
               iconColor="#2E7D32"
               onPress={() => navigateToProjectList('Construction Work')}
             />
-            
+
             <StatCard
               title="Other Works"
               value="12"
@@ -258,13 +258,13 @@ export default function ProjectsDashboardScreen() {
               backgroundColor="#E8D7F1"
               iconColor="#7B1FA2"
               onPress={() => navigateToProjectList('Other Works')}
-            /> */}
+            />
           </View>
         </View>
 
         {/* Section 2: Financial Summary */}
         <View style={styles.section}>
-          {/* <View style={styles.financialCard}>
+          <View style={styles.financialCard}>
             <View style={styles.donutChartsContainer}>
               <DonutChart
                 percentage={79}
@@ -277,11 +277,11 @@ export default function ProjectsDashboardScreen() {
                 label="Average Project Progress"
               />
             </View>
-          </View> */}
+          </View>
         </View>
 
         {/* Section 3: Project Health Indicators */}
-        {/* <View style={styles.section}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Project Health Indicators</Text>
           <View style={styles.gridContainer}>
             <StatCard
@@ -298,7 +298,9 @@ export default function ProjectsDashboardScreen() {
               icon="alert-circle-outline"
               backgroundColor="#FFF4D6"
               iconColor="#F9A825"
-              onPress={() => navigateToProjectList('Projects with Critical Issues')}
+              onPress={() =>
+                navigateToProjectList('Projects with Critical Issues')
+              }
             />
             <StatCard
               title="Inspections Overdue"
@@ -317,7 +319,7 @@ export default function ProjectsDashboardScreen() {
               onPress={() => navigateToProjectList('Inspected Today')}
             />
           </View>
-        </View> */}
+        </View>
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacer} />

@@ -41,6 +41,66 @@
     { "id": "9", "name": "Central Sub-Division A" },
     { "id": "10", "name": "Central Sub-Division B" }
   ],
+  "circles": [
+    { "id": "1", "name": "Circle 1 - Civil Lines" },
+    { "id": "2", "name": "Circle 2 - Karol Bagh" },
+    { "id": "3", "name": "Circle 3 - Paharganj" },
+    { "id": "4", "name": "Circle 4 - Sadar Bazaar" },
+    { "id": "5", "name": "Circle 5 - Chandni Chowk" },
+    { "id": "6", "name": "Circle 6 - Shahdara" },
+    { "id": "7", "name": "Circle 7 - Rohini" },
+    { "id": "8", "name": "Circle 8 - Dwarka" }
+  ],
+  "sectors": [
+    { "id": "1", "name": "Roads & Highways" },
+    { "id": "2", "name": "Buildings & Infrastructure" },
+    { "id": "3", "name": "Water Resources" },
+    { "id": "4", "name": "Sanitation & Drainage" },
+    { "id": "5", "name": "Electrical & Power" },
+    { "id": "6", "name": "Urban Development" },
+    { "id": "7", "name": "Public Amenities" },
+    { "id": "8", "name": "Green Spaces & Parks" }
+  ],
+  "subSectors": [
+    { "id": "1", "name": "National Highways" },
+    { "id": "2", "name": "State Highways" },
+    { "id": "3", "name": "City Roads" },
+    { "id": "4", "name": "Flyovers & Bridges" },
+    { "id": "5", "name": "Government Buildings" },
+    { "id": "6", "name": "Schools & Colleges" },
+    { "id": "7", "name": "Hospitals & Healthcare" },
+    { "id": "8", "name": "Water Supply Networks" },
+    { "id": "9", "name": "Stormwater Drains" },
+    { "id": "10", "name": "Street Lighting" }
+  ],
+  "fundingTypes": [
+    { "id": "1", "name": "Central Government Grant" },
+    { "id": "2", "name": "State Budget" },
+    { "id": "3", "name": "Municipal Funds" },
+    { "id": "4", "name": "PPP (Public-Private Partnership)" },
+    { "id": "5", "name": "World Bank Loan" },
+    { "id": "6", "name": "ADB Loan" },
+    { "id": "7", "name": "JICA Loan" },
+    { "id": "8", "name": "Smart City Mission" }
+  ],
+  "workTypes": [
+    { "id": "1", "name": "New Construction" },
+    { "id": "2", "name": "Renovation" },
+    { "id": "3", "name": "Repair & Maintenance" },
+    { "id": "4", "name": "Upgradation" },
+    { "id": "5", "name": "Restoration" },
+    { "id": "6", "name": "Expansion" },
+    { "id": "7", "name": "Rehabilitation" },
+    { "id": "8", "name": "Demolition & Reconstruction" }
+  ],
+  "projectStatuses": [
+    { "id": "1", "name": "On Track" },
+    { "id": "2", "name": "At Risk" },
+    { "id": "3", "name": "Delayed" },
+    { "id": "4", "name": "Completed" },
+    { "id": "5", "name": "On Hold" },
+    { "id": "6", "name": "Not Started" }
+  ],
   "projectTypes": [
     { "id": "1", "name": "Construction Work" },
     { "id": "2", "name": "Maintenance Work" },

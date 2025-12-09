@@ -348,7 +348,8 @@ class ApiManager {
 
       const token = this.getToken();
 
-
+      console.log("toke2122n,",token);
+      
 
       if (!token) throw new Error('No authentication token available');
 
@@ -366,6 +367,37 @@ class ApiManager {
     }
   }
 
+
+   public async getProjectDetail(
+     projectID: string | number,
+  
+    endPoint: string
+,
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
 
   /** ---------------- COMPLAINT DETAILS (EXTERNAL ADMIN API) ---------------- */
   public async getComplaintDetails(complaintId: string): Promise<any> {

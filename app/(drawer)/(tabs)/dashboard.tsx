@@ -139,7 +139,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={[styles.container,{
+    <SafeAreaView edges={['top']} style={[styles.container,{
     }]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Header
@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingBottom: 0, 
   },
   snapshotCard: {
     width: cardWidth,

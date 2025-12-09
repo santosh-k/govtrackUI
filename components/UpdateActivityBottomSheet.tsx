@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   footer: {
-    padding: 24,
+    padding: 48,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     borderTopWidth: 1,
     borderTopColor: COLORS.divider,

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Platform } from 'react-native';
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {Platform} from 'react-native';
+import {Tabs} from 'expo-router';
+import {Ionicons} from '@expo/vector-icons';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const COLORS = {
   activeTab: '#2196F3', // Blue for active tab
@@ -15,13 +15,14 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   // Ensure minimum bottom padding on Android to avoid nav bar overlap
-  const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 4) : insets.bottom;
+  const bottomPadding =
+    Platform.OS === 'android' ? Math.max(insets.bottom, 4) : insets.bottom;
 
   // Compute tab bar height including padding
   const tabBarHeight = 60 + bottomPadding;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+    <SafeAreaView style={{flex: 1}} edges={['bottom']}>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -34,7 +35,7 @@ export default function TabLayout() {
             height: tabBarHeight,
             paddingBottom: bottomPadding,
             paddingTop: 8,
-            maxHeight:80
+            maxHeight: 80,
           },
           tabBarLabelStyle: {
             fontSize: 12,
@@ -43,13 +44,12 @@ export default function TabLayout() {
         }}
         // Reserve space for scene content equal to tab bar height
         // @ts-ignore
-        sceneContainerStyle={{ paddingBottom: tabBarHeight }}
-      >
+        sceneContainerStyle={{paddingBottom: tabBarHeight}}>
         <Tabs.Screen
           name="dashboard"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({color, size}) => (
               <Ionicons name="home-outline" size={size} color={color} />
             ),
           }}
@@ -58,8 +58,12 @@ export default function TabLayout() {
           name="complaints"
           options={{
             title: 'Complaints',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="document-text-outline" size={size} color={color} />
+            tabBarIcon: ({color, size}) => (
+              <Ionicons
+                name="document-text-outline"
+                size={size}
+                color={color}
+              />
             ),
           }}
           key={Date.now()}
@@ -68,7 +72,7 @@ export default function TabLayout() {
           name="projects"
           options={{
             title: 'Projects',
-            tabBarIcon: ({ color, size }) => (
+            tabBarIcon: ({color, size}) => (
               <Ionicons name="folder-outline" size={size} color={color} />
             ),
           }}
@@ -77,8 +81,12 @@ export default function TabLayout() {
           name="tasks"
           options={{
             title: 'Tasks',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="checkmark-done-outline" size={size} color={color} />
+            tabBarIcon: ({color, size}) => (
+              <Ionicons
+                name="checkmark-done-outline"
+                size={size}
+                color={color}
+              />
             ),
           }}
         />
