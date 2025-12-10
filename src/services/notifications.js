@@ -1,7 +1,9 @@
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
 import { Platform, PermissionsAndroid } from 'react-native';
-import { ApiManager } from './ApiManager';
+
+// Module-level storage for the current FCM token so other modules can read it
+let currentFcmToken = null;
 
 /**
  * ✅ Configure notification handler for how notifications appear
@@ -61,10 +63,12 @@ export async function getFcmToken() {
     const fcmToken = await messaging().getToken();
     if (fcmToken) {
       console.log('✅ FCM Token:', fcmToken);
-      
+      // Cache token for other modules
+      currentFcmToken = fcmToken;
+
       // 🔥 CRITICAL: Send token to your backend so it can send notifications
       await sendTokenToBackend(fcmToken);
-      
+
       return fcmToken;
     } else {
       console.warn('❌ Failed to get FCM token');
@@ -82,13 +86,31 @@ export async function getFcmToken() {
  */
 async function sendTokenToBackend(token) {
   try {
-    // Example: Send to your backend API
-    // Adjust the endpoint and payload based on your backend requirements
-    const response = await ApiManager.post('/api/notifications/register-token', {
-      fcmToken: token,
-      platform: Platform.OS,
-    });
-    console.log('✅ FCM token sent to backend:', response);
+    // Dynamically import ApiManager to avoid circular import on startup
+    try {
+      const mod = await import('./ApiManager');
+      const ApiManagerClass = mod && (mod.default || mod.ApiManager);
+      if (ApiManagerClass && typeof ApiManagerClass.getInstance === 'function') {
+        const api = ApiManagerClass.getInstance();
+        // Use fetchWithAuth helper to POST to our endpoint
+        const resp = await api.fetchWithAuth('/api/notifications/register-token', {
+          method: 'POST',
+          body: JSON.stringify({ fcmToken: token, platform: Platform.OS }),
+        });
+        // parse response if any
+        let json = null;
+        try {
+          json = await resp.json();
+        } catch (e) {
+          // ignore
+        }
+        console.log('✅ FCM token sent to backend:', json || '[no json]');
+      } else {
+        console.warn('ApiManager not available to send FCM token');
+      }
+    } catch (err) {
+      console.warn('Could not import ApiManager to send token:', err);
+    }
   } catch (error) {
     console.error('❌ Error sending FCM token to backend:', error);
   }
@@ -102,13 +124,30 @@ export function setupTokenRefreshListener() {
   try {
     const unsubscribe = messaging().onTokenRefresh(token => {
       console.log('🔄 FCM Token Refreshed:', token);
-      // Send new token to backend immediately
+      // Update cached token and send new token to backend immediately
+      currentFcmToken = token;
       sendTokenToBackend(token);
     });
     return unsubscribe;
   } catch (error) {
     console.error('❌ Error setting up token refresh listener:', error);
   }
+}
+
+/**
+ * Return currently cached FCM token, or null if not yet fetched.
+ */
+export function getCurrentFcmToken() {
+  return currentFcmToken;
+}
+
+/**
+ * Ensure we have an FCM token — return the cached token or attempt to fetch one.
+ * Use this from other modules to avoid circular imports (dynamic import recommended).
+ */
+export async function ensureFcmToken() {
+  if (currentFcmToken) return currentFcmToken;
+  return await getFcmToken();
 }
 
 /**

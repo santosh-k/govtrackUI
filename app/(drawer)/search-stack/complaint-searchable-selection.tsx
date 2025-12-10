@@ -29,7 +29,7 @@ const COLORS = {
 };
 
 interface Item {
-  id: string;
+  id: string | number;
   name: string;
   designation?: string;
 }
@@ -52,8 +52,10 @@ export default function ComplaintSearchableSelectionScreen() {
   );
 
   const handleSelectItem = (item: Item) => {
+    console.log('handleSelectItem called with:', { type, item });
     if (fromSearch === 'true' && global.searchSelectionCallback) {
       // Use search callback for search screen
+      console.log('Calling searchSelectionCallback with:', { type, item });
       global.searchSelectionCallback(type, { id: item.id, name: item.name });
       // Go back to complaint-search screen
       router.back();

@@ -1,6 +1,16 @@
+export interface DeviceInfo {
+  deviceToken?: string;
+  deviceType?: string;
+  deviceModel?: string;
+  osVersion?: string;
+  appVersion?: string;
+  deviceId?: string;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
+  deviceInfo?: DeviceInfo;
 }
 
 export interface Department {

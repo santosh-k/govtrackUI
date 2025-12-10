@@ -7,12 +7,32 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useSelector } from 'react-redux';
-import { selectFilterOptions } from '@/src/store/complaintsSlice';
+import { useSelector, useDispatch } from 'react-redux';
+import { AppDispatch } from '@/src/store';
+import {
+  fetchZones,
+  fetchCircles,
+  fetchDivisions,
+  setSelectedZone,
+  setSelectedCircle,
+  setSelectedDivision,
+  selectZones,
+  selectCircles,
+  selectDivisions,
+  selectSelectedZoneId,
+  selectSelectedCircleId,
+  selectSelectedDivisionId,
+  selectIsLoadingZones,
+  selectIsLoadingCircles,
+  selectIsLoadingDivisions,
+  selectLocationError,
+} from '@/src/store/locationSlice';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -37,48 +57,82 @@ export const extractSearchData = (text?: string): string => {
 };
 export default function SearchComplaintScreen() {
     const insets = useSafeAreaInsets();
-    const filterOptions = useSelector(selectFilterOptions);
-  
-  const [complaintName, setComplaintName] = useState('');
-  const [complaintNumber, setComplaintNumber] = useState('');
-  const [location, setLocation] = useState('');
-  const [selectedZone, setSelectedZone] = useState('');
-  const [selectedCircle, setSelectedCircle] = useState('');
-  const [selectedDivision, setSelectedDivision] = useState('');
-  const [selectedZoneId, setSelectedZoneId] = useState<string | number | null>(null);
-  const [selectedCircleId, setSelectedCircleId] = useState<string | number | null>(null);
-  const [selectedDivisionId, setSelectedDivisionId] = useState<string | number | null>(null);
+    const dispatch = useDispatch<AppDispatch>();
 
-  // Setup global callback for selection from other screens
-  useEffect(() => {
-    global.searchSelectionCallback = (type: string, value: any) => {
-      if (type === 'zone') {
-        if (value && typeof value === 'object') {
-          setSelectedZone(String(value.name || ''));
-          setSelectedZoneId(value.id ?? null);
-        } else {
-          setSelectedZone(String(value || ''));
-          setSelectedZoneId(null);
-        }
-      } else if (type === 'circle') {
-        if (value && typeof value === 'object') {
-          setSelectedCircle(String(value.name || ''));
-          setSelectedCircleId(value.id ?? null);
-        } else {
-          setSelectedCircle(String(value || ''));
-          setSelectedCircleId(null);
-        }
-      } else if (type === 'division') {
-        if (value && typeof value === 'object') {
-          setSelectedDivision(String(value.name || ''));
-          setSelectedDivisionId(value.id ?? null);
-        } else {
-          setSelectedDivision(String(value || ''));
-          setSelectedDivisionId(null);
-        }
+    // Redux selectors
+    const zones = useSelector(selectZones);
+    const circles = useSelector(selectCircles);
+    const divisions = useSelector(selectDivisions);
+    const selectedZoneId = useSelector(selectSelectedZoneId);
+    const selectedCircleId = useSelector(selectSelectedCircleId);
+    const selectedDivisionId = useSelector(selectSelectedDivisionId);
+    const isLoadingZones = useSelector(selectIsLoadingZones);
+    const isLoadingCircles = useSelector(selectIsLoadingCircles);
+    const isLoadingDivisions = useSelector(selectIsLoadingDivisions);
+    const locationError = useSelector(selectLocationError);
+
+    // Local state
+    const [complaintName, setComplaintName] = useState('');
+    const [complaintNumber, setComplaintNumber] = useState('');
+    const [location, setLocation] = useState('');
+    const [selectedZoneName, setSelectedZoneName] = useState('');
+    const [selectedCircleName, setSelectedCircleName] = useState('');
+    const [selectedDivisionName, setSelectedDivisionName] = useState('');
+
+    // Fetch zones on component mount
+    useEffect(() => {
+      dispatch(fetchZones());
+    }, [dispatch]);
+
+    // Fetch circles when zone is selected
+    useEffect(() => {
+      if (selectedZoneId) {
+        dispatch(fetchCircles(selectedZoneId));
       }
-    };
-  }, []);
+    }, [selectedZoneId, dispatch]);
+
+    // Fetch divisions when circle is selected
+    useEffect(() => {
+      if (selectedCircleId) {
+        dispatch(fetchDivisions(selectedCircleId));
+      }
+    }, [selectedCircleId, dispatch]);
+
+    // Update zone name when selectedZoneId changes
+    useEffect(() => {
+      if (selectedZoneId) {
+        const zone = zones.find((z) => z.id === selectedZoneId);
+        if (zone) {
+          setSelectedZoneName(zone.name);
+        }
+      } else {
+        setSelectedZoneName('');
+      }
+    }, [selectedZoneId, zones]);
+
+    // Update circle name when selectedCircleId changes
+    useEffect(() => {
+      if (selectedCircleId) {
+        const circle = circles.find((c) => c.id === selectedCircleId);
+        if (circle) {
+          setSelectedCircleName(circle.name);
+        }
+      } else {
+        setSelectedCircleName('');
+      }
+    }, [selectedCircleId, circles]);
+
+    // Update division name when selectedDivisionId changes
+    useEffect(() => {
+      if (selectedDivisionId) {
+        const division = divisions.find((d) => d.id === selectedDivisionId);
+        if (division) {
+          setSelectedDivisionName(division.name);
+        }
+      } else {
+        setSelectedDivisionName('');
+      }
+    }, [selectedDivisionId, divisions]);
 
   const goBack = () => {
     // Simply go back to previous screen (dashboard)
@@ -86,48 +140,100 @@ export default function SearchComplaintScreen() {
   };
 
   const handleZonePress = () => {
-    const zones = filterOptions?.zones || [];
+    if (isLoadingZones) {
+      Alert.alert('Loading', 'Please wait while zones are loading...');
+      return;
+    }
+    
     router.push({
       pathname: '/search-stack/complaint-searchable-selection',
       params: { 
         title: 'Select Zone',
         type: 'zone',
         items: JSON.stringify(zones),
-        selected: selectedZone,
+        selected: selectedZoneName,
         fromSearch: 'true',
       },
     });
   };
 
   const handleCirclePress = () => {
-    // Circles can be fetched from API or use empty array for now
-    const circles = (filterOptions as any)?.circles || [];
-    router.replace({
+    if (!selectedZoneId) {
+      Alert.alert('Please select a Zone first');
+      return;
+    }
+
+    if (isLoadingCircles) {
+      Alert.alert('Loading', 'Please wait while circles are loading...');
+      return;
+    }
+    
+    router.push({
       pathname: '/search-stack/complaint-searchable-selection',
       params: { 
         title: 'Select Circle',
         type: 'circle',
         items: JSON.stringify(circles),
-        selected: selectedCircle,
+        selected: selectedCircleName,
         fromSearch: 'true',
       },
     });
   };
 
   const handleDivisionPress = () => {
-    // Divisions can be fetched from API or use empty array for now
-    const divisions = (filterOptions as any)?.divisions || [];
-    router.replace({
+    if (!selectedCircleId) {
+      Alert.alert('Please select a Circle first');
+      return;
+    }
+
+    if (isLoadingDivisions) {
+      Alert.alert('Loading', 'Please wait while divisions are loading...');
+      return;
+    }
+    
+    router.push({
       pathname: '/search-stack/complaint-searchable-selection',
       params: { 
         title: 'Select Division',
         type: 'division',
         items: JSON.stringify(divisions),
-        selected: selectedDivision,
+        selected: selectedDivisionName,
         fromSearch: 'true',
       },
     });
   };
+
+  // Handle selection callback from searchable-selection screen
+  useEffect(() => {
+    const setCallback = () => {
+      global.searchSelectionCallback = (type: string, value: any) => {
+        console.log('Selection Callback:', type, value);
+        if (type === 'zone') {
+          if (value && typeof value === 'object' && value.id) {
+            console.log('Dispatching setSelectedZone with ID:', value.id);
+            dispatch(setSelectedZone(Number(value.id)));
+          }
+        } else if (type === 'circle') {
+          if (value && typeof value === 'object' && value.id) {
+            console.log('Dispatching setSelectedCircle with ID:', value.id);
+            dispatch(setSelectedCircle(Number(value.id)));
+          }
+        } else if (type === 'division') {
+          if (value && typeof value === 'object' && value.id) {
+            console.log('Dispatching setSelectedDivision with ID:', value.id);
+            dispatch(setSelectedDivision(Number(value.id)));
+          }
+        }
+      };
+    };
+
+    setCallback();
+
+    return () => {
+      // Cleanup callback
+      delete (global as any).searchSelectionCallback;
+    };
+  }, [dispatch]);
 
   const handleFindComplaints = () => {
     const filterParts = [];
@@ -167,12 +273,9 @@ export default function SearchComplaintScreen() {
     setComplaintName('');
     setComplaintNumber('');
     setLocation('');
-    setSelectedZone('');
-    setSelectedCircle('');
-    setSelectedDivision('');
-    setSelectedZoneId(null);
-    setSelectedCircleId(null);
-    setSelectedDivisionId(null);
+    dispatch(setSelectedZone(null));
+    dispatch(setSelectedCircle(null));
+    dispatch(setSelectedDivision(null));
 
     console.log('Find Complaints - Params:', params);
     router.push({
@@ -217,11 +320,16 @@ export default function SearchComplaintScreen() {
               style={styles.selectionRow}
               onPress={handleZonePress}
               activeOpacity={0.7}
+              disabled={isLoadingZones}
             >
               <Text style={styles.selectionLabel}>
-                {selectedZone || 'All Zones'}
+                {selectedZoneName || 'All Zones'}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              {isLoadingZones ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -229,14 +337,19 @@ export default function SearchComplaintScreen() {
           <View style={styles.filterSection}>
             <Text style={styles.sectionTitle}>Circle</Text>
             <TouchableOpacity
-              style={styles.selectionRow}
+              style={[styles.selectionRow, !selectedZoneId && styles.disabledRow]}
               onPress={handleCirclePress}
               activeOpacity={0.7}
+              disabled={!selectedZoneId || isLoadingCircles}
             >
-              <Text style={styles.selectionLabel}>
-                {selectedCircle || 'All Circles'}
+              <Text style={[styles.selectionLabel, !selectedZoneId && styles.disabledText]}>
+                {selectedCircleName || 'All Circles'}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              {isLoadingCircles ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -244,16 +357,29 @@ export default function SearchComplaintScreen() {
           <View style={styles.filterSection}>
             <Text style={styles.sectionTitle}>Division</Text>
             <TouchableOpacity
-              style={styles.selectionRow}
+              style={[styles.selectionRow, !selectedCircleId && styles.disabledRow]}
               onPress={handleDivisionPress}
               activeOpacity={0.7}
+              disabled={!selectedCircleId || isLoadingDivisions}
             >
-              <Text style={styles.selectionLabel}>
-                {selectedDivision || 'All Divisions'}
+              <Text style={[styles.selectionLabel, !selectedCircleId && styles.disabledText]}>
+                {selectedDivisionName || 'All Divisions'}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              {isLoadingDivisions ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              )}
             </TouchableOpacity>
           </View>
+
+          {/* Error Message */}
+          {locationError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+              <Text style={styles.errorText}>{locationError}</Text>
+            </View>
+          )}
 
           {/* TEXT INPUT 1 */}
           <View style={styles.inputGroup}>
@@ -441,10 +567,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  disabledRow: {
+    opacity: 0.6,
+    backgroundColor: '#FAFAFA',
+  },
   selectionLabel: {
     fontSize: 16,
     fontWeight: '500',
     color: COLORS.text,
+    flex: 1,
+  },
+  disabledText: {
+    color: COLORS.textPlaceholder,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#D32F2F',
+    marginLeft: 8,
     flex: 1,
   },
 });

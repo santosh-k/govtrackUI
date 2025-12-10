@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -223,6 +224,7 @@ export default function ComplaintsScreen() {
   const [currentStatusParam, setCurrentStatusParam] = useState<string>('');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nextPageToLoad, setNextPageToLoad] = useState(2);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Clear all previous filters and search data on mount or when params change
   useEffect(() => {
@@ -234,13 +236,16 @@ export default function ComplaintsScreen() {
     // Reset pagination tracking
     setNextPageToLoad(2);
     
-    // Clear all local filter states
+    // Clear all local filter states (but NOT categoryId/categoryName if they're in params)
     setSearchQueryLocal('');
     setSelectedStatuses([]);
-    setSelectedCategory('');
+    // Only clear category if it's not coming from params
+    if (!params.categoryId && !params.categoryName) {
+      setSelectedCategory('');
+      setSelectedCategoryId(null);
+    }
     setSelectedZone('');
     setSelectedDepartment('');
-    setSelectedCategoryId(null);
     setSelectedZoneId(null);
     setSelectedDepartmentId(null);
     setCurrentStatusParam('');
@@ -323,16 +328,34 @@ export default function ComplaintsScreen() {
   };
 
   // Fetch complaints from Redux
-  const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false) => {
+  const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false, overrideCategoryId?: string | number | null) => {
     const status = typeof statusFilter === 'string' && statusFilter !== undefined ? statusFilter : currentStatusParam || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter =  params.dateFilter as string || 'all'
     const start_date = params.start_date as string 
     const end_date = params.end_date as string
+    
+    // Extract zone, circle, division IDs from params (from search screen)
+    const paramsZoneId = params.zoneId as string | number | undefined;
+    const paramsCircleId = params.circleId as string | number | undefined;
+    const paramsDivisionId = params.divisionId as string | number | undefined;
+    
+    // Use overrideCategoryId if provided (for stat card navigation), otherwise use state
+    const categoryIdToUse = overrideCategoryId !== undefined ? overrideCategoryId : selectedCategoryId;
+    
+    // Use zone/circle/division from params if available, otherwise use selected state
+    const zoneIdToUse = paramsZoneId || selectedZoneId;
+    const circleIdToUse = paramsCircleId || null; // Circle ID from params (search screen)
+    const divisionIdToUse = paramsDivisionId || selectedDepartmentId; // Note: mapping division to department
+    
     console.log('fetchComplaint Api Called')
     console.log('Current Date Filter == ', filter)
     console.log('Start Date == ', start_date)
     console.log('End Date == ', end_date)
+    console.log('Category ID being sent == ', categoryIdToUse)
+    console.log('Zone ID being sent == ', zoneIdToUse)
+    console.log('Circle ID being sent == ', circleIdToUse)
+    console.log('Division ID being sent == ', divisionIdToUse)
     console.log('All Params == ', params)
     
     // Only clear complaints when starting a new filter/search (page 1), not for infinite scroll
@@ -349,8 +372,10 @@ export default function ComplaintsScreen() {
         limit: 10,
         search: searchQuery,
         isInfiniteScroll,
-        category_id: selectedCategoryId,
-        zone_id: selectedZoneId,
+        category_id: categoryIdToUse,
+        zone_id: zoneIdToUse,
+        circle_id: circleIdToUse,
+        division_id: divisionIdToUse,
         department_id: selectedDepartmentId,
         start_date: start_date ?? undefined,
         end_date: end_date ?? undefined,
@@ -367,12 +392,24 @@ export default function ComplaintsScreen() {
       dispatch(setSearchQuery(searchData));
       setSearchQueryLocal(searchData);   
       handleFetchComplaints(1, currentStatusParam, false);
-    } else if (params.filter && !params.categoryId) {
-      // Coming from stat card (not from complaint group)
-      console.log('ComplaintList - Fetching from stat card');
-      handleFetchComplaints(1, currentStatusParam, false);
+    } else if (params.filter) {
+      // Coming from either stat card or complaint group or search screen
+      console.log('ComplaintList - Filter params detected, will fetch after category state updates');
+      // Don't fetch here - let the category effect or search screen effect handle it
     }
   }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
+
+  // Dedicated effect for search screen navigation (zone/circle/division filtering)
+  useEffect(() => {
+    const hasSearchParams = params.zoneId || params.circleId || params.divisionId;
+    const hasSearchData = params.searchData && params.searchData !== '';
+    
+    if (hasSearchParams || (params.filter && !params.categoryId && !hasSearchData)) {
+      console.log('ComplaintList - Search screen navigation detected, fetching complaints');
+      console.log('Search params - zoneId:', params.zoneId, 'circleId:', params.circleId, 'divisionId:', params.divisionId);
+      handleFetchComplaints(1, currentStatusParam, false, null);
+    }
+  }, [params.zoneId, params.circleId, params.divisionId, params.filter]);
 
   /* useFocusEffect(
     useCallback(() => {
@@ -424,27 +461,31 @@ export default function ComplaintsScreen() {
     const categoryId = params.categoryId as string | number | undefined;
     const categoryName = params.categoryName as string | undefined;
     
-    console.log('ComplaintList - CategoryId useEffect triggered - categoryId:', categoryId, 'categoryName:', categoryName);
+    console.log('ComplaintList - CategoryId useEffect triggered - categoryId:', categoryId, 'categoryName:', categoryName, 'params.filter:', params.filter);
     
     if (categoryId && categoryName) {
       console.log('ComplaintList - Setting category from complaint group - ID:', categoryId, 'Name:', categoryName);
       setSelectedCategoryId(categoryId as any);
       setSelectedCategory(categoryName);
-    } else if (!categoryId && !params.categoryName) {
-      // Coming from stat card - clear category filters
-      console.log('ComplaintList - Clearing category filters (from stat card)');
+      // Will fetch in next useEffect when selectedCategoryId is updated
+    } else if (!categoryId && params.filter) {
+      // Coming from stat card or search screen - clear category filters BEFORE fetching with null
+      console.log('ComplaintList - Clearing category filters (from stat card/search), now fetching with categoryId=null');
       setSelectedCategoryId(null);
       setSelectedCategory('');
+      // Fetch IMMEDIATELY with null categoryId to avoid using stale state
+      handleFetchComplaints(1, currentStatusParam, false, null);
     }
-  }, [params.categoryId, params.categoryName]);
+  }, [params.categoryId, params.categoryName, params.filter, params.zoneId, params.circleId, params.divisionId]);
 
-  // Fetch after categoryId is set
+  // Fetch after categoryId is set (only if it's from complaint group, not stat card)
   useEffect(() => {
-    if (selectedCategoryId !== null && selectedCategory) {
-      console.log('ComplaintList - Fetching after categoryId state updated:', selectedCategoryId, selectedCategory);
-      handleFetchComplaints(1, currentStatusParam, false);
+    if (selectedCategoryId !== null && selectedCategory && params.categoryId) {
+      // Only fetch if categoryId came from params (complaint group)
+      console.log('ComplaintList - Fetching after categoryId state updated from complaint group:', selectedCategoryId, selectedCategory);
+      handleFetchComplaints(1, currentStatusParam, false, selectedCategoryId);
     }
-  }, [selectedCategoryId, selectedCategory]);
+  }, [selectedCategoryId, selectedCategory, params.categoryId]);
 
   // Reset loading state when complaints finish loading
   useEffect(() => {
@@ -792,11 +833,28 @@ export default function ComplaintsScreen() {
     if (pagination && pagination.has_next) {
       console.log('Loading next page:', nextPageToLoad);
       setIsLoadingMore(true);
-      handleFetchComplaints(nextPageToLoad, currentStatusParam, true);
+      handleFetchComplaints(nextPageToLoad, currentStatusParam, true, selectedCategoryId);
     } else {
       console.log('No more pages. has_next:', pagination?.has_next);
     }
-  }, [pagination, nextPageToLoad, isLoadingMore, loading, currentStatusParam]);
+  }, [pagination, nextPageToLoad, isLoadingMore, loading, currentStatusParam, selectedCategoryId]);
+
+  // Handle pull to refresh
+  const handleRefresh = useCallback(async () => {
+    console.log('Pull to refresh triggered');
+    setIsRefreshing(true);
+    setNextPageToLoad(2);
+    
+    // Reset to first page and fetch fresh data
+    // handleFetchComplaints will extract zone/circle/division from params (search screen)
+    // or use selected state as fallback
+    await handleFetchComplaints(1, currentStatusParam, false, selectedCategoryId);
+    
+    // Stop the refresh animation after a short delay to show the refresh completed
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  }, [currentStatusParam, selectedCategoryId, searchQuery]);
 
   // Handle search query change
   const handleSearchChange = (text: string) => {
@@ -982,6 +1040,16 @@ export default function ComplaintsScreen() {
             onCopy={copyToClipboard}
           />
         )}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+            title="Pull to refresh"
+            titleColor={COLORS.textSecondary}
+            progressBackgroundColor={COLORS.cardBackground}
+          />
+        }
         ListFooterComponent={() => {
           if (filteredComplaints.length === 0) return null;
           return loading ? (

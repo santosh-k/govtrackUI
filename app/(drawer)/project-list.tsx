@@ -572,7 +572,7 @@ export default function ProjectListScreen() {
 
   // Get filter params from advanced search
   const filterZone = params.zone as string || '';
-  const filterDepartment = params.department as string || '';
+  const filterDepartment = params.department as string || '';1
   const filterDivision = params.division as string || '';
   const filterSubDivision = params.subDivision as string || '';
   const filterProjectType = params.projectType as string || '';
