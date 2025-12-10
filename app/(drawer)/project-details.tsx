@@ -14,6 +14,7 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
@@ -22,6 +23,8 @@ import Svg, {Circle} from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Slider from '@react-native-community/slider';
+import FileViewer from 'react-native-file-viewer';
+import RNFS from 'react-native-fs';
 import {
   GestureHandlerRootView,
   PinchGestureHandler,
@@ -30,6 +33,7 @@ import {
 import SpeedDialFAB from '@/components/SpeedDialFAB';
 import AddMediaSheet from '@/components/AddMediaSheet';
 import moment from 'moment';
+import Video from 'react-native-video';
 
 const {width, height} = Dimensions.get('window');
 
@@ -71,7 +75,7 @@ const ZoomableImage: React.FC<{uri: string}> = ({uri}) => {
       onHandlerStateChange={onPinchStateChange}>
       <Animated.View style={[styles.zoomableContainer]}>
         <Animated.Image
-          source={{uri}}
+          source={{uri: uri}}
           style={[styles.fullImage, {transform: [{scale: animatedScale}]}]}
           resizeMode="contain"
         />
@@ -193,6 +197,13 @@ const getStatusColors = (status: ProjectStatus) => {
       return {bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack};
   }
 };
+
+const colors = [
+  {bg: '#E3FCEF', text: '#2ECC71'},
+  {bg: '#FFF4E5', text: '#F5A623'},
+  {bg: '#FFE6E6', text: '#FF4D4F'},
+  {bg: '#E6F7FF', text: '#1890FF'},
+];
 
 // Animated Donut Chart Component
 const DonutChart: React.FC<{percentage: number; size?: number}> = ({
@@ -401,6 +412,47 @@ export default function ProjectDetailsScreen() {
       if (response?.success && response?.data) {
         console.log('dhdhdsdsd', JSON.stringify(response));
 
+        // if (tab != 'Media') {
+        setProjectData(response?.data);
+        // }
+        // setProjectStat(response?.data)
+        setLoading(false);
+      } else {
+        setProjectData(null);
+        // setProjectStat(0)
+        setLoading(false);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      console.log('21223321', message);
+      setLoading(false);
+      setProjectData(null);
+    }
+  };
+
+  const fetchProjectDetailsMedia = async (
+    id: string,
+    tab: string,
+    filter: string,
+  ) => {
+    setLoading(true);
+    try {
+      // Use dynamic import to avoid circular dependency
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().getProjectDetailMedia(
+        id,
+        tab.toLowerCase(),
+        filter === 'Videos'
+          ? 'video'
+          : filter === 'Documents'
+          ? 'document'
+          : 'image',
+      );
+
+      if (response?.success && response?.data) {
+        console.log('dhdhdsdsd111111', JSON.stringify(response));
+
         setProjectData(response?.data);
         // setProjectStat(response?.data)
         setLoading(false);
@@ -428,6 +480,7 @@ export default function ProjectDetailsScreen() {
     setActiveTab(tab);
     scrollTabIntoView(index);
     fetchProjectDetails(projectIdD, tab);
+    // fetchProjectDetailsMedia(projectIdD, tab, 'image');
   };
 
   const handleSwipeEnd = (e: any) => {
@@ -1200,11 +1253,11 @@ export default function ProjectDetailsScreen() {
   const getFilteredMediaItems = (): MediaItem[] => {
     switch (mediaFilter) {
       case 'Photos':
-        return allMediaItems.filter(item => item.type === 'image');
+        return projectData?.items?.filter(item => item?.type === 'image');
       case 'Videos':
-        return allMediaItems.filter(item => item.type === 'video');
+        return projectData?.items?.filter(item => item?.type === 'video');
       case 'Documents':
-        return allMediaItems.filter(item => item.type === 'document');
+        return projectData?.items?.filter(item => item?.type === 'document');
     }
   };
 
@@ -1213,18 +1266,44 @@ export default function ProjectDetailsScreen() {
     return getFilteredMediaItems().filter(item => item.type !== 'document');
   };
 
-  const handleMediaPress = (item: MediaItem, index: number) => {
-    if (item.type === 'document') {
-      Alert.alert('Document', `Open ${item.filename || 'document'}`);
+  const handleMediaPress = async (item: MediaItem, index: number) => {
+    if (item?.type === 'document') {
+      const localPath =
+        Platform.OS === 'android'
+          ? `${RNFS.DownloadDirectoryPath}/${item?.fileName}` // Download folder
+          : `${RNFS.DocumentDirectoryPath}/${item?.fileName}`; // iOS documents
+      try {
+        const result = await RNFS.downloadFile({
+          fromUrl: item?.url,
+          toFile: localPath,
+        }).promise;
+
+        if (result.statusCode === 200) {
+          console.log('PDF Downloaded:', localPath);
+
+          // Download file
+          FileViewer.open(localPath)
+            .then(() => console.log('File opened'))
+            .catch(err => console.log('Open error:', err));
+        }
+      } catch (err) {
+        console.log('Auto-download error:', err);
+      }
       return;
     }
 
     // For images and videos, open the viewer
     const viewableItems = getViewableMediaItems();
+
     const viewableIndex = viewableItems.findIndex(m => m.id === item.id);
     setViewerMediaItems(viewableItems);
     setSelectedMediaIndex(viewableIndex >= 0 ? viewableIndex : 0);
     setShowMediaViewer(true);
+  };
+
+  const openFile = async () => {
+    const fileUrl = 'https://example.com/sample.pdf'; // any file
+    const localPath = `${RNFS.DocumentDirectoryPath}/sample.pdf`;
   };
 
   /**
@@ -1264,6 +1343,11 @@ export default function ProjectDetailsScreen() {
       setAllMediaItems([newMedia, ...allMediaItems]);
       Alert.alert('Success', 'Media added successfully');
     }
+  };
+
+  const onPressMediaFilter = filter => {
+    // fetchProjectDetailsMedia(projectIdD, 'media', filter);
+    setMediaFilter(filter);
   };
 
   /**
@@ -1679,7 +1763,7 @@ export default function ProjectDetailsScreen() {
     return (
       <View style={styles.tabContent}>
         {/* Media Grid */}
-        {filteredMedia.length === 0 ? (
+        {filteredMedia?.length === 0 ? (
           <View style={styles.emptyMediaState}>
             <Ionicons
               name="images-outline"
@@ -1695,34 +1779,61 @@ export default function ProjectDetailsScreen() {
           <FlatList
             data={filteredMedia}
             numColumns={3}
-            keyExtractor={item => item.id}
+            keyExtractor={item => item?.id}
             renderItem={({item, index}) => (
               <TouchableOpacity
-                style={styles.mediaThumbnail}
-                onPress={() => handleMediaPress(item, index)}
+                style={[
+                  styles.mediaThumbnail,
+                  {
+                    backgroundColor:
+                      item?.type === 'video' && item?.type === 'document'
+                        ? '#000000'
+                        : '#ffffff',
+                    margin: 2,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
+                  },
+                ]}
+                onPress={() => {
+                  handleMediaPress(item, index);
+                }}
                 activeOpacity={0.8}>
-                {item.type === 'document' ? (
-                  <View style={styles.documentThumbnail}>
+                {item?.type === 'document' ? (
+                  <View
+                    style={[
+                      styles.documentThumbnail,
+                      {
+                        backgroundColor: '#ffffff',
+                      },
+                    ]}>
                     <Ionicons
                       name={
-                        item.filename?.endsWith('.pdf')
+                        item?.fileName?.endsWith('.pdf')
                           ? 'document-text'
                           : 'document'
                       }
                       size={40}
                       color={COLORS.primary}
                     />
-                    <Text style={styles.documentFilename} numberOfLines={2}>
-                      {item.filename || 'Document'}
+                    <Text
+                      style={[
+                        styles.documentFilename,
+                        {
+                          paddingHorizontal: 8,
+                        },
+                      ]}
+                      numberOfLines={2}>
+                      {item?.fileName || 'Document'}
                     </Text>
                   </View>
                 ) : (
                   <>
                     <Image
-                      source={{uri: item.uri}}
+                      source={{uri: item?.url}}
                       style={styles.thumbnailImage}
                     />
-                    {item.type === 'video' && (
+                    {item?.type === 'video' && (
                       <View style={styles.playIconOverlay}>
                         <Ionicons name="play-circle" size={40} color="white" />
                       </View>
@@ -1748,7 +1859,7 @@ export default function ProjectDetailsScreen() {
                     mediaFilter === filter &&
                       styles.segmentedControlSegmentActive,
                   ]}
-                  onPress={() => setMediaFilter(filter)}
+                  onPress={() => onPressMediaFilter(filter)}
                   activeOpacity={0.8}>
                   <Text
                     style={[
@@ -2021,7 +2132,7 @@ export default function ProjectDetailsScreen() {
 
   const renderActivityTab = () => (
     <View style={styles.tabContent}>
-      {activityHistory.length === 0 ? (
+      {projectData?.items?.length === 0 ? (
         <View style={styles.emptyActivityState}>
           <Ionicons name="time-outline" size={64} color={COLORS.textLight} />
           <Text style={styles.emptyActivityTitle}>No Activity Yet</Text>
@@ -2031,11 +2142,17 @@ export default function ProjectDetailsScreen() {
         </View>
       ) : (
         <FlatList
-          data={activityHistory}
+          data={projectData?.items}
           keyExtractor={item => item.id}
           renderItem={({item, index}) => {
             const statusColors = getStatusColors(item.status);
-            const isLast = index === activityHistory.length - 1;
+            const isLast = index === projectData?.items?.length - 1;
+            const colorSet = colors[index % colors.length];
+
+            const date = item?.date;
+
+            const formattedDate = moment(date).format('DD-MMM-YY'); // 10-Dec-25
+            const formattedTime = moment(date).format('hh:mm A');
 
             return (
               <View style={styles.timelineItem}>
@@ -2044,7 +2161,7 @@ export default function ProjectDetailsScreen() {
                   <View
                     style={[
                       styles.timelineNode,
-                      {backgroundColor: statusColors.text},
+                      {backgroundColor: colorSet.text},
                     ]}
                   />
                   {!isLast && <View style={styles.timelineLine} />}
@@ -2057,22 +2174,26 @@ export default function ProjectDetailsScreen() {
                     <Text
                       style={[
                         styles.activityStatusText,
-                        {color: statusColors.text},
+                        {color: colorSet.text},
                       ]}>
-                      Status changed to {item.status}
+                      {item?.title}
                     </Text>
                   </View>
 
                   {/* 2. Remarks */}
-                  {item.remarks && (
-                    <Text style={styles.activityRemarks}>{item.remarks}</Text>
+                  {item.description && (
+                    <Text style={styles.activityRemarks}>
+                      {item?.description}
+                    </Text>
                   )}
 
                   {/* 3. "Updated By" Information Footer */}
                   <Text style={styles.activityMeta}>
                     by{' '}
-                    <Text style={styles.activityAuthor}>{item.updatedBy}</Text>{' '}
-                    ({item.designation}) on {item.timestamp}
+                    <Text style={styles.activityAuthor}>
+                      {item?.changedBy?.name}
+                    </Text>{' '}
+                    ({item?.designation}) on {formattedDate} at {formattedTime}
                   </Text>
                 </View>
               </View>
@@ -2715,7 +2836,7 @@ export default function ProjectDetailsScreen() {
       {/* Media Viewer Modal */}
       <Modal
         visible={showMediaViewer}
-        transparent={false}
+        transparent={true}
         animationType="fade"
         onRequestClose={() => setShowMediaViewer(false)}>
         <GestureHandlerRootView style={{flex: 1}}>
@@ -2727,7 +2848,7 @@ export default function ProjectDetailsScreen() {
             </TouchableOpacity>
 
             <FlatList
-              data={viewerMediaItems.length > 0 ? viewerMediaItems : []}
+              data={viewerMediaItems?.length > 0 ? viewerMediaItems : []}
               horizontal
               pagingEnabled
               initialScrollIndex={selectedMediaIndex}
@@ -2738,18 +2859,17 @@ export default function ProjectDetailsScreen() {
               })}
               renderItem={({item}) => (
                 <View style={styles.mediaViewerItem}>
-                  {item.type === 'image' ? (
-                    <ZoomableImage uri={item.uri} />
+                  {item?.type === 'image' ? (
+                    <ZoomableImage uri={item?.url} />
                   ) : (
                     <>
-                      <Image
-                        source={{uri: item.uri}}
-                        style={styles.fullImage}
-                        resizeMode="contain"
+                      <Video
+                        source={{
+                          uri: item?.url,
+                        }}
+                        style={{width: '100%', aspectRatio: 16 / 9}}
+                        controls={false}
                       />
-                      <TouchableOpacity style={styles.playButton}>
-                        <Ionicons name="play-circle" size={80} color="white" />
-                      </TouchableOpacity>
                     </>
                   )}
                 </View>
@@ -3393,7 +3513,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 8,
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: COLORS.border,
   },
   documentThumbnail: {
@@ -3404,7 +3524,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: COLORS.border,
   },
   documentFilename: {
