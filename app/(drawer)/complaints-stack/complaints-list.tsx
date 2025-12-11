@@ -30,6 +30,26 @@ import {
   selectComplaintsPagination,
   selectCurrentPage,
 } from '@/src/store/complaintsSlice';
+
+import {
+  fetchZones,
+  fetchCircles,
+  fetchDivisions,
+  setSelectedZone,
+  setSelectedCircle,
+  setSelectedDivision,
+  selectZones,
+  selectCircles,
+  selectDivisions,
+  selectSelectedZoneId,
+  selectSelectedCircleId,
+  selectSelectedDivisionId,
+  selectIsLoadingZones,
+  selectIsLoadingCircles,
+  selectIsLoadingDivisions,
+  selectLocationError,
+} from '@/src/store/locationSlice';
+
 import { AppDispatch } from '@/src/store/index';
 
 const COLORS = {
@@ -226,6 +246,14 @@ export default function ComplaintsScreen() {
   const [nextPageToLoad, setNextPageToLoad] = useState(2);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const zones = useSelector(selectZones);
+  const circles = useSelector(selectCircles);
+  const divisions = useSelector(selectDivisions);
+  const isLoadingZones = useSelector(selectIsLoadingZones);
+  const isLoadingCircles = useSelector(selectIsLoadingCircles);
+  const isLoadingDivisions = useSelector(selectIsLoadingDivisions);
+  const locationError = useSelector(selectLocationError);
+
   // Clear all previous filters and search data on mount or when params change
   useEffect(() => {
     console.log('ComplaintsScreen - Clearing all previous filters and search on params change');
@@ -245,19 +273,23 @@ export default function ComplaintsScreen() {
       setSelectedCategoryId(null);
     }
     setSelectedZone('');
-    setSelectedDepartment('');
+    setSelectedCircle('');
+    setSelectedDivision('');
     setSelectedZoneId(null);
-    setSelectedDepartmentId(null);
+    setSelectedCircleId(null);
+    setSelectedDivisionId(null);
     setCurrentStatusParam('');
     
     // Clear temp filter states
     setTempSelectedStatuses([]);
     setTempSelectedCategory('');
     setTempSelectedZone('');
-    setTempSelectedDepartment('');
+    setTempSelectedCircle('');
+    setTempSelectedDivision('');
     setTempSelectedCategoryId(null);
     setTempSelectedZoneId(null);
-    setTempSelectedDepartmentId(null);
+    setTempSelectedCircleId(null);
+    setTempSelectedDivisionId(null);
   }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId, params.searchData]);
 
   // Check if navigation came from dashboard
@@ -268,19 +300,24 @@ export default function ComplaintsScreen() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedZone, setSelectedZone] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedCircle, setSelectedCircle] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | number | null>(null);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | number | null>(null);
+  const [selectedCircleId, setSelectedCircleId] = useState<string | number | null>(null);
+   const [selectedDivisionId, setSelectedDivisionId] = useState<string | number | null>(null);
+
 
   // Temporary filter states (for the bottom sheet)
   const [tempSelectedStatuses, setTempSelectedStatuses] = useState<string[]>([]);
   const [tempSelectedCategory, setTempSelectedCategory] = useState('');
   const [tempSelectedZone, setTempSelectedZone] = useState('');
-  const [tempSelectedDepartment, setTempSelectedDepartment] = useState('');
+  const [tempSelectedCircle, setTempSelectedCircle] = useState('');
+  const [tempSelectedDivision, setTempSelectedDivision] = useState('');
   const [tempSelectedCategoryId, setTempSelectedCategoryId] = useState<string | number | null>(null);
   const [tempSelectedZoneId, setTempSelectedZoneId] = useState<string | number | null>(null);
-  const [tempSelectedDepartmentId, setTempSelectedDepartmentId] = useState<string | number | null>(null);
+  const [tempSelectedCircleId, setTempSelectedCircleId] = useState<string | number | null>(null);
+  const [tempSelectedDivisionId, setTempSelectedDivisionId] = useState<string | number | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const copyToClipboard = (text: string) => {
@@ -345,8 +382,8 @@ export default function ComplaintsScreen() {
     
     // Use zone/circle/division from params if available, otherwise use selected state
     const zoneIdToUse = paramsZoneId || selectedZoneId;
-    const circleIdToUse = paramsCircleId || null; // Circle ID from params (search screen)
-    const divisionIdToUse = paramsDivisionId || selectedDepartmentId; // Note: mapping division to department
+    const circleIdToUse = paramsCircleId || selectedCircleId; // Circle ID from params (search screen)
+    const divisionIdToUse = paramsDivisionId || selectedDivisionId; // Note: mapping division to department
     
     console.log('fetchComplaint Api Called')
     console.log('Current Date Filter == ', filter)
@@ -376,7 +413,6 @@ export default function ComplaintsScreen() {
         zone_id: zoneIdToUse,
         circle_id: circleIdToUse,
         division_id: divisionIdToUse,
-        department_id: selectedDepartmentId,
         start_date: start_date ?? undefined,
         end_date: end_date ?? undefined,
       })
@@ -430,7 +466,8 @@ export default function ComplaintsScreen() {
           setSelectedStatuses([]);
           setSelectedCategory('');
           setSelectedZone('');
-          setSelectedDepartment('');
+          setSelectedCircle('');
+          setSelectedDivision('');
           break;
         case 'pending':
           setSelectedStatuses(['Open']);
@@ -544,19 +581,20 @@ export default function ComplaintsScreen() {
     let count = selectedStatuses.length;
     if (selectedCategory) count++;
     if (selectedZone) count++;
-    if (selectedDepartment) count++;
+    if (selectedCircle) count++;
+     if (selectedDivision) count++;
     return count;
-  }, [selectedStatuses, selectedCategory, selectedZone, selectedDepartment]);
+  }, [selectedStatuses, selectedCategory, selectedZone, selectedCircle, selectedDivision]);
 
   // Filter and search logic
   const filteredComplaints = useMemo(() => {
     // Always display API results directly when search or any filter is active
-    if (searchQuery.trim() || selectedStatuses.length > 0 || selectedCategory || selectedZone || selectedDepartment || selectedCategoryId || selectedZoneId || selectedDepartmentId) {
+    if (searchQuery.trim() || selectedStatuses.length > 0 || selectedCategory || selectedZone || selectedCircle || selectedDivision || selectedCategoryId || selectedZoneId || selectedCircleId, selectedDivisionId) {
       return transformedComplaints;
     }
     // If no search or filters, return all complaints
     return transformedComplaints;
-  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedDepartment, transformedComplaints, selectedCategoryId, selectedZoneId, selectedDepartmentId]);
+  }, [searchQuery, selectedStatuses, selectedCategory, selectedZone, selectedCircle, selectedDivision, transformedComplaints, selectedCategoryId, selectedZoneId, selectedCircleId, selectedDivisionId]);
 
   const handleComplaintPress = (complaint: Complaint) => {
     router.push({
@@ -564,16 +602,72 @@ export default function ComplaintsScreen() {
      params: { id: complaint.id },
 });
   };
+    useEffect(() => {
+          dispatch(fetchZones());
+      }, [dispatch]);
+// Fetch circles when zone is selected
+    useEffect(() => {
+      if (tempSelectedZoneId) {
+        dispatch(fetchCircles(tempSelectedZoneId));
+      }
+    }, [tempSelectedZoneId, dispatch]);
+
+    // Fetch divisions when circle is selected
+    useEffect(() => {
+      if (tempSelectedCircleId) {
+        dispatch(fetchDivisions(tempSelectedCircleId));
+      }
+    }, [tempSelectedCircleId, dispatch]);
+
+    // Update zone name when selectedZoneId changes
+    useEffect(() => {
+      if (selectedZoneId) {
+        const zone = zones.find((z) => z.id === selectedZoneId);
+        if (zone) {
+          setSelectedZone(zone.name);
+        }
+      } else {
+        setSelectedZone('');
+      }
+    }, [selectedZoneId, zones]);
+
+    // Update circle name when selectedCircleId changes
+    useEffect(() => {
+      if (selectedCircleId) {
+        const circle = circles.find((c) => c.id === selectedCircleId);
+        if (circle) {
+          setSelectedCircle(circle.name);
+        }
+      } else {
+        setSelectedCircle('');
+      }
+    }, [selectedCircleId, circles]);
+
+    // Update division name when selectedDivisionId changes
+    useEffect(() => {
+      if (selectedDivisionId) {
+        const division = divisions.find((d) => d.id === selectedDivisionId);
+        if (division) {
+          setSelectedDivision(division.name);
+        }
+      } else {
+        setSelectedDivision('');
+      }
+    }, [selectedDivisionId, divisions]);
+
 
   const handleFilterPress = () => {
     // Copy current filters to temp states
+    
     setTempSelectedStatuses([...selectedStatuses]);
     setTempSelectedCategory(selectedCategory);
     setTempSelectedZone(selectedZone);
-    setTempSelectedDepartment(selectedDepartment);
+    setTempSelectedCircle(selectedCircle);
+    setTempSelectedDivision(selectedDivision);
     setTempSelectedCategoryId(selectedCategoryId);
     setTempSelectedZoneId(selectedZoneId);
-    setTempSelectedDepartmentId(selectedDepartmentId);
+    setTempSelectedCircleId(selectedCircleId);
+    setTempSelectedDivisionId(selectedDivisionId);
     setFilterSheetVisible(true);
   };
 
@@ -615,6 +709,8 @@ export default function ComplaintsScreen() {
     global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'zone') {
         if (value && typeof value === 'object') {
+          console.log('SelectedZone===',String(value.name || ''));
+          console.log('SelectedZoneID===',String(value.id || ''));
           setTempSelectedZone(String(value.name || ''));
           setTempSelectedZoneId(value.id ?? null);
         } else {
@@ -627,21 +723,28 @@ export default function ComplaintsScreen() {
     };
     setFilterSheetVisible(false);
     router.push({
-      pathname: '/(drawer)/complaints-stack/select-zone',
-      params: { selected: tempSelectedZone },
+      pathname: '/complaints-stack/filter-selection-screen',
+      params: { 
+        title: 'Select Zone',
+        type: 'zone',
+        items: JSON.stringify(zones),
+        selected: tempSelectedZone,
+        fromSearch: 'true',
+      },
+
     });
   };
 
-  const handleDepartmentPress = () => {
+  const handleCirclePress = () => {
     // Set global callback to receive selection
     global.filterSelectionCallback = (type: string, value: any) => {
-      if (type === 'department') {
+      if (type === 'circle') {
         if (value && typeof value === 'object') {
-          setTempSelectedDepartment(String(value.name || ''));
-          setTempSelectedDepartmentId(value.id ?? null);
+          setTempSelectedCircle(String(value.name || ''));
+          setTempSelectedCircleId(value.id ?? null);
         } else {
-          setTempSelectedDepartment(String(value || ''));
-          setTempSelectedDepartmentId(null);
+          setTempSelectedCircle(String(value || ''));
+          setTempSelectedCircleId(null);
         }
         // Re-open the filter sheet
         setTimeout(() => setFilterSheetVisible(true), 100);
@@ -649,23 +752,59 @@ export default function ComplaintsScreen() {
     };
     setFilterSheetVisible(false);
     router.push({
-      pathname: '/(drawer)/complaints-stack/select-department',
-      params: { selected: tempSelectedDepartment },
+      pathname: '/complaints-stack/filter-selection-screen',
+       params: { 
+        title: 'Select Circle',
+        type: 'circle',
+        items: JSON.stringify(circles),
+        selected: tempSelectedCircle,
+        fromSearch: 'true',
+      },
+    });
+  };
+
+  const handleDivisionPress = () => {
+    // Set global callback to receive selection
+    global.filterSelectionCallback = (type: string, value: any) => {
+      if (type === 'division') {
+        if (value && typeof value === 'object') {
+          setTempSelectedDivision(String(value.name || ''));
+          setTempSelectedDivisionId(value.id ?? null);
+        } else {
+          setTempSelectedDivision(String(value || ''));
+          setTempSelectedDivisionId(null);
+        }
+        // Re-open the filter sheet
+        setTimeout(() => setFilterSheetVisible(true), 100);
+      }
+    };
+    setFilterSheetVisible(false);
+    router.push({
+      pathname: '/complaints-stack/filter-selection-screen',
+      params: { 
+        title: 'Select Division',
+        type: 'division',
+        items: JSON.stringify(divisions),
+        selected: tempSelectedDivision,
+        fromSearch: 'true',
+      },
     });
   };
 
   const handleApplyFilters = () => {
     console.log(tempSelectedStatuses)
     console.log(tempSelectedCategory)
-    console.log(tempSelectedDepartment)
+    console.log(tempSelectedDivision)
     console.log(tempSelectedZone)
     setSelectedStatuses([...tempSelectedStatuses]);
     setSelectedCategory(tempSelectedCategory);
     setSelectedZone(tempSelectedZone);
-    setSelectedDepartment(tempSelectedDepartment);
+    setSelectedCircle(tempSelectedCircle);
+    setSelectedDivision(tempSelectedDivision);
     setSelectedCategoryId(tempSelectedCategoryId);
     setSelectedZoneId(tempSelectedZoneId);
-    setSelectedDepartmentId(tempSelectedDepartmentId);
+    setSelectedCircleId(tempSelectedCircleId);
+    setSelectedDivisionId(tempSelectedDivisionId);
     setFilterSheetVisible(false);
 
     // Reset pagination when applying filters
@@ -695,7 +834,8 @@ export default function ComplaintsScreen() {
         isInfiniteScroll: false,
         category_id: tempSelectedCategoryId ?? undefined,
         zone_id: tempSelectedZoneId ?? undefined,
-        department_id: tempSelectedDepartmentId ?? undefined,
+        circle_id: tempSelectedCircleId ?? undefined,
+        division_id: tempSelectedDivisionId ?? undefined,
         start_date: start_date ?? undefined,
         end_date: end_date ?? undefined 
       })
@@ -706,13 +846,15 @@ export default function ComplaintsScreen() {
     setTempSelectedStatuses([]);
     setTempSelectedCategory('');
     setTempSelectedZone('');
-    setTempSelectedDepartment('');
+    setTempSelectedCircle('');
+    setTempSelectedDivision('');
     setTempSelectedCategoryId(null);
     setTempSelectedZoneId(null);
-    setTempSelectedDepartmentId(null);
+    setTempSelectedCircleId(null);
+    setTempSelectedDivisionId(null);
   };
 
-  const handleRemoveFilter = (filterType: 'status' | 'category' | 'zone' | 'department', value?: string) => {
+  const handleRemoveFilter = (filterType: 'status' | 'category' | 'zone' | 'circle' | 'division', value?: string) => {
     // Compute new filter values synchronously so we can immediately refetch
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter = params.dateFilter as string || 'all'
@@ -740,7 +882,8 @@ export default function ComplaintsScreen() {
             isInfiniteScroll: false,
             category_id: selectedCategoryId ?? undefined,
             zone_id: selectedZoneId ?? undefined,
-            department_id: selectedDepartmentId ?? undefined,
+            circle_id: selectedCircleId ?? undefined,
+            division_id: selectedDivisionId ?? undefined,
             start_date: start_date ?? undefined,
             end_date: end_date ?? undefined,
           })
@@ -761,7 +904,8 @@ export default function ComplaintsScreen() {
             isInfiniteScroll: false,
             category_id: undefined,
             zone_id: selectedZoneId ?? undefined,
-            department_id: selectedDepartmentId ?? undefined,
+            circle_id: selectedCircleId ?? undefined,
+            division_id: selectedDivisionId ?? undefined,
             start_date: start_date ?? undefined,
             end_date: end_date ?? undefined,
           })
@@ -782,16 +926,17 @@ export default function ComplaintsScreen() {
             isInfiniteScroll: false,
             category_id: selectedCategoryId ?? undefined,
             zone_id: undefined,
-            department_id: selectedDepartmentId ?? undefined,
+            circle_id: selectedCircleId ?? undefined,
+            division_id: selectedDivisionId ?? undefined,
             start_date: start_date ?? undefined,
             end_date: end_date ?? undefined,
           })
         );
         break;
       }
-      case 'department': {
-        setSelectedDepartment('');
-        setSelectedDepartmentId(null);
+      case 'circle': {
+        setSelectedCircle('');
+        setSelectedCircleId(null);
         dispatch(
           fetchComplaints({
             stats_filter,
@@ -803,7 +948,30 @@ export default function ComplaintsScreen() {
             isInfiniteScroll: false,
             category_id: selectedCategoryId ?? undefined,
             zone_id: selectedZoneId ?? undefined,
-            department_id: undefined,
+            circle_id: undefined,
+            division_id: selectedDivisionId ?? undefined,
+            start_date: start_date ?? undefined,
+            end_date: end_date ?? undefined,
+          })
+        );
+        break;
+      }
+      case 'division': {
+        setSelectedDivision('');
+        setSelectedDivisionId(null);
+        dispatch(
+          fetchComplaints({
+            stats_filter,
+            filter,
+            status: currentStatusParam || '',
+            page: 1,
+            limit: 10,
+            search: searchQuery,
+            isInfiniteScroll: false,
+            category_id: selectedCategoryId ?? undefined,
+            zone_id: selectedZoneId ?? undefined,
+            circle_id: selectedCircleId ?? undefined,
+            division_id: undefined,
             start_date: start_date ?? undefined,
             end_date: end_date ?? undefined,
           })
@@ -983,13 +1151,27 @@ export default function ComplaintsScreen() {
                 </TouchableOpacity>
               </View>
             )}
-            {selectedDepartment && (
+            {selectedCircle && (
               <View style={styles.filterTag}>
                 <Text style={styles.filterTagText} numberOfLines={1}>
-                  Department: {selectedDepartment}
+                  Circle: {selectedCircle}
                 </Text>
                 <TouchableOpacity
-                  onPress={() => handleRemoveFilter('department')}
+                  onPress={() => handleRemoveFilter('circle')}
+                  activeOpacity={0.6}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={16} color={COLORS.tagText} />
+                </TouchableOpacity>
+              </View>
+            )}
+            {selectedCircle && (
+              <View style={styles.filterTag}>
+                <Text style={styles.filterTagText} numberOfLines={1}>
+                  Division: {selectedDivision}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => handleRemoveFilter('division')}
                   activeOpacity={0.6}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
@@ -1084,11 +1266,13 @@ export default function ComplaintsScreen() {
         selectedStatuses={tempSelectedStatuses}
         selectedCategory={tempSelectedCategory}
         selectedZone={tempSelectedZone}
-        selectedDepartment={tempSelectedDepartment}
+        selectedCircle={tempSelectedCircle}
+        selectedDivision={tempSelectedDivision}
         onStatusToggle={handleStatusToggle}
         onCategoryPress={handleCategoryPress}
         onZonePress={handleZonePress}
-        onDepartmentPress={handleDepartmentPress}
+        onCirclePress={handleCirclePress}
+        onDivisionPress={handleDivisionPress}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
       />

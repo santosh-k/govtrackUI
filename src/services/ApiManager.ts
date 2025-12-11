@@ -15,14 +15,24 @@ import { Platform } from 'react-native';
 class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
-  private baseUrl = 'https://pwd.thesst.com/cms/api';
-  private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
-  private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
+  //private baseUrl = 'https://pwd.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
+
+  // For Staging Server
+  //private baseUrl = 'https://pwdstag.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwdstag.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwdstag.thesst.com/admin/pms/api';
+
+  // For Dev Server
+  private baseUrl = 'https://pwddev.thesst.com/cms/api';
+  private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
+  private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api';
 
   //For Local Server
   //private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
  // private baseUrl = 'http://192.168.1.58:3005/cms/api';
- // private adminPmsUrl = 'http://192.168.1.58:3005/admin/pms/api'
+ // private adminPmsUrl = 'http://192.168.1.58:3005/admin/pms/api';
 
 
   private constructor() {}

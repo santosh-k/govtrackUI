@@ -35,11 +35,14 @@ interface FilterBottomSheetProps {
   selectedStatuses: string[];
   selectedCategory: string;
   selectedZone: string;
-  selectedDepartment: string;
+  selectedCircle: string;
+  selectedDivision: string;
+  //selectedDepartment: string;
   onStatusToggle: (status: string) => void;
   onCategoryPress: () => void;
   onZonePress: () => void;
-  onDepartmentPress: () => void;
+  onCirclePress: () => void;
+  onDivisionPress: () => void;
   onApply: () => void;
   onReset: () => void;
 }
@@ -52,11 +55,13 @@ export default function FilterBottomSheet({
   selectedStatuses,
   selectedCategory,
   selectedZone,
-  selectedDepartment,
+  selectedCircle,
+  selectedDivision,
   onStatusToggle,
   onCategoryPress,
   onZonePress,
-  onDepartmentPress,
+  onCirclePress,
+  onDivisionPress,
   onApply,
   onReset,
 }: FilterBottomSheetProps) {
@@ -223,16 +228,30 @@ export default function FilterBottomSheet({
               </TouchableOpacity>
             </View>
 
-            {/* Department Section */}
+            {/* Circle Section */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Department</Text>
+              <Text style={styles.sectionTitle}>Circle</Text>
               <TouchableOpacity
                 style={styles.selectionRow}
-                onPress={onDepartmentPress}
+                onPress={onCirclePress}
                 activeOpacity={0.7}
               >
                 <Text style={styles.selectionLabel}>
-                  {selectedDepartment || 'All Departments'}
+                  {selectedCircle || 'All Circles'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+             {/* Division Section */}
+            <View style={styles.filterSection}>
+              <Text style={styles.sectionTitle}>Division</Text>
+              <TouchableOpacity
+                style={styles.selectionRow}
+                onPress={onDivisionPress}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.selectionLabel}>
+                  {selectedDivision || 'All Division'}
                 </Text>
                 <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
               </TouchableOpacity>

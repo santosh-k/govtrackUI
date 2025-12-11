@@ -29,6 +29,8 @@ export const fetchZones = createAsyncThunk(
       const response = await ApiManager.getInstance().fetchZones();
 
       if (response?.success && response?.data) {
+        console.log('Zone Fetched')
+        console.log(JSON.stringify(response))
         return response.data as Zone[];
       } else {
         return rejectWithValue(response?.message || 'Failed to fetch zones');
