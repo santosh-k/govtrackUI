@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import selectionData from '@/data/selectionData.json';
 
 const COLORS = {
@@ -84,12 +84,16 @@ const InlinePickerModal: React.FC<InlinePickerModalProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredData = data.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredData = data.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}>
       <View style={pickerStyles.overlay}>
         <View style={pickerStyles.container}>
           <View style={pickerStyles.header}>
@@ -110,39 +114,65 @@ const InlinePickerModal: React.FC<InlinePickerModalProps> = ({
             />
             {searchQuery !== '' && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             )}
           </View>
 
-          <ScrollView style={pickerStyles.list} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={pickerStyles.list}
+            showsVerticalScrollIndicator={false}>
             <TouchableOpacity
-              style={[pickerStyles.item, !currentValue && pickerStyles.itemSelected]}
+              style={[
+                pickerStyles.item,
+                !currentValue && pickerStyles.itemSelected,
+              ]}
               onPress={() => {
                 onSelect('');
                 onClose();
-              }}
-            >
-              <Text style={[pickerStyles.itemText, !currentValue && pickerStyles.itemTextSelected]}>
+              }}>
+              <Text
+                style={[
+                  pickerStyles.itemText,
+                  !currentValue && pickerStyles.itemTextSelected,
+                ]}>
                 All (No Filter)
               </Text>
-              {!currentValue && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
+              {!currentValue && (
+                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+              )}
             </TouchableOpacity>
-            {filteredData.map((item) => {
+            {filteredData.map(item => {
               const isSelected = item.name === currentValue;
               return (
                 <TouchableOpacity
                   key={item.id}
-                  style={[pickerStyles.item, isSelected && pickerStyles.itemSelected]}
+                  style={[
+                    pickerStyles.item,
+                    isSelected && pickerStyles.itemSelected,
+                  ]}
                   onPress={() => {
                     onSelect(item.name);
                     onClose();
-                  }}
-                >
-                  <Text style={[pickerStyles.itemText, isSelected && pickerStyles.itemTextSelected]}>
+                  }}>
+                  <Text
+                    style={[
+                      pickerStyles.itemText,
+                      isSelected && pickerStyles.itemTextSelected,
+                    ]}>
                     {item.name}
                   </Text>
-                  {isSelected && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -289,10 +319,14 @@ export default function ProjectFilterBottomSheet({
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
-  const openPicker = (title: string, dataKey: DataKey, field: keyof ProjectFilters) => {
+  const openPicker = (
+    title: string,
+    dataKey: DataKey,
+    field: keyof ProjectFilters,
+  ) => {
     const data = (selectionData[dataKey] || []) as SelectionItem[];
     setPickerTitle(title);
     setPickerData(data);
@@ -303,7 +337,7 @@ export default function ProjectFilterBottomSheet({
 
   const handlePickerSelect = (value: string) => {
     if (pickerField) {
-      setFilters((prev) => ({ ...prev, [pickerField]: value }));
+      setFilters(prev => ({...prev, [pickerField]: value}));
     }
   };
 
@@ -352,14 +386,14 @@ export default function ProjectFilterBottomSheet({
     value: string,
     title: string,
     dataKey: DataKey,
-    field: keyof ProjectFilters
+    field: keyof ProjectFilters,
   ) => (
     <TouchableOpacity
       style={styles.dropdownContainer}
       onPress={() => openPicker(title, dataKey, field)}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.dropdownText, !value && styles.dropdownTextPlaceholder]}>
+      activeOpacity={0.7}>
+      <Text
+        style={[styles.dropdownText, !value && styles.dropdownTextPlaceholder]}>
         {value || `Select ${label}`}
       </Text>
       <Ionicons name="chevron-down" size={18} color={COLORS.textSecondary} />
@@ -367,13 +401,16 @@ export default function ProjectFilterBottomSheet({
   );
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <Animated.View
-          style={[styles.bottomSheet, { transform: [{ translateY }] }]}
-        >
+          style={[styles.bottomSheet, {transform: [{translateY}]}]}>
           {/* Gesture area - only handle bar and header respond to drag gestures */}
           <View {...panResponder.panHandlers}>
             <View style={styles.handleBar} />
@@ -384,12 +421,16 @@ export default function ProjectFilterBottomSheet({
                 <Text style={styles.headerTitle}>Filter Projects</Text>
                 {getActiveFilterCount() > 0 && (
                   <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getActiveFilterCount()}</Text>
+                    <Text style={styles.filterCountText}>
+                      {getActiveFilterCount()}
+                    </Text>
                   </View>
                 )}
               </View>
               <View style={styles.headerRight}>
-                <TouchableOpacity onPress={handleReset} style={styles.resetHeaderButton}>
+                <TouchableOpacity
+                  onPress={handleReset}
+                  style={styles.resetHeaderButton}>
                   <Text style={styles.resetHeaderText}>Reset</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onClose} activeOpacity={0.6}>
@@ -400,93 +441,169 @@ export default function ProjectFilterBottomSheet({
           </View>
 
           <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
+            style={{flex: 1}}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
+              keyboardShouldPersistTaps="handled">
               {/* Organizational Section */}
               <View style={styles.sectionHeader}>
-                <Ionicons name="business-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="business-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.sectionTitle}>Organizational</Text>
               </View>
               <View style={styles.filterSection}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Department</Text>
-                  {renderDropdown('Department', filters.department, 'Select Department', 'departments', 'department')}
+                  {renderDropdown(
+                    'Department',
+                    filters.department,
+                    'Select Department',
+                    'departments',
+                    'department',
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Zone</Text>
-                  {renderDropdown('Zone', filters.zone, 'Select Zone', 'zones', 'zone')}
+                  {renderDropdown(
+                    'Zone',
+                    filters.zone,
+                    'Select Zone',
+                    'zones',
+                    'zone',
+                  )}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Circle</Text>
-                  {renderDropdown('Circle', filters.circle, 'Select Circle', 'circles', 'circle')}
+                  {renderDropdown(
+                    'Circle',
+                    filters.circle,
+                    'Select Circle',
+                    'circles',
+                    'circle',
+                  )}
                 </View>
 
                 <View style={styles.rowInputs}>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Division</Text>
-                    {renderDropdown('Division', filters.division, 'Select Division', 'divisions', 'division')}
+                    {renderDropdown(
+                      'Division',
+                      filters.division,
+                      'Select Division',
+                      'divisions',
+                      'division',
+                    )}
                   </View>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Sub-Division</Text>
-                    {renderDropdown('Sub-Division', filters.subDivision, 'Select Sub-Division', 'subDivisions', 'subDivision')}
+                    {renderDropdown(
+                      'Sub-Division',
+                      filters.subDivision,
+                      'Select Sub-Division',
+                      'subDivisions',
+                      'subDivision',
+                    )}
                   </View>
                 </View>
               </View>
 
               {/* Location Section */}
               <View style={styles.sectionHeader}>
-                <Ionicons name="location-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="location-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.sectionTitle}>Location / Sector</Text>
               </View>
               <View style={styles.filterSection}>
                 <View style={styles.rowInputs}>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Sector</Text>
-                    {renderDropdown('Sector', filters.sector, 'Select Sector', 'sectors', 'sector')}
+                    {renderDropdown(
+                      'Sector',
+                      filters.sector,
+                      'Select Sector',
+                      'sectors',
+                      'sector',
+                    )}
                   </View>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Sub-Sector</Text>
-                    {renderDropdown('Sub-Sector', filters.subSector, 'Select Sub-Sector', 'subSectors', 'subSector')}
+                    {renderDropdown(
+                      'Sub-Sector',
+                      filters.subSector,
+                      'Select Sub-Sector',
+                      'subSectors',
+                      'subSector',
+                    )}
                   </View>
                 </View>
               </View>
 
               {/* Attributes Section */}
               <View style={styles.sectionHeader}>
-                <Ionicons name="options-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="options-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
                 <Text style={styles.sectionTitle}>Project Attributes</Text>
               </View>
               <View style={styles.filterSection}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Working Status</Text>
-                  {renderDropdown('Status', filters.status, 'Select Status', 'projectStatuses', 'status')}
+                  {renderDropdown(
+                    'Status',
+                    filters.status,
+                    'Select Status',
+                    'projectStatuses',
+                    'status',
+                  )}
                 </View>
 
                 <View style={styles.rowInputs}>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Funding Type</Text>
-                    {renderDropdown('Funding', filters.fundingType, 'Select Funding Type', 'fundingTypes', 'fundingType')}
+                    {renderDropdown(
+                      'Funding',
+                      filters.fundingType,
+                      'Select Funding Type',
+                      'fundingTypes',
+                      'fundingType',
+                    )}
                   </View>
                   <View style={[styles.inputGroup, styles.halfWidth]}>
                     <Text style={styles.inputLabel}>Work Type</Text>
-                    {renderDropdown('Work Type', filters.workType, 'Select Work Type', 'workTypes', 'workType')}
+                    {renderDropdown(
+                      'Work Type',
+                      filters.workType,
+                      'Select Work Type',
+                      'workTypes',
+                      'workType',
+                    )}
                   </View>
                 </View>
               </View>
 
               {/* Budget Section */}
               <View style={styles.sectionHeader}>
-                <Ionicons name="cash-outline" size={18} color={COLORS.textSecondary} />
-                <Text style={styles.sectionTitle}>Budget Range (in Crores)</Text>
+                <Ionicons
+                  name="cash-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.sectionTitle}>
+                  Budget Range (in Crores)
+                </Text>
               </View>
               <View style={styles.filterSection}>
                 <View style={styles.rowInputs}>
@@ -499,7 +616,9 @@ export default function ProjectFilterBottomSheet({
                         placeholder="0"
                         placeholderTextColor={COLORS.textPlaceholder}
                         value={filters.budgetMin}
-                        onChangeText={(text) => setFilters((prev) => ({ ...prev, budgetMin: text }))}
+                        onChangeText={text =>
+                          setFilters(prev => ({...prev, budgetMin: text}))
+                        }
                         keyboardType="numeric"
                       />
                       <Text style={styles.currencySuffix}>Cr</Text>
@@ -514,7 +633,9 @@ export default function ProjectFilterBottomSheet({
                         placeholder="100"
                         placeholderTextColor={COLORS.textPlaceholder}
                         value={filters.budgetMax}
-                        onChangeText={(text) => setFilters((prev) => ({ ...prev, budgetMax: text }))}
+                        onChangeText={text =>
+                          setFilters(prev => ({...prev, budgetMax: text}))
+                        }
                         keyboardType="numeric"
                       />
                       <Text style={styles.currencySuffix}>Cr</Text>
@@ -527,7 +648,10 @@ export default function ProjectFilterBottomSheet({
 
           {/* Apply Button */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.applyButton} onPress={handleApply} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={handleApply}
+              activeOpacity={0.8}>
               <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
               <Text style={styles.applyButtonText}>Apply Filters</Text>
             </TouchableOpacity>
@@ -568,7 +692,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
+        shadowOffset: {width: 0, height: -4},
         shadowOpacity: 0.15,
         shadowRadius: 12,
       },
@@ -744,7 +868,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.3,
         shadowRadius: 8,
       },

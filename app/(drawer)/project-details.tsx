@@ -34,6 +34,9 @@ import SpeedDialFAB from '@/components/SpeedDialFAB';
 import AddMediaSheet from '@/components/AddMediaSheet';
 import moment from 'moment';
 import Video from 'react-native-video';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import {UrlObject} from 'expo-router/build/global-state/routeInfo';
 
 const {width, height} = Dimensions.get('window');
 
@@ -289,6 +292,10 @@ export default function ProjectDetailsScreen() {
   const [newStatus, setNewStatus] = useState<ProjectStatus>('On Track');
   const [statusComment, setStatusComment] = useState('');
   const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const [showInspectionViewer, setShowInspectionViewer] = useState(false);
+  const [showMediaBootleneckViewer, setShowMediaBottleNeckViewer] =
+    useState(false);
+  const [inspectionUrl, setInspectionUrl] = useState(null);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [showAddInspectionModal, setShowAddInspectionModal] = useState(false);
   const [showAddProgressModal, setShowAddProgressModal] = useState(false);
@@ -395,8 +402,8 @@ export default function ProjectDetailsScreen() {
       setProjectNameItem(params?.projectName as string);
       setProjectCodeItem(params?.projectCode as string);
       if (!projectIdD || projectIdD === 'undefined') return;
-      fetchProjectDetails(projectIdD, 'Overview');
-    }, [projectIdD]),
+      fetchProjectDetails(projectIdD, activeTab);
+    }, [projectIdD, activeTab]),
   );
 
   const fetchProjectDetails = async (id: string, tab: string) => {
@@ -480,6 +487,9 @@ export default function ProjectDetailsScreen() {
     setActiveTab(tab);
     scrollTabIntoView(index);
     fetchProjectDetails(projectIdD, tab);
+    if (tab === 'Media') {
+      setMediaFilter('Photos');
+    }
     // fetchProjectDetailsMedia(projectIdD, tab, 'image');
   };
 
@@ -1282,7 +1292,7 @@ export default function ProjectDetailsScreen() {
           console.log('PDF Downloaded:', localPath);
 
           // Download file
-          FileViewer.open(localPath)
+          FileViewer.open(localPath, {showOpenWithDialog: true})
             .then(() => console.log('File opened'))
             .catch(err => console.log('Open error:', err));
         }
@@ -1786,9 +1796,7 @@ export default function ProjectDetailsScreen() {
                   styles.mediaThumbnail,
                   {
                     backgroundColor:
-                      item?.type === 'video' && item?.type === 'document'
-                        ? '#000000'
-                        : '#ffffff',
+                      item?.type === 'video' ? '#000000' : '#ffffff',
                     margin: 2,
                     borderRadius: 8,
                     borderWidth: 1,
@@ -1896,10 +1904,11 @@ export default function ProjectDetailsScreen() {
     setShowInspectionDetails(true);
   };
 
-  const handleInspectionMediaPress = (media: MediaItem[], index: number) => {
-    setViewerMediaItems(media);
-    setSelectedMediaIndex(index);
-    setShowMediaViewer(true);
+  const handleInspectionMediaPress = media => {
+    // setViewerMediaItems(media);
+    setInspectionUrl(media);
+    // setSelectedMediaIndex(index);
+    setShowInspectionViewer(true);
   };
 
   const getPriorityColor = (priority: Priority) => {
@@ -1923,23 +1932,18 @@ export default function ProjectDetailsScreen() {
   const handleBottleneckMediaPress = (media: MediaItem[], index: number) => {
     setViewerMediaItems(media);
     setSelectedMediaIndex(index);
-    setShowMediaViewer(true);
+    setShowMediaBottleNeckViewer(true);
   };
 
   const renderInspectionCard = ({item}: {item: Inspection}) => {
-    const statusColors = getInspectionStatusColor(item.status);
+    // const statusColors = getInspectionStatusColor(item.status);
+
     const descriptionPreview =
       item?.description?.length > 80
         ? item?.description?.substring(0, 80) + '...'
         : item?.description;
 
     // Filter only visual media (images and videos) for thumbnail preview
-    const visualMedia = item?.media?.filter(
-      m => m.type === 'image' || m.type === 'video',
-    );
-    const hasMedia = visualMedia?.length > 0;
-    const displayMedia = visualMedia?.slice(0, 3);
-    const remainingCount = visualMedia?.length - 3;
 
     return (
       <TouchableOpacity
@@ -1954,12 +1958,31 @@ export default function ProjectDetailsScreen() {
           <View
             style={[
               styles.inspectionStatusBadge,
-              {backgroundColor: statusColors.bg},
+              {
+                backgroundColor:
+                  item?.status === 'COMPLETED'
+                    ? '#E8F5E9'
+                    : item?.status === 'SCHEDULED'
+                    ? '#FFEBEE'
+                    : item?.status === 'PASSED'
+                    ? '#FFF3E0'
+                    : '#E8F5E9',
+              },
             ]}>
             <Text
               style={[
                 styles.inspectionStatusText,
-                {color: statusColors.text, textTransform: 'capitalize'},
+                {
+                  color:
+                    item?.status === 'COMPLETED'
+                      ? '#2E7D32'
+                      : item?.status === 'SCHEDULED'
+                      ? '#C62828'
+                      : item?.status === 'PASSED'
+                      ? '#E65100'
+                      : '#2E7D32',
+                  textTransform: 'capitalize',
+                },
               ]}>
               {item?.status}
             </Text>
@@ -1974,48 +1997,54 @@ export default function ProjectDetailsScreen() {
           <Text style={styles.inspectionDescription}>{descriptionPreview}</Text>
         )}
 
-        {/* Media Thumbnail Preview Gallery */}
-        {hasMedia && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.inspectionMediaPreview}
-            contentContainerStyle={styles.inspectionMediaPreviewContent}>
-            {displayMedia.map((media, index) => (
-              <View key={media.id} style={styles.inspectionThumbnailWrapper}>
-                <Image
-                  source={{
-                    uri: media.type === 'video' ? media.thumbnail : media.uri,
-                  }}
-                  style={styles.inspectionThumbnail}
-                />
-                {media.type === 'video' && (
+        {item?.document != null && (
+          <View style={styles.inspectionThumbnailWrapper}>
+            <Image
+              source={{
+                uri: item?.document?.url,
+              }}
+              resizeMode="contain"
+              style={[
+                styles.inspectionThumbnail,
+                {
+                  borderWidth: 1,
+                  borderColor: '#EAEAEA',
+                },
+              ]}
+            />
+            {/* {media.type === 'video' && (
                   <View style={styles.thumbnailPlayIcon}>
                     <Ionicons name="play-circle" size={24} color="white" />
                   </View>
-                )}
-              </View>
-            ))}
-            {remainingCount > 0 && (
-              <View style={styles.inspectionThumbnailWrapper}>
-                <View style={styles.remainingCountOverlay}>
-                  <Text style={styles.remainingCountText}>
-                    +{remainingCount}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </ScrollView>
+                )} */}
+          </View>
         )}
 
         {/* Inspector Details */}
-        {/* <View style={styles.inspectorSection}>
-          <Text style={styles.inspectorName}>
-            by <Text style={styles.inspectorNameBold}>{item.inspector}</Text>
-          </Text>
-          <Text style={styles.inspectorMeta}>{item.inspectorPosition}</Text>
-          <Text style={styles.inspectorMeta}>{item.inspectorDepartment}</Text>
-        </View> */}
+        {item?.inspector != null && (
+          <View
+            style={[
+              styles.inspectorSection,
+              {
+                marginTop: item?.document != null ? 10 : 0,
+              },
+            ]}>
+            <Text style={styles.inspectorName}>
+              by{' '}
+              <Text style={styles.inspectorNameBold}>
+                {item?.inspector?.name}
+              </Text>
+            </Text>
+            {item?.designation != null && (
+              <Text style={styles.inspectorMeta}>
+                {item?.designation?.name}
+              </Text>
+            )}
+            {item?.department != null && (
+              <Text style={styles.inspectorMeta}>{item?.department?.name}</Text>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -2033,16 +2062,14 @@ export default function ProjectDetailsScreen() {
   );
 
   const renderBottleneckCard = ({item}: {item: Bottleneck}) => {
-    const priorityColors = getPriorityColor(item.priority);
+    // const priorityColors = getPriorityColor(item.priority);
     const descriptionPreview =
-      item.description.length > 80
-        ? item.description.substring(0, 80) + '...'
-        : item.description;
+      item?.description.length > 80
+        ? item?.description.substring(0, 80) + '...'
+        : item?.description;
 
-    // Filter only visual media (images and videos) for thumbnail preview
-    const visualMedia = item.media.filter(
-      m => m.type === 'image' || m.type === 'video',
-    );
+    // // Filter only visual media (images and videos) for thumbnail preview
+    const visualMedia = item?.images;
     const hasMedia = visualMedia.length > 0;
     const displayMedia = visualMedia.slice(0, 3);
     const remainingCount = visualMedia.length - 3;
@@ -2054,23 +2081,45 @@ export default function ProjectDetailsScreen() {
         activeOpacity={0.7}>
         {/* Header with Date and Priority */}
         <View style={styles.bottleneckCardHeader}>
-          <Text style={styles.bottleneckDate}>{item.date}</Text>
+          <Text style={styles.bottleneckDate}>
+            {' '}
+            {moment(item?.date).format('DD-MMM-YY')}
+          </Text>
           <View
             style={[
               styles.priorityBadge,
-              {backgroundColor: priorityColors.bg},
+              {
+                backgroundColor:
+                  item?.status === 'resolved' ? '#53ad4a' : '#ff9704',
+                paddingHorizontal: 0,
+              },
             ]}>
-            <Text style={[styles.priorityText, {color: priorityColors.text}]}>
-              {item.priority}
+            <Text
+              style={[
+                styles.priorityText,
+                {
+                  color: '#ffffff',
+                  textTransform: 'capitalize',
+                  paddingHorizontal: 12,
+                },
+              ]}>
+              {item?.status}
             </Text>
           </View>
         </View>
 
-        {/* Title/Heading */}
-        <Text style={styles.bottleneckTitle}>{item.title}</Text>
+        <Text
+          style={[
+            styles.bottleneckTitle,
+            {
+              textTransform: 'capitalize',
+            },
+          ]}>{`${item?.severity}`}</Text>
 
         {/* Description Preview */}
-        <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
+        {item?.description != null && (
+          <Text style={styles.bottleneckDescription}>{descriptionPreview}</Text>
+        )}
 
         {/* Media Thumbnail Preview Gallery */}
         {hasMedia && (
@@ -2080,18 +2129,20 @@ export default function ProjectDetailsScreen() {
             style={styles.bottleneckMediaPreview}
             contentContainerStyle={styles.bottleneckMediaPreviewContent}>
             {displayMedia.map((media, index) => (
-              <View key={media.id} style={styles.bottleneckThumbnailWrapper}>
+              <View key={media} style={styles.bottleneckThumbnailWrapper}>
                 <Image
                   source={{
-                    uri: media.type === 'video' ? media.thumbnail : media.uri,
+                    uri: media,
                   }}
-                  style={styles.bottleneckThumbnail}
+                  resizeMode="contain"
+                  style={[
+                    styles.bottleneckThumbnail,
+                    {
+                      borderWidth: 1,
+                      borderColor: '#EAEAEA',
+                    },
+                  ]}
                 />
-                {media.type === 'video' && (
-                  <View style={styles.thumbnailPlayIcon}>
-                    <Ionicons name="play-circle" size={24} color="white" />
-                  </View>
-                )}
               </View>
             ))}
             {remainingCount > 0 && (
@@ -2107,13 +2158,22 @@ export default function ProjectDetailsScreen() {
         )}
 
         {/* Reporter Details */}
-        <View style={styles.reporterSection}>
-          <Text style={styles.reporterName}>
-            by <Text style={styles.reporterNameBold}>{item.reportedBy}</Text>
-          </Text>
-          <Text style={styles.reporterMeta}>{item.reporterPosition}</Text>
-          <Text style={styles.reporterMeta}>{item.reporterDepartment}</Text>
-        </View>
+        {item?.reportedBy != null && (
+          <View style={styles.reporterSection}>
+            <Text style={styles.reporterName}>
+              by{' '}
+              <Text style={styles.reporterNameBold}>
+                {item?.reportedBy?.name}
+              </Text>
+            </Text>
+            <Text style={styles.reporterMeta}>
+              {item?.reportedBy?.designation}
+            </Text>
+            <Text style={styles.reporterMeta}>
+              {item?.reportedBy?.department}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -2121,7 +2181,7 @@ export default function ProjectDetailsScreen() {
   const renderBottlenecksTab = () => (
     <View style={styles.tabContent}>
       <FlatList
-        data={bottlenecks}
+        data={projectData?.items}
         keyExtractor={item => item.id}
         renderItem={renderBottleneckCard}
         contentContainerStyle={styles.listContent}
@@ -2193,7 +2253,8 @@ export default function ProjectDetailsScreen() {
                     <Text style={styles.activityAuthor}>
                       {item?.changedBy?.name}
                     </Text>{' '}
-                    ({item?.designation}) on {formattedDate} at {formattedTime}
+                    ({item?.changedBy?.designation}) on {formattedDate} at{' '}
+                    {formattedTime}
                   </Text>
                 </View>
               </View>
@@ -2567,18 +2628,28 @@ export default function ProjectDetailsScreen() {
                         style={[
                           styles.inspectionStatusBadge,
                           {
-                            backgroundColor: getInspectionStatusColor(
-                              selectedInspection.status,
-                            ).bg,
+                            backgroundColor:
+                              selectedInspection.status === 'COMPLETED'
+                                ? '#E8F5E9'
+                                : selectedInspection.status === 'SCHEDULED'
+                                ? '#FFEBEE'
+                                : selectedInspection.status === 'PASSED'
+                                ? '#FFF3E0'
+                                : '#E8F5E9',
                           },
                         ]}>
                         <Text
                           style={[
                             styles.inspectionStatusText,
                             {
-                              color: getInspectionStatusColor(
-                                selectedInspection.status,
-                              ).text,
+                              color:
+                                selectedInspection.status === 'COMPLETED'
+                                  ? '#2E7D32'
+                                  : selectedInspection.status === 'SCHEDULED'
+                                  ? '#C62828'
+                                  : selectedInspection.status === 'PASSED'
+                                  ? '#E65100'
+                                  : '#2E7D32',
                               textTransform: 'capitalize',
                             },
                           ]}>
@@ -2588,6 +2659,24 @@ export default function ProjectDetailsScreen() {
                     </View>
                   </View>
 
+                  {selectedInspection?.inspectionType != null && (
+                    <Text
+                      style={[
+                        styles.inspectionDetailsDate,
+                        {
+                          marginBottom: 20,
+                        },
+                      ]}>
+                      {'Inspection Type: '}
+                      <Text
+                        style={{
+                          fontWeight: '400',
+                          textTransform: 'capitalize',
+                        }}>
+                        {selectedInspection?.inspectionType}
+                      </Text>
+                    </Text>
+                  )}
                   {/* Description Section */}
                   {selectedInspection.description != null && (
                     <View style={styles.inspectionDetailsSection}>
@@ -2601,87 +2690,106 @@ export default function ProjectDetailsScreen() {
                   )}
 
                   {/* Media Gallery Section */}
-                  {selectedInspection?.media?.length > 0 && (
+                  {selectedInspection?.document != null && (
                     <View style={styles.inspectionDetailsSection}>
                       <Text style={styles.inspectionDetailsSectionTitle}>
                         Attached Media
                       </Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.inspectionMediaGallery}>
-                        {selectedInspection?.media?.map((media, index) => (
-                          <TouchableOpacity
-                            key={media?.id}
-                            style={styles.inspectionMediaThumbnail}
-                            onPress={() =>
-                              handleInspectionMediaPress(
-                                selectedInspection?.media,
-                                index,
-                              )
-                            }
-                            activeOpacity={0.7}>
-                            {media?.type === 'document' ? (
-                              <View style={styles.documentThumbnail}>
-                                <Ionicons
-                                  name="document-text"
-                                  size={40}
-                                  color={COLORS.primary}
-                                />
-                                <Text
-                                  style={styles.documentFilename}
-                                  numberOfLines={2}>
-                                  {media?.filename || 'Document'}
-                                </Text>
-                              </View>
-                            ) : (
-                              <>
-                                <Image
-                                  source={{
-                                    uri:
-                                      media?.type === 'video'
-                                        ? media?.thumbnail
-                                        : media?.uri,
-                                  }}
-                                  style={styles.inspectionMediaThumbnailImage}
-                                />
-                                {media?.type === 'video' && (
-                                  <View style={styles.videoPlayIcon}>
-                                    <Ionicons
-                                      name="play-circle"
-                                      size={32}
-                                      color="white"
-                                    />
-                                  </View>
-                                )}
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.inspectionMediaThumbnail,
+                          {
+                            borderWidth: 1,
+                            borderColor: '#EAEAEA',
+                          },
+                        ]}
+                        onPress={() =>
+                          handleInspectionMediaPress(
+                            selectedInspection?.document?.url,
+                          )
+                        }
+                        activeOpacity={0.7}>
+                        <Image
+                          source={{
+                            uri: selectedInspection?.document?.url,
+                          }}
+                          resizeMode="contain"
+                          style={[styles.inspectionMediaThumbnailImage, {}]}
+                        />
+                      </TouchableOpacity>
                     </View>
                   )}
 
-                  {/* Inspector Section */}
+                  {/* {/* Inspector Section  */}
                   {selectedInspection?.inspector != null && (
-                    <View style={styles.inspectionDetailsSection}>
-                      <Text style={styles.inspectionDetailsSectionTitle}>
+                    <View
+                      style={[
+                        styles.inspectionDetailsSection,
+                        {
+                          marginTop:
+                            selectedInspection?.document != null ? 10 : 0,
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.inspectionDetailsSectionTitle,
+                          {
+                            marginBottom: 5,
+                          },
+                        ]}>
                         Inspector
                       </Text>
                       <Text style={styles.inspectionDetailsInspectorName}>
-                        {selectedInspection.inspector}
+                        {selectedInspection.inspector?.name}
                       </Text>
-                      <Text style={styles.inspectionDetailsMeta}>
-                        {selectedInspection.inspectorPosition}
-                      </Text>
-                      <Text style={styles.inspectionDetailsMeta}>
-                        {selectedInspection.inspectorDepartment}
-                      </Text>
+                      {selectedInspection?.designation != null && (
+                        <Text style={styles.inspectionDetailsMeta}>
+                          {selectedInspection?.designation?.name}
+                        </Text>
+                      )}
+                      {selectedInspection?.department != null && (
+                        <Text style={styles.inspectionDetailsMeta}>
+                          {selectedInspection.department?.name}
+                        </Text>
+                      )}
                     </View>
                   )}
                 </>
               )}
             </ScrollView>
+
+            <Modal
+              visible={showInspectionViewer}
+              transparent={false}
+              animationType="fade"
+              onRequestClose={() => setShowInspectionViewer(false)}>
+              <GestureHandlerRootView style={{flex: 1}}>
+                <View style={styles.mediaViewerContainer}>
+                  <TouchableOpacity
+                    style={styles.closeMediaButton}
+                    onPress={() => setShowInspectionViewer(false)}>
+                    <Ionicons name="close" size={32} color="white" />
+                  </TouchableOpacity>
+
+                  <View style={styles.mediaViewerItem}>
+                    {/* {item?.type === 'image' ? ( */}
+                    <ZoomableImage uri={inspectionUrl} />
+                    {/* ) : (
+                    <>
+                      <Video
+                        source={{
+                          uri: item?.url,
+                        }}
+                        style={{width: '100%', aspectRatio: 16 / 9}}
+                        controls={false}
+                      />
+                    </>
+                  )} */}
+                  </View>
+                </View>
+              </GestureHandlerRootView>
+            </Modal>
           </View>
         </View>
       </Modal>
@@ -2713,44 +2821,52 @@ export default function ProjectDetailsScreen() {
                   <View style={styles.bottleneckDetailsSummary}>
                     <View style={styles.bottleneckDetailsRow}>
                       <Text style={styles.bottleneckDetailsDate}>
-                        {selectedBottleneck.date}
+                        {moment(selectedBottleneck?.date).format('DD-MMM-YY')}
                       </Text>
                       <View
                         style={[
                           styles.priorityBadge,
                           {
-                            backgroundColor: getPriorityColor(
-                              selectedBottleneck.priority,
-                            ).bg,
+                            backgroundColor:
+                              selectedBottleneck?.status === 'resolved'
+                                ? '#53ad4a'
+                                : '#ff9704',
+                            paddingHorizontal: 0,
                           },
                         ]}>
                         <Text
                           style={[
                             styles.priorityText,
                             {
-                              color: getPriorityColor(
-                                selectedBottleneck.priority,
-                              ).text,
+                              color: '#ffffff',
+                              textTransform: 'capitalize',
+                              paddingHorizontal: 12,
                             },
                           ]}>
-                          {selectedBottleneck.priority}
+                          {selectedBottleneck.status}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  {/* Description Section */}
+                  <Text
+                    style={[
+                      styles.bottleneckTitle,
+                      {
+                        textTransform: 'capitalize',
+                      },
+                    ]}>{`${selectedBottleneck?.severity}`}</Text>
+
                   <View style={styles.bottleneckDetailsSection}>
                     <Text style={styles.bottleneckDetailsSectionTitle}>
                       Description
                     </Text>
                     <Text style={styles.bottleneckDetailsDescription}>
-                      {selectedBottleneck.description}
+                      {selectedBottleneck?.description}
                     </Text>
                   </View>
 
-                  {/* Media Gallery Section */}
-                  {selectedBottleneck.media.length > 0 && (
+                  {selectedBottleneck?.images?.length > 0 && (
                     <View style={styles.bottleneckDetailsSection}>
                       <Text style={styles.bottleneckDetailsSectionTitle}>
                         Attached Media
@@ -2759,76 +2875,111 @@ export default function ProjectDetailsScreen() {
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         style={styles.bottleneckMediaGallery}>
-                        {selectedBottleneck.media.map((media, index) => (
+                        {selectedBottleneck?.images?.map((media, index) => (
                           <TouchableOpacity
-                            key={media.id}
-                            style={styles.bottleneckMediaThumbnail}
+                            key={media}
+                            style={[
+                              styles.bottleneckMediaThumbnail,
+                              {
+                                borderWidth: 1,
+                                borderColor: '#EAEAEA',
+                              },
+                            ]}
                             onPress={() =>
                               handleBottleneckMediaPress(
-                                selectedBottleneck.media,
+                                selectedBottleneck?.images,
                                 index,
                               )
                             }
                             activeOpacity={0.7}>
-                            {media.type === 'document' ? (
-                              <View style={styles.documentThumbnail}>
-                                <Ionicons
-                                  name="document-text"
-                                  size={40}
-                                  color={COLORS.primary}
-                                />
-                                <Text
-                                  style={styles.documentFilename}
-                                  numberOfLines={2}>
-                                  {media.filename || 'Document'}
-                                </Text>
-                              </View>
-                            ) : (
-                              <>
-                                <Image
-                                  source={{
-                                    uri:
-                                      media.type === 'video'
-                                        ? media.thumbnail
-                                        : media.uri,
-                                  }}
-                                  style={styles.bottleneckMediaThumbnailImage}
-                                />
-                                {media.type === 'video' && (
-                                  <View style={styles.videoPlayIcon}>
-                                    <Ionicons
-                                      name="play-circle"
-                                      size={32}
-                                      color="white"
-                                    />
-                                  </View>
-                                )}
-                              </>
-                            )}
+                            <Image
+                              source={{
+                                uri: media,
+                              }}
+                              resizeMode="contain"
+                              style={styles.bottleneckMediaThumbnailImage}
+                            />
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
                     </View>
                   )}
 
-                  {/* Reporter Section */}
-                  <View style={styles.bottleneckDetailsSection}>
-                    <Text style={styles.bottleneckDetailsSectionTitle}>
-                      Reported By
-                    </Text>
-                    <Text style={styles.bottleneckDetailsReporterName}>
-                      {selectedBottleneck.reportedBy}
-                    </Text>
-                    <Text style={styles.bottleneckDetailsMeta}>
-                      {selectedBottleneck.reporterPosition}
-                    </Text>
-                    <Text style={styles.bottleneckDetailsMeta}>
-                      {selectedBottleneck.reporterDepartment}
-                    </Text>
-                  </View>
+                  {selectedBottleneck?.reportedBy != null && (
+                    <View style={styles.bottleneckDetailsSection}>
+                      <Text style={styles.bottleneckDetailsSectionTitle}>
+                        Reported By
+                      </Text>
+                      <Text style={styles.bottleneckDetailsReporterName}>
+                        {selectedBottleneck?.reportedBy?.name}
+                      </Text>
+                      <Text style={styles.bottleneckDetailsMeta}>
+                        {selectedBottleneck?.reportedBy?.designation}
+                      </Text>
+                      <Text style={styles.bottleneckDetailsMeta}>
+                        {selectedBottleneck?.reportedBy?.department}
+                      </Text>
+                    </View>
+                  )}
+
+                  {selectedBottleneck?.resolution === 'Fixed' && (
+                    <>
+                      {selectedBottleneck?.resolvedBy != null && (
+                        <View style={styles.bottleneckDetailsSection}>
+                          <Text style={styles.bottleneckDetailsSectionTitle}>
+                            Resolved By
+                          </Text>
+                          <Text style={styles.bottleneckDetailsReporterName}>
+                            {selectedBottleneck?.resolvedBy?.name}
+                          </Text>
+                          <Text style={styles.bottleneckDetailsMeta}>
+                            {selectedBottleneck?.resolvedBy?.designation}
+                          </Text>
+                          <Text style={styles.bottleneckDetailsMeta}>
+                            {selectedBottleneck?.resolvedBy?.department}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </ScrollView>
+
+            <Modal
+              visible={showMediaBootleneckViewer}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowMediaBottleNeckViewer(false)}>
+              <GestureHandlerRootView style={{flex: 1}}>
+                <View style={styles.mediaViewerContainer}>
+                  <TouchableOpacity
+                    style={styles.closeMediaButton}
+                    onPress={() => setShowMediaBottleNeckViewer(false)}>
+                    <Ionicons name="close" size={32} color="white" />
+                  </TouchableOpacity>
+
+                  <FlatList
+                    data={viewerMediaItems?.length > 0 ? viewerMediaItems : []}
+                    horizontal
+                    pagingEnabled
+                    initialScrollIndex={selectedMediaIndex}
+                    getItemLayout={(data, index) => ({
+                      length: width,
+                      offset: width * index,
+                      index,
+                    })}
+                    renderItem={({item}) => (
+                      <View style={styles.mediaViewerItem}>
+                        <ZoomableImage uri={item} />
+                      </View>
+                    )}
+                    keyExtractor={item => item.id}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </View>
+              </GestureHandlerRootView>
+            </Modal>
           </View>
         </View>
       </Modal>

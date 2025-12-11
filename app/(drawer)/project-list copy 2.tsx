@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,6 @@ import {
   Platform,
   TouchableWithoutFeedback,
   ActivityIndicator,
-  Modal,
-  Pressable,
-  Animated,
-  Dimensions,
-  PanResponder,
-  KeyboardAvoidingView,
-  ScrollView,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {router, useLocalSearchParams} from 'expo-router';
@@ -26,24 +19,15 @@ import {useSelector} from 'react-redux';
 import {RootState} from '@/src/store';
 import moment from 'moment';
 import ProjectFilterBottomSheet, {
-  InlinePickerModal,
   ProjectFilters,
 } from '@/components/ProjectFilterBottomSheet';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SHEET_HEIGHT = SCREEN_HEIGHT * 0.85;
 const COLORS = {
   background: '#F5F5F5',
   cardBackground: '#FFFFFF',
-  inputBackground: '#F8F8F8',
-
   text: '#1A1A1A',
-  overlay: 'rgba(0, 0, 0, 0.5)',
   saffron: '#FF9800',
   textSecondary: '#666666',
-  sectionHeader: '#F5F5F5',
-  textPlaceholder: '#BDBDBD',
-
   textLight: '#999999',
   border: '#E0E0E0',
   progressBackground: '#E8E8E8',
@@ -170,7 +154,6 @@ interface ProjectCardProps {
 const ProjectCard: React.FC<ProjectCardProps> = ({project, onPress}) => {
   // Ensure statusColors receives a valid ProjectStatus (fallback to 'On Track')
   // (project.status may be undefined coming from different data sources)
-
   const statusColors = getStatusColors(
     (project.status as ProjectStatus) ?? 'On Track',
   );
@@ -231,11 +214,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({project, onPress}) => {
                   marginHorizontal: 10,
                 },
               ]}>
-              {project?.status === 'ee_approval'
-                ? 'ee approval'
-                : project?.status === 'aa_approval'
-                ? 'aa approval'
-                : project?.status}
+              {project?.status}
             </Text>
           </View>
         )}
@@ -666,56 +645,6 @@ export default function ProjectListScreen() {
   const params = useLocalSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [isDropDownVisible, setIsDropDownVisible] = useState(false);
-  const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-
-  useEffect(() => {
-    if (isFilterVisible) {
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
-      Animated.timing(translateY, {
-        toValue: SHEET_HEIGHT,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isFilterVisible, translateY]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 150 || gestureState.vy > 0.5) {
-          Animated.timing(translateY, {
-            toValue: SHEET_HEIGHT,
-            duration: 250,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsFilterVisible(false);
-          });
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 11,
-          }).start();
-        }
-      },
-    }),
-  ).current;
-
   const [activeFilters, setActiveFilters] =
     useState<ProjectFilters>(emptyFilters);
 
@@ -729,46 +658,10 @@ export default function ProjectListScreen() {
 
   const [projects, setProjects] = useState<any[]>([]);
   const [filteredProject, setFilteredProjects] = useState<any[]>([]);
-  const [filterDepartmentList, setFilterDepartmentList] = useState([]);
-  const [filterZoneList, setFilterZoneList] = useState([]);
-  const [filterCircleList, setFilterCircleList] = useState([]);
-  const [filterDivisionList, setFilterDivisionList] = useState([]);
-  const [filterSubDivisionList, setFilterSubDivisionList] = useState([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [isLoading, setIsLoading] = useState(false);
   const [isListEnd, setIsListEnd] = useState(false); // no more data
-  const [pickerTitle, setPickerTitle] = useState('');
-  const [filterData, setFilterData] = useState([]);
-  const [pickerVisible, setPickerVisible] = useState(false);
-
-  const [selectedId, setSelectedId] = useState(null);
-  const [selectedName, setSelectedName] = useState(null);
-  const [isDisabled, setIsDisabled] = useState(false);
-
-  const [selectedZoneId, setSelectedZoneId] = useState(null);
-  const [selectedZoneName, setSelectedZoneName] = useState(null);
-  const [isDisabledZone, setIsDisabledZone] = useState(false);
-
-  const [selectedCircleId, setSelectedCircleId] = useState(null);
-  const [selectedCircleName, setSelectedCircleName] = useState(null);
-  const [isDisabledCircle, setIsDisabledCircle] = useState(false);
-
-  const [selectedDivisionId, setSelectedDivisionId] = useState(null);
-  const [selectedDivisionName, setSelectedDivisionName] = useState(null);
-  const [isDisabledDivision, setIsDisabledDivision] = useState(false);
-
-  const [selectedSubDivisionId, setSelectedSubDivisionId] = useState(null);
-  const [selectedSubDivisionName, setSelectedSubDivisionName] = useState(null);
-  const [isDisabledSubDivision, setIsDisabledSubDivision] = useState(false);
-
-  const [searchText, setSearchText] = useState('');
-
-  const [filteredData, setFilteredData] = useState([]);
-  const [filteredZoneData, setFilteredZoneData] = useState([]);
-  const [filteredCircleData, setFilteredCircleData] = useState([]);
-  const [filteredDivisionData, setFilteredDivisionData] = useState([]);
-  const [filteredSubDivisionData, setFilteredSubDivisionData] = useState([]);
 
   const navigateBack = () => {
     router.push('/(drawer)/(tabs)/projects');
@@ -846,183 +739,6 @@ export default function ProjectListScreen() {
       console.log('Error fetching projects:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSelect = item => {
-    if (pickerTitle === 'Department') {
-      setSelectedId(item?.id);
-      setSelectedName(item.name);
-      setIsDropDownVisible(false);
-      setSearchText(''); // clear search
-      setFilteredData(filterData);
-      fetchFilterZoneList(item?.id);
-    } else if (pickerTitle === 'Zone') {
-      setSelectedZoneId(item?.id);
-      setSelectedZoneName(item.name);
-      setIsDropDownVisible(false);
-      setSearchText(''); // clear search
-      setFilteredZoneData(filterZoneList);
-      fetchFilterCircleList(item?.id);
-      //  fetchFilterZoneList(item?.id);
-    } else if (pickerTitle === 'Circle') {
-      setSelectedCircleId(item?.id);
-      setSelectedCircleName(item.name);
-      setIsDropDownVisible(false);
-      setSearchText(''); // clear search
-      setFilteredCircleData(filterCircleList);
-      fetchFilterDivisionList(item?.id);
-    } else if (pickerTitle === 'Division') {
-      setSelectedDivisionId(item?.id);
-      setSelectedDivisionName(item.name);
-      setIsDropDownVisible(false);
-      setSearchText(''); // clear search
-      setFilteredDivisionData(filterDivisionList);
-      fetchFilterSubDivisionList(item?.id);
-    } else if (pickerTitle === 'Sub-Division') {
-      setSelectedSubDivisionId(item?.id);
-      setSelectedSubDivisionName(item.name);
-      setIsDropDownVisible(false);
-      setSearchText(''); // clear search
-      setFilteredSubDivisionData(filterSubDivisionList);
-    }
-  };
-
-  const fetchFilterDepartmentList = async () => {
-    try {
-      const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response =
-        await ApiManager.getInstance().getFilterDepartmentOption();
-
-      console.log('resa[filterdepartment', response);
-
-      if (response?.success && response?.data?.length > 0) {
-        setFilterDepartmentList(response?.data);
-        const selectedOption = response?.data?.find(
-          item => item.id === response.option_selected,
-        );
-
-        if (selectedOption) {
-          setSelectedId(selectedOption.id);
-          setSelectedName(selectedOption.name);
-          setIsDisabled(true); // disable dropdown if option_selected matches
-          fetchFilterZoneList(selectedOption.id);
-        }
-      } else {
-      }
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    } finally {
-    }
-  };
-
-  const fetchFilterZoneList = async id => {
-    try {
-      const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getFilterZoneOption(id);
-
-      console.log('resa[filtrZone', response);
-
-      if (response?.success && response?.data?.length > 0) {
-        setFilterZoneList(response?.data);
-        const selectedOption = response?.data?.find(
-          item => item.id === response.option_selected,
-        );
-
-        if (selectedOption) {
-          setSelectedZoneId(selectedOption.id);
-          setSelectedZoneName(selectedOption.name);
-          setIsDisabledZone(true); // disable dropdown if option_selected matches
-          fetchFilterCircleList(selectedOption.id);
-        }
-      } else {
-      }
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    } finally {
-    }
-  };
-
-  const fetchFilterCircleList = async id => {
-    try {
-      const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getFilterCircleOption(id);
-
-      console.log('resa[filtrCircle', response);
-
-      if (response?.success && response?.data?.length > 0) {
-        setFilterCircleList(response?.data);
-        const selectedOption = response?.data?.find(
-          item => item.id === response.option_selected,
-        );
-
-        if (selectedOption) {
-          setSelectedCircleId(selectedOption.id);
-          setSelectedCircleName(selectedOption.name);
-          setIsDisabledCircle(true); // disable dropdown if option_selected matches
-          fetchFilterDivisionList(selectedOption.id);
-        }
-      } else {
-      }
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    } finally {
-    }
-  };
-
-  const fetchFilterDivisionList = async id => {
-    try {
-      const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response = await ApiManager.getInstance().getFilterDivisionOption(
-        id,
-      );
-
-      console.log('resa[filtrDiviioss', response);
-
-      if (response?.success && response?.data?.length > 0) {
-        setFilterDivisionList(response?.data);
-        const selectedOption = response?.data?.find(
-          item => item.id === response.option_selected,
-        );
-
-        if (selectedOption) {
-          setSelectedDivisionId(selectedOption.id);
-          setSelectedDivisionName(selectedOption.name);
-          setIsDisabledDivision(true); // disable dropdown if option_selected matches
-          fetchFilterSubDivisionList(selectedOption.id);
-        }
-      } else {
-      }
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    } finally {
-    }
-  };
-
-  const fetchFilterSubDivisionList = async id => {
-    try {
-      const ApiManager = (await import('@/src/services/ApiManager')).default;
-      const response =
-        await ApiManager.getInstance().getFilterSubDivisionOption(id);
-
-      console.log('resa[filtrDiviioss12122', response);
-
-      if (response?.success && response?.data?.length > 0) {
-        setFilterSubDivisionList(response?.data);
-        const selectedOption = response?.data?.find(
-          item => item.id === response.option_selected,
-        );
-
-        if (selectedOption) {
-          setSelectedSubDivisionId(selectedOption.id);
-          setSelectedSubDivisionName(selectedOption.name);
-          setIsDisabledSubDivision(true); // disable dropdown if option_selected matches
-        }
-      } else {
-      }
-    } catch (error) {
-      console.log('Error fetching projects:', error);
-    } finally {
     }
   };
 
@@ -1227,71 +943,6 @@ export default function ProjectListScreen() {
     </View>
   );
 
-  const openPicker = (label, dataKey) => {
-    console.log('dddddd', dataKey);
-    setPickerTitle(label);
-    if (label === 'Department') {
-      setFilterData(dataKey);
-    } else if (label === 'Zone') {
-      setFilterZoneList(dataKey);
-    } else if (label === 'Circle') {
-      setFilterCircleList(dataKey);
-    } else if (label === 'Division') {
-      setFilterDivisionList(dataKey);
-    } else if (label === 'Sub-Division') {
-      setFilterSubDivisionList(dataKey);
-    }
-    setIsDropDownVisible(true);
-  };
-
-  const renderDropdown = (
-    label,
-    dataKey,
-    selectedName,
-    selectedId,
-    isDisabledItem,
-  ) => (
-    <TouchableOpacity
-      style={styles.dropdownContainer}
-      onPress={() => openPicker(label, dataKey)}
-      disabled={isDisabledItem}
-      activeOpacity={0.7}>
-      <Text style={[styles.dropdownText]}>
-        {selectedId !== null ? selectedName : `Select ${label}`}
-      </Text>
-      <Ionicons name="chevron-down" size={18} color={COLORS.textSecondary} />
-    </TouchableOpacity>
-  );
-
-  const handleSearch = text => {
-    setSearchText(text);
-    if (pickerTitle === 'Department') {
-      const filtered = filterData.filter(item =>
-        item?.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredData(filtered);
-    } else if (pickerTitle === 'Zone') {
-      const filtered = filterZoneList.filter(item =>
-        item?.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredZoneData(filtered);
-    } else if (pickerTitle === 'Circle') {
-      const filtered = filterCircleList.filter(item =>
-        item?.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredCircleData(filtered);
-    } else if (pickerTitle === 'Division') {
-      const filtered = filterDivisionList.filter(item =>
-        item?.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredDivisionData(filtered);
-    } else if (pickerTitle === 'Sub-Division') {
-      const filtered = filterSubDivisionList.filter(item =>
-        item?.name.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredSubDivisionData(filtered);
-    }
-  };
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -1312,10 +963,7 @@ export default function ProjectListScreen() {
             <Text style={styles.headerTitle}>Projects List</Text>
             <TouchableOpacity
               style={styles.filterButton}
-              onPress={() => {
-                setIsFilterVisible(true);
-                fetchFilterDepartmentList();
-              }}
+              onPress={() => setIsFilterVisible(true)}
               activeOpacity={0.6}>
               <Ionicons name="options-outline" size={24} color={COLORS.text} />
               {getActiveFilterCount() > 0 && (
@@ -1392,443 +1040,13 @@ export default function ProjectListScreen() {
         />
 
         {/* Filter Bottom Sheet */}
-        {/* <ProjectFilterBottomSheet
+        <ProjectFilterBottomSheet
           visible={isFilterVisible}
           onClose={() => setIsFilterVisible(false)}
           onApply={handleApplyFilters}
           onReset={handleResetFilters}
           currentFilters={activeFilters}
-        /> */}
-
-        <Modal
-          visible={isFilterVisible}
-          transparent={false}
-          animationType="none"
-          onRequestClose={() => setIsFilterVisible(false)}>
-          <View style={styles.modalContainer}>
-            <Pressable
-              style={styles.backdrop}
-              onPress={() => setIsFilterVisible(false)}
-            />
-            <Animated.View
-              style={[styles.bottomSheet, {transform: [{translateY}]}]}>
-              <View {...panResponder.panHandlers}>
-                <View style={styles.handleBar} />
-
-                <View
-                  style={[
-                    styles.header,
-                    {
-                      justifyContent: 'space-between',
-                    },
-                  ]}>
-                  <View style={styles.headerLeft}>
-                    <Text style={[styles.headerTitle, {flex: 0}]}>
-                      Filter Projects
-                    </Text>
-                    {/* {getActiveFilterCount() > 0 && (
-                                  <View style={styles.filterCountBadge}>
-                                    <Text style={styles.filterCountText}>
-                                      {getActiveFilterCount()}
-                                    </Text>
-                                  </View>
-                                )} */}
-                  </View>
-                  <View style={styles.headerRight}>
-                    <TouchableOpacity
-                      onPress={handleResetFilters}
-                      style={styles.resetHeaderButton}>
-                      <Text style={styles.resetHeaderText}>Reset</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setIsFilterVisible(false)}
-                      activeOpacity={0.6}>
-                      <Ionicons name="close" size={26} color={COLORS.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              <KeyboardAvoidingView
-                style={{flex: 1}}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView
-                  style={styles.scrollView}
-                  contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled">
-                  <View style={styles.sectionHeader}>
-                    <Ionicons
-                      name="business-outline"
-                      size={18}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.sectionTitle}>Organizational</Text>
-                  </View>
-
-                  <View style={styles.filterSection}>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Department</Text>
-                      {renderDropdown(
-                        'Department',
-                        filterDepartmentList,
-                        selectedName,
-                        selectedId,
-                        isDisabled,
-                      )}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Zone</Text>
-                      {renderDropdown(
-                        'Zone',
-                        filterZoneList,
-                        selectedZoneName,
-                        selectedZoneId,
-                        isDisabledZone,
-                      )}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Circle</Text>
-                      {renderDropdown(
-                        'Circle',
-                        filterCircleList,
-                        selectedCircleName,
-                        selectedCircleId,
-                        isDisabledCircle,
-                      )}
-                    </View>
-
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        gap: 12,
-                      }}>
-                      <View
-                        style={{
-                          marginBottom: 16,
-                          flex: 1,
-                        }}>
-                        <Text style={styles.inputLabel}>Division</Text>
-                        {renderDropdown(
-                          'Division',
-                          filterDivisionList,
-                          selectedDivisionName,
-                          selectedDivisionId,
-                          isDisabledDivision,
-                        )}
-                      </View>
-
-                      <View
-                        style={{
-                          marginBottom: 16,
-                          flex: 1,
-                        }}>
-                        <Text style={styles.inputLabel}>Division</Text>
-                        {renderDropdown(
-                          'Sub-Division',
-                          filterSubDivisionList,
-                          selectedSubDivisionName,
-                          selectedSubDivisionId,
-                          isDisabledSubDivision,
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </ScrollView>
-              </KeyboardAvoidingView>
-            </Animated.View>
-
-            <Modal
-              visible={isDropDownVisible}
-              transparent={false}
-              animationType="none"
-              onRequestClose={() => setIsFilterVisible(false)}>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: COLORS.overlay,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  padding: 20,
-                }}>
-                <View
-                  style={{
-                    backgroundColor: COLORS.cardBackground,
-                    borderRadius: 16,
-                    width: '100%',
-                    maxHeight: SCREEN_HEIGHT * 0.7,
-                    overflow: 'hidden',
-                  }}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      paddingHorizontal: 16,
-                      paddingVertical: 14,
-                      borderBottomWidth: 1,
-                      borderBottomColor: COLORS.border,
-                    }}>
-                    <Text
-                      style={{
-                        fontSize: 17,
-                        fontWeight: '600',
-                        color: COLORS.text,
-                      }}>
-                      {pickerTitle}
-                    </Text>
-
-                    <TouchableOpacity
-                      onPress={() => setIsDropDownVisible(false)}>
-                      <Ionicons name="close" size={24} color={COLORS.text} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: COLORS.inputBackground,
-                      marginHorizontal: 16,
-                      marginVertical: 12,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 10,
-                    }}>
-                    <Ionicons
-                      name="search"
-                      size={18}
-                      color={COLORS.textSecondary}
-                    />
-                    <TextInput
-                      style={{
-                        flex: 1,
-                        fontSize: 14,
-                        color: COLORS.text,
-                        marginLeft: 8,
-                        paddingVertical: 0,
-                      }}
-                      placeholder="Search..."
-                      placeholderTextColor={COLORS.textPlaceholder}
-                      value={searchText}
-                      onChangeText={handleSearch}
-                    />
-                    {searchQuery !== '' && (
-                      <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <Ionicons
-                          name="close-circle"
-                          size={18}
-                          color={COLORS.textSecondary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  <ScrollView
-                    style={{maxHeight: SCREEN_HEIGHT * 0.45}}
-                    showsVerticalScrollIndicator={false}>
-                    {pickerTitle === 'Department' && (
-                      <FlatList
-                        data={searchText.length > 0 ? filteredData : filterData}
-                        keyExtractor={item => item?.id}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            onPress={() => handleSelect(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingHorizontal: 16,
-                              paddingVertical: 14,
-                              borderBottomWidth: 1,
-                              borderBottomColor: COLORS.border,
-                            }}>
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                color: COLORS.text,
-                                flex: 1,
-                              }}>
-                              {item?.name}
-                            </Text>
-                            {selectedId === item?.id && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color={COLORS.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      />
-                    )}
-                    {pickerTitle === 'Zone' && (
-                      <FlatList
-                        data={
-                          searchText.length > 0
-                            ? filteredZoneData
-                            : filterZoneList
-                        }
-                        keyExtractor={item => item?.id}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            onPress={() => handleSelect(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingHorizontal: 16,
-                              paddingVertical: 14,
-                              borderBottomWidth: 1,
-                              borderBottomColor: COLORS.border,
-                            }}>
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                color: COLORS.text,
-                                flex: 1,
-                              }}>
-                              {item?.name}
-                            </Text>
-                            {selectedZoneId === item?.id && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color={COLORS.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      />
-                    )}
-
-                    {pickerTitle === 'Circle' && (
-                      <FlatList
-                        data={
-                          searchText.length > 0
-                            ? filteredCircleData
-                            : filterCircleList
-                        }
-                        keyExtractor={item => item?.id}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            onPress={() => handleSelect(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingHorizontal: 16,
-                              paddingVertical: 14,
-                              borderBottomWidth: 1,
-                              borderBottomColor: COLORS.border,
-                            }}>
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                color: COLORS.text,
-                                flex: 1,
-                              }}>
-                              {item?.name}
-                            </Text>
-                            {selectedCircleId === item?.id && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color={COLORS.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      />
-                    )}
-
-                    {pickerTitle === 'Division' && (
-                      <FlatList
-                        data={
-                          searchText.length > 0
-                            ? filteredDivisionData
-                            : filterDivisionList
-                        }
-                        keyExtractor={item => item?.id}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            onPress={() => handleSelect(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingHorizontal: 16,
-                              paddingVertical: 14,
-                              borderBottomWidth: 1,
-                              borderBottomColor: COLORS.border,
-                            }}>
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                color: COLORS.text,
-                                flex: 1,
-                              }}>
-                              {item?.name}
-                            </Text>
-                            {selectedDivisionId === item?.id && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color={COLORS.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      />
-                    )}
-
-                    {pickerTitle === 'Sub-Division' && (
-                      <FlatList
-                        data={
-                          searchText.length > 0
-                            ? filteredSubDivisionData
-                            : filterSubDivisionList
-                        }
-                        keyExtractor={item => item?.id}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            onPress={() => handleSelect(item)}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              paddingHorizontal: 16,
-                              paddingVertical: 14,
-                              borderBottomWidth: 1,
-                              borderBottomColor: COLORS.border,
-                            }}>
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                color: COLORS.text,
-                                flex: 1,
-                              }}>
-                              {item?.name}
-                            </Text>
-                            {selectedSubDivisionId === item?.id && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color={COLORS.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      />
-                    )}
-                  </ScrollView>
-                </View>
-              </View>
-            </Modal>
-          </View>
-        </Modal>
+        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -1838,43 +1056,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  modalContainer: {
-    flex: 1,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlay,
-  },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: SHEET_HEIGHT,
-    backgroundColor: COLORS.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: -4},
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 20,
-      },
-    }),
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',
@@ -2118,96 +1299,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  filterCountBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    paddingHorizontal: 6,
-  },
-  filterCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  resetHeaderButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  resetHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.sectionHeader,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  filterSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  dropdownContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    minHeight: 48,
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  dropdownTextPlaceholder: {
-    color: COLORS.textPlaceholder,
-    fontWeight: '400',
   },
 });

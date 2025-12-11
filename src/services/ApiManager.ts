@@ -13,11 +13,11 @@ import {
 class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
-  // private baseUrl = 'https://pwd.thesst.com/cms/api';
+  // private baseUrl = 'https://pwddev.thesst.com/cms/api';
   private baseUrl = 'http://192.168.1.58:3005/cms/api';
-  // private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
+  // private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
   private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
-  // private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
+  // private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api'
   private adminPmsUrl = 'http://192.168.1.58:3001/admin/pms/api'
 
   private constructor() {}
@@ -393,6 +393,156 @@ class ApiManager {
       // Append optional ID filters
     
       const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+    public async getFilterDepartmentOption(
+
+
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/departments`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+   public async getFilterZoneOption(
+
+id: string | number
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/departments/${id}/zones`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+  public async getFilterCircleOption(
+
+zoneId: string | number
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+    public async getFilterDivisionOption(
+
+circleId: string | number
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/circles/${circleId}/divisions`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+
+      public async getFilterSubDivisionOption(
+
+divisionId: string | number
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
       console.log(url)
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
