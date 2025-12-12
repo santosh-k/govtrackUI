@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
 import { AppDispatch } from '@/src/store';
+import { RootState } from '@/src/store/index';
 import {
   fetchZones,
   fetchCircles,
@@ -33,6 +34,7 @@ import {
   selectIsLoadingDivisions,
   selectLocationError,
 } from '@/src/store/locationSlice';
+import { useFocusEffect } from '@react-navigation/native';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -70,6 +72,8 @@ export default function SearchComplaintScreen() {
     const isLoadingCircles = useSelector(selectIsLoadingCircles);
     const isLoadingDivisions = useSelector(selectIsLoadingDivisions);
     const locationError = useSelector(selectLocationError);
+    // Current logged in user (for defaults & permissions)
+    const user = useSelector((state: RootState) => state.auth.user);
 
     // Local state
     const [complaintName, setComplaintName] = useState('');
@@ -134,12 +138,66 @@ export default function SearchComplaintScreen() {
       }
     }, [selectedDivisionId, divisions]);
 
+  // Apply defaults from logged-in user only on mount
+  useEffect(() => {
+    if (!user) return;
+    
+    if (user.isZonalUser) {
+      dispatch(setSelectedZone(user.zone.id));
+      dispatch(setSelectedCircle(null));
+      dispatch(setSelectedDivision(null));
+      dispatch(fetchCircles(user.zone.id));
+    } else if (user.isCircleUser) {
+      dispatch(setSelectedZone(user.zone.id));
+      dispatch(setSelectedCircle(user.circle.id));
+      dispatch(setSelectedDivision(null));
+      dispatch(fetchCircles(user.zone.id));
+      dispatch(fetchDivisions(user.circle.id));
+    } else if (user.isDivisionUser) {
+      dispatch(setSelectedZone(user.zone.id));
+      dispatch(setSelectedCircle(user.circle.id));
+      dispatch(setSelectedDivision(user.division.id));
+      dispatch(fetchCircles(user.zone.id));
+      dispatch(fetchDivisions(user.circle.id));
+    }
+  }, []);
+
+  // Reset to defaults when coming back from complaints-list (after searching)
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      
+      // Reset to defaults only when selectedZoneId is null (comes from handleFindComplaints)
+      if (selectedZoneId === null) {
+        if (user.isZonalUser) {
+          dispatch(setSelectedZone(user.zone.id));
+          dispatch(fetchCircles(user.zone.id));
+        } else if (user.isCircleUser) {
+          dispatch(setSelectedZone(user.zone.id));
+          dispatch(setSelectedCircle(user.circle.id));
+          dispatch(fetchCircles(user.zone.id));
+          dispatch(fetchDivisions(user.circle.id));
+        } else if (user.isDivisionUser) {
+          dispatch(setSelectedZone(user.zone.id));
+          dispatch(setSelectedCircle(user.circle.id));
+          dispatch(setSelectedDivision(user.division.id));
+          dispatch(fetchCircles(user.zone.id));
+          dispatch(fetchDivisions(user.circle.id));
+        }
+      }
+    }, [user, selectedZoneId, dispatch])
+  );
+
   const goBack = () => {
     // Simply go back to previous screen (dashboard)
     router.back();
   };
 
   const handleZonePress = () => {
+    if (user?.isCircleUser || user?.isDivisionUser) {
+      Alert.alert('Permission Denied', "You don't have permission to change Zone.");
+      return;
+    }
     if (isLoadingZones) {
       Alert.alert('Loading', 'Please wait while zones are loading...');
       return;
@@ -162,11 +220,15 @@ export default function SearchComplaintScreen() {
       Alert.alert('Please select a Zone first');
       return;
     }
-
-    if (isLoadingCircles) {
-      Alert.alert('Loading', 'Please wait while circles are loading...');
+    if (user?.isDivisionUser) {
+      Alert.alert('Permission Denied', "You don't have permission to change Circle.");
       return;
     }
+
+     if (isLoadingCircles) {
+       Alert.alert('Loading', 'Please wait while circles are loading...');
+       return;
+     }
     
     router.push({
       pathname: '/search-stack/complaint-searchable-selection',

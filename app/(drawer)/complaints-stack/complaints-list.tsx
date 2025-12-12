@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -50,7 +50,7 @@ import {
   selectLocationError,
 } from '@/src/store/locationSlice';
 
-import { AppDispatch } from '@/src/store/index';
+import { AppDispatch, RootState } from '@/src/store/index';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -253,12 +253,16 @@ export default function ComplaintsScreen() {
   const isLoadingCircles = useSelector(selectIsLoadingCircles);
   const isLoadingDivisions = useSelector(selectIsLoadingDivisions);
   const locationError = useSelector(selectLocationError);
+  const user = useSelector((state: RootState) => state.auth.user);
+  const fromSearchScreenRef = useRef(false);
+  const defaultsApplied = useRef(false);
+  const expectedCategoryIdRef = useRef<string | number | null>(null);
 
   // Clear all previous filters and search data on mount or when params change
   useEffect(() => {
-    console.log('ComplaintsScreen - Clearing all previous filters and search on params change');
+    console.log('ComplaintsScreen - Clearing all previous filters and search on params change', 'categoryId:', params.categoryId);
     
-    // Clear complaints from Redux
+    // Clear complaints from Redux IMMEDIATELY when params change
     dispatch({ type: 'complaints/clearComplaints' });
     
     // Reset pagination tracking
@@ -280,7 +284,7 @@ export default function ComplaintsScreen() {
     setSelectedDivisionId(null);
     setCurrentStatusParam('');
     
-    // Clear temp filter states
+    // Clear temp filter states (do NOT persist these)
     setTempSelectedStatuses([]);
     setTempSelectedCategory('');
     setTempSelectedZone('');
@@ -290,7 +294,29 @@ export default function ComplaintsScreen() {
     setTempSelectedZoneId(null);
     setTempSelectedCircleId(null);
     setTempSelectedDivisionId(null);
-  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId, params.searchData]);
+    // Set UI-only defaults from logged-in user so filter sheet shows defaults
+    // Do NOT rely on these for API requests unless user applies filters
+    if (user) {
+      if (user.isZonalUser) {
+        setSelectedZone(String(user.zone?.name || ''));
+        setSelectedZoneId(user.zone?.id ?? null);
+      }
+      if (user.isCircleUser) {
+        setSelectedZone(String(user.zone?.name || ''));
+        setSelectedZoneId(user.zone?.id ?? null);
+        setSelectedCircle(String(user.circle?.name || ''));
+        setSelectedCircleId(user.circle?.id ?? null);
+      }
+      if (user.isDivisionUser) {
+        setSelectedZone(String(user.zone?.name || ''));
+        setSelectedZoneId(user.zone?.id ?? null);
+        setSelectedCircle(String(user.circle?.name || ''));
+        setSelectedCircleId(user.circle?.id ?? null);
+        setSelectedDivision(String(user.division?.name || ''));
+        setSelectedDivisionId(user.division?.id ?? null);
+      }
+    }
+  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId, params.categoryName, params.searchData, dispatch]);
 
   // Check if navigation came from dashboard
   const fromDashboard = params.fromDashboard === 'true';
@@ -305,7 +331,7 @@ export default function ComplaintsScreen() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string | number | null>(null);
   const [selectedCircleId, setSelectedCircleId] = useState<string | number | null>(null);
-   const [selectedDivisionId, setSelectedDivisionId] = useState<string | number | null>(null);
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string | number | null>(null);
 
 
   // Temporary filter states (for the bottom sheet)
@@ -381,9 +407,9 @@ export default function ComplaintsScreen() {
     const categoryIdToUse = overrideCategoryId !== undefined ? overrideCategoryId : selectedCategoryId;
     
     // Use zone/circle/division from params if available, otherwise use selected state
-    const zoneIdToUse = paramsZoneId || selectedZoneId;
-    const circleIdToUse = paramsCircleId || selectedCircleId; // Circle ID from params (search screen)
-    const divisionIdToUse = paramsDivisionId || selectedDivisionId; // Note: mapping division to department
+    const zoneIdToUse = paramsZoneId || (fromSearchScreenRef.current ? selectedZoneId : null) || (tempSelectedZoneId ? selectedZoneId : null);
+    const circleIdToUse = paramsCircleId || (fromSearchScreenRef.current ? selectedCircleId : null) || (tempSelectedCircleId ? selectedCircleId : null);
+    const divisionIdToUse = paramsDivisionId || (fromSearchScreenRef.current ? selectedDivisionId : null) || (tempSelectedDivisionId ? selectedDivisionId : null); // Note: mapping division to department
     
     console.log('fetchComplaint Api Called')
     console.log('Current Date Filter == ', filter)
@@ -497,32 +523,40 @@ export default function ComplaintsScreen() {
   useEffect(() => {
     const categoryId = params.categoryId as string | number | undefined;
     const categoryName = params.categoryName as string | undefined;
+    const hasSearchParams = params.zoneId || params.circleId || params.divisionId;
     
     console.log('ComplaintList - CategoryId useEffect triggered - categoryId:', categoryId, 'categoryName:', categoryName, 'params.filter:', params.filter);
     
     if (categoryId && categoryName) {
       console.log('ComplaintList - Setting category from complaint group - ID:', categoryId, 'Name:', categoryName);
+      // Set the expected categoryId BEFORE clearing to prevent stale data
+      expectedCategoryIdRef.current = categoryId;
+      // Clear complaints immediately before setting new category
+      dispatch({ type: 'complaints/clearComplaints' });
       setSelectedCategoryId(categoryId as any);
       setSelectedCategory(categoryName);
       // Will fetch in next useEffect when selectedCategoryId is updated
-    } else if (!categoryId && params.filter) {
-      // Coming from stat card or search screen - clear category filters BEFORE fetching with null
-      console.log('ComplaintList - Clearing category filters (from stat card/search), now fetching with categoryId=null');
+    } else if (!categoryId && params.filter && !hasSearchParams) {
+      // Coming from stat card (NOT from search screen with zone/circle/division)
+      // Skip this if search params are present - let the search params effect handle it
+      console.log('ComplaintList - Clearing category filters (from stat card), now fetching with categoryId=null');
+      expectedCategoryIdRef.current = null;
+      dispatch({ type: 'complaints/clearComplaints' });
       setSelectedCategoryId(null);
       setSelectedCategory('');
       // Fetch IMMEDIATELY with null categoryId to avoid using stale state
       handleFetchComplaints(1, currentStatusParam, false, null);
     }
-  }, [params.categoryId, params.categoryName, params.filter, params.zoneId, params.circleId, params.divisionId]);
+  }, [params.categoryId, params.categoryName, params.filter, params.zoneId, params.circleId, params.divisionId, dispatch, currentStatusParam]);
 
   // Fetch after categoryId is set (only if it's from complaint group, not stat card)
   useEffect(() => {
-    if (selectedCategoryId !== null && selectedCategory && params.categoryId) {
-      // Only fetch if categoryId came from params (complaint group)
+    if (selectedCategoryId !== null && selectedCategory && params.categoryId && selectedCategoryId === expectedCategoryIdRef.current) {
+      // Only fetch if categoryId came from params (complaint group) AND matches expected
       console.log('ComplaintList - Fetching after categoryId state updated from complaint group:', selectedCategoryId, selectedCategory);
       handleFetchComplaints(1, currentStatusParam, false, selectedCategoryId);
     }
-  }, [selectedCategoryId, selectedCategory, params.categoryId]);
+  }, [selectedCategoryId, selectedCategory, params.categoryId, currentStatusParam]);
 
   // Reset loading state when complaints finish loading
   useEffect(() => {
@@ -605,7 +639,36 @@ export default function ComplaintsScreen() {
     useEffect(() => {
           dispatch(fetchZones());
       }, [dispatch]);
-// Fetch circles when zone is selected
+    // Apply defaults from user once
+  useEffect(() => {
+    if (!user || defaultsApplied.current) return;
+    if (user.isZonalUser) {
+      setSelectedZone(String(user.zone.name || ''));
+      setSelectedZoneId(user.zone.id ?? null);
+      dispatch(fetchCircles(user.zone.id));
+    }
+    if (user.isCircleUser) {
+      setSelectedZone(String(user.zone.name || ''));
+      setSelectedZoneId(user.zone.id ?? null);
+      setSelectedCircle(String(user.circle.name || ''));
+      setSelectedCircleId(user.circle.id ?? null);
+      dispatch(fetchCircles(user.zone.id));
+      dispatch(fetchDivisions(user.circle.id));
+    }
+    if (user.isDivisionUser) {
+      setSelectedZone(String(user.zone.name || ''));
+      setSelectedZoneId(user.zone.id ?? null);
+      setSelectedCircle(String(user.circle.name || ''));
+      setSelectedCircleId(user.circle.id ?? null);
+      setSelectedDivision(String(user.division.name || ''));
+      setSelectedDivisionId(user.division.id ?? null);
+      dispatch(fetchCircles(user.zone.id));
+      dispatch(fetchDivisions(user.circle.id));
+    }
+    defaultsApplied.current = true;
+  }, [user, dispatch]);
+
+    // Fetch circles when zone is selected
     useEffect(() => {
       if (tempSelectedZoneId) {
         dispatch(fetchCircles(tempSelectedZoneId));
@@ -658,16 +721,48 @@ export default function ComplaintsScreen() {
 
   const handleFilterPress = () => {
     // Copy current filters to temp states
-    
+    // Resolve display names and ids from selected state, zones/circles/divisions arrays,
+    // and finally fallback to logged-in user's defaults when nothing else is set.
+    let zoneNameToUse = selectedZone || (selectedZoneId ? zones.find((z) => z.id === selectedZoneId)?.name || '' : '');
+    let zoneIdToUse = selectedZoneId ?? null;
+    let circleNameToUse = selectedCircle || (selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name || '' : '');
+    let circleIdToUse = selectedCircleId ?? null;
+    let divisionNameToUse = selectedDivision || (selectedDivisionId ? divisions.find((d) => d.id === selectedDivisionId)?.name || '' : '');
+    let divisionIdToUse = selectedDivisionId ?? null;
+
+    // If nothing is selected, prefer the logged-in user's defaults (but only if present)
+    if ((!zoneNameToUse || !zoneIdToUse) && user) {
+      if (user.zone) {
+        zoneNameToUse = zoneNameToUse || String(user.zone.name || '');
+        zoneIdToUse = zoneIdToUse ?? (user.zone.id ?? null);
+      }
+    }
+
+    if ((!circleNameToUse || !circleIdToUse) && user) {
+      // Only apply circle default when user has a circle (isCircleUser or isDivisionUser)
+      if (user.isCircleUser || user.isDivisionUser) {
+        circleNameToUse = circleNameToUse || String(user.circle?.name || '');
+        circleIdToUse = circleIdToUse ?? (user.circle?.id ?? null);
+      }
+    }
+
+    if ((!divisionNameToUse || !divisionIdToUse) && user) {
+      // Only apply division default for division users
+      if (user.isDivisionUser) {
+        divisionNameToUse = divisionNameToUse || String(user.division?.name || '');
+        divisionIdToUse = divisionIdToUse ?? (user.division?.id ?? null);
+      }
+    }
+
     setTempSelectedStatuses([...selectedStatuses]);
     setTempSelectedCategory(selectedCategory);
-    setTempSelectedZone(selectedZone);
-    setTempSelectedCircle(selectedCircle);
-    setTempSelectedDivision(selectedDivision);
+    setTempSelectedZone(zoneNameToUse);
+    setTempSelectedCircle(circleNameToUse);
+    setTempSelectedDivision(divisionNameToUse);
     setTempSelectedCategoryId(selectedCategoryId);
-    setTempSelectedZoneId(selectedZoneId);
-    setTempSelectedCircleId(selectedCircleId);
-    setTempSelectedDivisionId(selectedDivisionId);
+    setTempSelectedZoneId(zoneIdToUse);
+    setTempSelectedCircleId(circleIdToUse);
+    setTempSelectedDivisionId(divisionIdToUse);
     setFilterSheetVisible(true);
   };
 
@@ -705,20 +800,16 @@ export default function ComplaintsScreen() {
   };
 
   const handleZonePress = () => {
-    // Set global callback to receive selection
+    if (user?.isCircleUser || user?.isDivisionUser) {
+      setToastMessage("You don't have permission to change Zone.")
+      setToastVisible(true);
+      return;
+    }
     global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'zone') {
-        if (value && typeof value === 'object') {
-          console.log('SelectedZone===',String(value.name || ''));
-          console.log('SelectedZoneID===',String(value.id || ''));
-          setTempSelectedZone(String(value.name || ''));
-          setTempSelectedZoneId(value.id ?? null);
-        } else {
-          setTempSelectedZone(String(value || ''));
-          setTempSelectedZoneId(null);
-        }
-        // Re-open the filter sheet
-        setTimeout(() => setFilterSheetVisible(true), 100);
+        setTempSelectedZone(String(value.name || ''));
+        setTempSelectedZoneId(value.id ?? null);
+        setTimeout(() => setFilterSheetVisible(true), 200);  // ← change 100 to 200
       }
     };
     setFilterSheetVisible(false);
@@ -736,18 +827,16 @@ export default function ComplaintsScreen() {
   };
 
   const handleCirclePress = () => {
-    // Set global callback to receive selection
+    if (user?.isDivisionUser) {
+      setToastMessage("You don't have permission to change Circle.")
+      setToastVisible(true);
+      return;
+    }
     global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'circle') {
-        if (value && typeof value === 'object') {
-          setTempSelectedCircle(String(value.name || ''));
-          setTempSelectedCircleId(value.id ?? null);
-        } else {
-          setTempSelectedCircle(String(value || ''));
-          setTempSelectedCircleId(null);
-        }
-        // Re-open the filter sheet
-        setTimeout(() => setFilterSheetVisible(true), 100);
+        setTempSelectedCircle(String(value.name || ''));
+        setTempSelectedCircleId(value.id ?? null);
+        setTimeout(() => setFilterSheetVisible(true), 200);  // ← change 100 to 200
       }
     };
     setFilterSheetVisible(false);
@@ -764,18 +853,11 @@ export default function ComplaintsScreen() {
   };
 
   const handleDivisionPress = () => {
-    // Set global callback to receive selection
     global.filterSelectionCallback = (type: string, value: any) => {
       if (type === 'division') {
-        if (value && typeof value === 'object') {
-          setTempSelectedDivision(String(value.name || ''));
-          setTempSelectedDivisionId(value.id ?? null);
-        } else {
-          setTempSelectedDivision(String(value || ''));
-          setTempSelectedDivisionId(null);
-        }
-        // Re-open the filter sheet
-        setTimeout(() => setFilterSheetVisible(true), 100);
+        setTempSelectedDivision(String(value.name || ''));
+        setTempSelectedDivisionId(value.id ?? null);
+        setTimeout(() => setFilterSheetVisible(true), 200);  // ← change 100 to 200
       }
     };
     setFilterSheetVisible(false);
@@ -1009,20 +1091,48 @@ export default function ComplaintsScreen() {
 
   // Handle pull to refresh
   const handleRefresh = useCallback(async () => {
-    console.log('Pull to refresh triggered');
-    setIsRefreshing(true);
-    setNextPageToLoad(2);
-    
-    // Reset to first page and fetch fresh data
-    // handleFetchComplaints will extract zone/circle/division from params (search screen)
-    // or use selected state as fallback
-    await handleFetchComplaints(1, currentStatusParam, false, selectedCategoryId);
-    
-    // Stop the refresh animation after a short delay to show the refresh completed
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 500);
-  }, [currentStatusParam, selectedCategoryId, searchQuery]);
+  console.log('Pull to refresh triggered');
+  setIsRefreshing(true);
+  setNextPageToLoad(2);
+  
+  // Use only original params (no user defaults for zone/circle/division)
+  const stats_filter = getApiStatus(params.filter as string) || 'total';
+  const filter = params.dateFilter as string || 'all';
+  const start_date = params.start_date as string;
+  const end_date = params.end_date as string;
+  
+  // Only include search/filter params, not defaults
+  // Normalize array params to single values
+  const normalizeParam = (value: any): string | number | null => {
+    if (Array.isArray(value)) return value[0] ?? null;
+    return value ?? null;
+  };
+  const zoneIdForRefresh = normalizeParam(params.zoneId) || (fromSearchScreenRef.current && tempSelectedZoneId ? tempSelectedZoneId : null);
+  const circleIdForRefresh = normalizeParam(params.circleId) || (fromSearchScreenRef.current && tempSelectedCircleId ? tempSelectedCircleId : null);
+  const divisionIdForRefresh = normalizeParam(params.divisionId) || (fromSearchScreenRef.current && tempSelectedDivisionId ? tempSelectedDivisionId : null);
+  
+  dispatch(
+    fetchComplaints({
+      stats_filter,
+      filter,
+      status: currentStatusParam || '',
+      page: 1,
+      limit: 10,
+      search: searchQuery,
+      isInfiniteScroll: false,
+      category_id: selectedCategoryId ?? undefined,
+      zone_id: zoneIdForRefresh ?? undefined,
+      circle_id: circleIdForRefresh ?? undefined,
+      division_id: divisionIdForRefresh ?? undefined,
+      start_date: start_date ?? undefined,
+      end_date: end_date ?? undefined,
+    })
+  );
+  
+  setTimeout(() => {
+    setIsRefreshing(false);
+  }, 500);
+}, [params, currentStatusParam, selectedCategoryId, searchQuery, tempSelectedZoneId, tempSelectedCircleId, tempSelectedDivisionId, dispatch, fromSearchScreenRef]);
 
   // Handle search query change
   const handleSearchChange = (text: string) => {
@@ -1221,7 +1331,8 @@ export default function ComplaintsScreen() {
             onPress={() => handleComplaintPress(complaint)}
             onCopy={copyToClipboard}
           />
-        )}
+        )
+        }
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}

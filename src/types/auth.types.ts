@@ -23,6 +23,14 @@ export interface Zone {
   id: number;
   name: string;
 }
+export interface Circle {
+  id: number;
+  name: string;
+}
+export interface SubDivision {
+  id: number;
+  name: string;
+}
 
 export interface Division {
   id: number;
@@ -61,8 +69,16 @@ export interface User {
   isActive: boolean;
   address: string | null;
   profile_image?: string;
+  level:string;
+  isAdminUser: boolean;
+  isZonalUser: boolean;
+  isCircleUser: boolean;
+  isDivisionUser: boolean;
+  isSubDivisionUser: boolean;
   zone: Zone;
+  circle: Circle;
   division: Division;
+  subDivision: SubDivision;
   designations: Designation[];
   departments: Department[];
   permissions: Permission[];
