@@ -392,7 +392,8 @@ export default function ComplaintsScreen() {
 
   // Fetch complaints from Redux
   const handleFetchComplaints = async (page: number = 1, statusFilter?: string, isInfiniteScroll: boolean = false, overrideCategoryId?: string | number | null) => {
-    const status = typeof statusFilter === 'string' && statusFilter !== undefined ? statusFilter : currentStatusParam || '';
+    //const status = typeof statusFilter === 'string' && statusFilter !== undefined ? statusFilter : currentStatusParam || '';
+    const status = currentStatusParam || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter =  params.dateFilter as string || 'all'
     const start_date = params.start_date as string 
@@ -462,16 +463,17 @@ export default function ComplaintsScreen() {
   }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
 
   // Dedicated effect for search screen navigation (zone/circle/division filtering)
+  // Only trigger when actual search params (zone/circle/division) are present.
+  // Stat-card navigation is handled by the category/filter effects to avoid duplicate calls.
   useEffect(() => {
     const hasSearchParams = params.zoneId || params.circleId || params.divisionId;
-    const hasSearchData = params.searchData && params.searchData !== '';
-    
-    if (hasSearchParams || (params.filter && !params.categoryId && !hasSearchData)) {
+
+    if (hasSearchParams) {
       console.log('ComplaintList - Search screen navigation detected, fetching complaints');
       console.log('Search params - zoneId:', params.zoneId, 'circleId:', params.circleId, 'divisionId:', params.divisionId);
       handleFetchComplaints(1, currentStatusParam, false, null);
     }
-  }, [params.zoneId, params.circleId, params.divisionId, params.filter]);
+  }, [params.zoneId, params.circleId, params.divisionId]);
 
   /* useFocusEffect(
     useCallback(() => {
@@ -481,43 +483,49 @@ export default function ComplaintsScreen() {
     }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
   ); */
   // Handle incoming filter parameter from dashboard
-  useEffect(() => {
+ /* useEffect(() => {
     if (params.filter) {
       const filterType = params.filter as string;
-
+      let newSelectedStatuses: string[] = [];
       // Map dashboard filter types to status filters
       switch (filterType) {
         case 'all':
           // Show all complaints - clear filters
-          setSelectedStatuses([]);
+          newSelectedStatuses = [];
           setSelectedCategory('');
           setSelectedZone('');
           setSelectedCircle('');
           setSelectedDivision('');
           break;
         case 'pending':
-          setSelectedStatuses(['Open']);
+          newSelectedStatuses = ['Open'];
           break;
         case 'inProgress':
-          setSelectedStatuses(['In Progress']);
+          newSelectedStatuses = ['In Progress'];
           break;
         case 'completed':
-          setSelectedStatuses(['Resolved']);
+          newSelectedStatuses = ['Resolved'];
           break;
         case 'closed':
-          setSelectedStatuses(['Closed']);
+          newSelectedStatuses = ['Closed'];
           break;
         case 'assignedByYou':
-          setSelectedStatuses([]);
+          newSelectedStatuses = [];
           break;
         case 'completedByYou':
-          setSelectedStatuses(['Resolved']);
+          newSelectedStatuses = ['Resolved'];
           break;
         default:
           break;
-      }
+      }     
+      setSelectedStatuses(newSelectedStatuses);
+      // Update currentStatusParam based on new selected statuses
+      const statusParam = newSelectedStatuses && newSelectedStatuses.length > 0
+        ? newSelectedStatuses.map(mapLabelToApiStatus).join(',')
+        : '';
+      setCurrentStatusParam(statusParam);
     }
-  }, [params.filter]);
+  }, [params.filter]); */
 
   // Handle categoryId from complaint group navigation
   useEffect(() => {
@@ -547,7 +555,7 @@ export default function ComplaintsScreen() {
       // Fetch IMMEDIATELY with null categoryId to avoid using stale state
       handleFetchComplaints(1, currentStatusParam, false, null);
     }
-  }, [params.categoryId, params.categoryName, params.filter, params.zoneId, params.circleId, params.divisionId, dispatch, currentStatusParam]);
+  }, [params.categoryId, params.categoryName, params.filter, params.zoneId, params.circleId, params.divisionId, dispatch, currentStatusParam, selectedStatuses]);
 
   // Fetch after categoryId is set (only if it's from complaint group, not stat card)
   useEffect(() => {
