@@ -1223,7 +1223,7 @@ export default function ComplaintsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Active Filter Tags */}
+      {/* Active Filter Tags 
       {activeFilterCount > 0 && (
         <View style={styles.activeFiltersContainer}>
           <ScrollView
@@ -1299,7 +1299,7 @@ export default function ComplaintsScreen() {
             )}
           </ScrollView>
         </View>
-      )}
+      )} */}
 
       {/* Loading Progress Bar */}
       {loading && (
