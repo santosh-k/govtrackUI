@@ -36,7 +36,7 @@ const COLORS = {
   disabled: '#F5F5F5',
   disabledText: '#BDBDBD',
 };
-// const insets = useSafeAreaInsets();
+
 // Mock hierarchical data
 const MOCK_DATA = {
   divisions: [
@@ -203,6 +203,7 @@ function DropdownField({ label, value, placeholder, onPress, disabled = false }:
 }
 
 export default function AssignComplaintScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const complaintId = params.complaintId as string;
   console.log('ComplaintId===',complaintId)
@@ -669,7 +670,7 @@ export default function AssignComplaintScreen() {
       </ScrollView>
 
       {/* Assign Button - Always Visible */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { bottom: insets.bottom }]}>
         <TouchableOpacity
           style={styles.assignButton}
           onPress={handleAssign}
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    // bottom: insets.bottom,
+     //bottom: insets.bottom,
     left: 0,
     right: 0,
     backgroundColor: COLORS.cardBackground,

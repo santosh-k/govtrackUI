@@ -13,6 +13,7 @@ import {
   Platform,
   Modal,
   InteractionManager,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -468,8 +469,8 @@ export default function ComplaintDashboardScreen() {
         bounces={false}
       >
         {loading && (
-          <View style={{ alignItems: 'center', marginVertical: 32 }}>
-            <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         )}
         

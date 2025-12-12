@@ -39,6 +39,13 @@ export default function DrawerLayout() {
           headerShown: false,
         }}
       />
+      <Drawer.Screen
+        name="project-details"
+        options={{
+          drawerLabel: 'Project Details',
+          headerShown: false,
+        }}
+      />
     </Drawer>
   );
 }

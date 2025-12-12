@@ -53,6 +53,19 @@ android/.gradle/
 android/app/src/main/assets/shell-app.bundle
 android/app/src/main/assets/shell-app.bundle.map
 
+# Gradle caches
+android/build/
+# CMake / NDK debug build folders
+android/app/.cxx/
+
+# Ninja / CMake generated files
+*.ninja_deps
+*.ninja_log
+*.json
+*.bin
+*.lock
+CMakeFiles/
+
 # iOS
 ios/build/
 ios/Pods/

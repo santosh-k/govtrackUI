@@ -727,6 +727,7 @@ export default function ProjectListScreen() {
   const filterProjectType = (params.projectType as string) || '';
   const filterSearchText = (params.searchText as string) || '';
 
+
   const [projects, setProjects] = useState<any[]>([]);
   const [filteredProject, setFilteredProjects] = useState<any[]>([]);
   const [filterDepartmentList, setFilterDepartmentList] = useState([]);
@@ -779,8 +780,8 @@ export default function ProjectListScreen() {
     projectName?: string,
     projectCode?: string,
   ) => {
-    router.replace({
-      pathname: '/(drawer)/project-details',
+    router.push({
+      pathname: '/project-details',
       params: {
         projectId: projectId ?? '',
         projectName: projectName ?? '',

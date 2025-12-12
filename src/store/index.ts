@@ -8,6 +8,7 @@ import complaintDetailsReducer from './complaintDetailsSlice';
 import assignmentReducer from './assignmentSlice';
 import selectionReducer from './selectionSlice';
 import updateComplaintReducer from './updateComplaintSlice';
+import locationReducer from './locationSlice';
 
 // Persist the root reducer and only whitelist the `auth` slice for persistence.
 const persistConfig = {
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   assignment: assignmentReducer,
   selection: selectionReducer,
   updateComplaint: updateComplaintReducer,
+  location: locationReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

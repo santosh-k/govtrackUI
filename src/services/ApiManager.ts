@@ -10,15 +10,32 @@ import {
   updateUser,
 } from '../store/authSlice';
 
+import { Platform } from 'react-native';
+
 class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
-  // private baseUrl = 'https://pwddev.thesst.com/cms/api';
-  private baseUrl = 'http://192.168.1.58:3005/cms/api';
-  // private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
-  private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
-  // private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api'
-  private adminPmsUrl = 'http://192.168.1.58:3001/admin/pms/api'
+
+  //private baseUrl = 'https://pwd.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
+
+  // For Staging Server
+  //private baseUrl = 'https://pwdstag.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwdstag.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwdstag.thesst.com/admin/pms/api';
+
+  // For Dev Server
+  private baseUrl = 'https://pwddev.thesst.com/cms/api';
+  private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
+  private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api';
+
+  //For Local Server
+  //private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
+ // private baseUrl = 'http://192.168.1.58:3005/cms/api';
+ // private adminPmsUrl = 'http://192.168.1.58:3005/admin/pms/api';
+
+
 
   private constructor() {}
 
@@ -129,38 +146,113 @@ class ApiManager {
     return data;
   }
 
-  /** ---------------- LOGIN ---------------- */
-  public async login(credentials: LoginRequest): Promise<LoginResponse> {
-    store.dispatch(loginStart());
+  private async buildDeviceInfo(provided?: any) {
+    // Lazily require react-native-device-info to avoid native module access during
+    // module initialization (which can cause RN native module null errors).
+    let DeviceInfo: any = null;
+    try {
+      // dynamic import works with metro if the package is available
+      // fall back to require for environments where import() isn't supported
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      DeviceInfo = require('react-native-device-info');
+    } catch (e) {
+      try {
+        DeviceInfo = await import('react-native-device-info');
+      } catch (err) {
+        DeviceInfo = null;
+      }
+    }
+
+    const deviceType = Platform.OS; // "android" or "ios"
+
+    // Default values in case DeviceInfo is not available or native module isn't linked yet
+    let deviceModel = 'Unknown Device';
+    let osVersion = '';
+    let appVersion = '1.0.0';
+    let deviceId = '';
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-
-      const data: LoginResponse = await response.json();
-
-      if (data.success && data.data) {
-        store.dispatch(
-          loginSuccess({
-            token: data.data.token,
-            refreshToken: data.data.refreshToken,
-            user: data.data.user,
-          })
-        );
-      } else {
-        store.dispatch(loginFailure('Login failed'));
+      if (DeviceInfo) {
+        // Some methods are synchronous
+        if (typeof DeviceInfo.getModel === 'function') deviceModel = DeviceInfo.getModel();
+        if (typeof DeviceInfo.getSystemVersion === 'function') osVersion = DeviceInfo.getSystemVersion();
+        if (typeof DeviceInfo.getVersion === 'function') appVersion = DeviceInfo.getVersion();
+        if (typeof DeviceInfo.getUniqueId === 'function') {
+          // getUniqueId may be async in some implementations
+          const maybeId = DeviceInfo.getUniqueId();
+          deviceId = maybeId && typeof maybeId.then === 'function' ? await maybeId : maybeId;
+        }
       }
-
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      store.dispatch(loginFailure(message));
-      throw new Error(message);
+    } catch (e) {
+      // ignore errors reading device info — we will send defaults
+      console.warn('Could not read device info:', e);
     }
+
+    // Merge with provided deviceInfo if available
+    return {
+      deviceToken: provided?.deviceToken || '',
+      deviceType,
+      deviceModel,
+      osVersion,
+      appVersion,
+      deviceId,
+    };
   }
+  /** ---------------- LOGIN ---------------- */
+  public async login(credentials: LoginRequest): Promise<LoginResponse> {
+  store.dispatch(loginStart());
+
+  try {
+    const deviceInfo = await this.buildDeviceInfo(credentials.deviceInfo);
+
+    const payload = {
+      username: credentials.username,
+      password: credentials.password,
+      deviceInfo,
+    };
+
+    // Try FCM token
+    try {
+      if (!payload.deviceInfo.deviceToken) {
+        const notifModule = await import('./notifications');
+        if (typeof notifModule.ensureFcmToken === 'function') {
+          const token = await notifModule.ensureFcmToken();
+          if (token) payload.deviceInfo.deviceToken = token;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not obtain FCM token', e);
+    }
+    console.log(JSON.stringify(payload))
+    const response = await fetch(`${this.baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data: LoginResponse = await response.json();
+
+    if (data.success && data.data) {
+      store.dispatch(
+        loginSuccess({
+          token: data.data.token,
+          refreshToken: data.data.refreshToken,
+          user: data.data.user,
+        })
+      );
+    } else {
+      store.dispatch(loginFailure(data.message || 'Login failed'));
+    }
+
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    store.dispatch(loginFailure(message));
+    throw new Error(message);
+  }
+}
 
   /** ---------------- REFRESH TOKEN ---------------- */
   public async refreshToken(): Promise<{ token: string; expiresIn: number }> {
@@ -289,6 +381,8 @@ class ApiManager {
     search: string = '',
     category_id?: string | number,
     zone_id?: string | number,
+    circle_id?: string | number,
+    division_id?: string | number,
     department_id?: string | number,
     startDate?: string,
     endDate?: string
@@ -317,7 +411,13 @@ class ApiManager {
         queryParams.append('category', String(category_id));
       }
       if (zone_id !== undefined && zone_id !== null && zone_id !== '') {
-        queryParams.append('zone', String(zone_id));
+        queryParams.append('zone_id', String(zone_id));
+      }
+      if (circle_id !== undefined && circle_id !== null && circle_id !== '') {
+        queryParams.append('circle_id', String(circle_id));
+      }
+      if (division_id !== undefined && division_id !== null && division_id !== '') {
+        queryParams.append('division_id', String(division_id));
       }
       if (department_id !== undefined && department_id !== null && department_id !== '') {
         queryParams.append('department', String(department_id));
@@ -350,10 +450,8 @@ class ApiManager {
 
 
       const token = this.getToken();
-
       console.log("toke2122n,",token);
       
-
       if (!token) throw new Error('No authentication token available');
 
     
@@ -674,6 +772,54 @@ divisionId: string | number
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH ZONES (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchZones(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/zones`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH CIRCLES BY ZONE ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchCircles(zoneId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH DIVISIONS BY CIRCLE ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchDivisions(circleId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/circles/${circleId}/divisions`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';

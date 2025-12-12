@@ -1,6 +1,16 @@
+export interface DeviceInfo {
+  deviceToken?: string;
+  deviceType?: string;
+  deviceModel?: string;
+  osVersion?: string;
+  appVersion?: string;
+  deviceId?: string;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
+  deviceInfo?: DeviceInfo;
 }
 
 export interface Department {
@@ -10,6 +20,14 @@ export interface Department {
 }
 
 export interface Zone {
+  id: number;
+  name: string;
+}
+export interface Circle {
+  id: number;
+  name: string;
+}
+export interface SubDivision {
   id: number;
   name: string;
 }
@@ -51,8 +69,16 @@ export interface User {
   isActive: boolean;
   address: string | null;
   profile_image?: string;
+  level:string;
+  isAdminUser: boolean;
+  isZonalUser: boolean;
+  isCircleUser: boolean;
+  isDivisionUser: boolean;
+  isSubDivisionUser: boolean;
   zone: Zone;
+  circle: Circle;
   division: Division;
+  subDivision: SubDivision;
   designations: Designation[];
   departments: Department[];
   permissions: Permission[];
