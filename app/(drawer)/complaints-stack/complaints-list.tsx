@@ -316,7 +316,7 @@ export default function ComplaintsScreen() {
         setSelectedDivisionId(user.division?.id ?? null);
       }
     }
-  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId, params.categoryName, params.searchData, dispatch]);
+  }, [params.filter, params.dateFilter, params.start_date, params.startDate, params.end_date, params.endDate, params.categoryId, params.categoryName, params.searchData, dispatch]);
 
   // Check if navigation came from dashboard
   const fromDashboard = params.fromDashboard === 'true';
@@ -396,8 +396,8 @@ export default function ComplaintsScreen() {
     const status = currentStatusParam || '';
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter =  params.dateFilter as string || 'all'
-    const start_date = params.start_date as string 
-    const end_date = params.end_date as string
+    const start_date = (params.start_date as string) || (params.startDate as string) || undefined;
+    const end_date = (params.end_date as string) || (params.endDate as string) || undefined;
     
     // Extract zone, circle, division IDs from params (from search screen)
     const paramsZoneId = params.zoneId as string | number | undefined;
@@ -460,7 +460,7 @@ export default function ComplaintsScreen() {
       console.log('ComplaintList - Filter params detected, will fetch after category state updates');
       // Don't fetch here - let the category effect or search screen effect handle it
     }
-  }, [params.filter, params.dateFilter, params.start_date, params.end_date, params.categoryId]);
+  }, [params.filter, params.dateFilter, params.start_date, params.startDate, params.end_date, params.endDate, params.categoryId]);
 
   // Dedicated effect for search screen navigation (zone/circle/division filtering)
   // Only trigger when actual search params (zone/circle/division) are present.
@@ -480,7 +480,7 @@ export default function ComplaintsScreen() {
       if (params.filter) {
         handleFetchComplaints(1, currentStatusParam, false);
       }
-    }, [params.filter, params.dateFilter, params.start_date, params.end_date, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
+    }, [params.filter, params.dateFilter, params.start_date, params.startDate, params.end_date, params.endDate, selectedCategoryId, selectedZoneId, selectedDepartmentId, selectedStatuses, searchQuery])
   ); */
   // Handle incoming filter parameter from dashboard
  /* useEffect(() => {
@@ -904,8 +904,8 @@ export default function ComplaintsScreen() {
     // Use tempSelected*Id directly because React state updates are async
     const stats_filter = getApiStatus(params.filter as string) || 'total';
     const filter = params.dateFilter as string || 'all'
-    const start_date = params.start_date as string 
-    const end_date = params.end_date as string
+    const start_date = (params.start_date as string) || (params.startDate as string) || undefined;
+    const end_date = (params.end_date as string) || (params.endDate as string) || undefined;
     // Convert tempSelectedStatuses (labels) to API status param (comma-separated)
     const statusParam = tempSelectedStatuses && tempSelectedStatuses.length > 0
       ? tempSelectedStatuses.map(mapLabelToApiStatus).join(',')
@@ -1106,9 +1106,10 @@ export default function ComplaintsScreen() {
   // Use only original params (no user defaults for zone/circle/division)
   const stats_filter = getApiStatus(params.filter as string) || 'total';
   const filter = params.dateFilter as string || 'all';
-  const start_date = params.start_date as string;
-  const end_date = params.end_date as string;
-  
+  const start_date = (params.start_date as string) || (params.startDate as string) || undefined;
+  const end_date = (params.end_date as string) || (params.endDate as string) || undefined;
+  console.log('StartDateList', start_date)
+  console.log('EndDateList', end_date)
   // Only include search/filter params, not defaults
   // Normalize array params to single values
   const normalizeParam = (value: any): string | number | null => {
@@ -1136,7 +1137,6 @@ export default function ComplaintsScreen() {
       end_date: end_date ?? undefined,
     })
   );
-  
   setTimeout(() => {
     setIsRefreshing(false);
   }, 500);

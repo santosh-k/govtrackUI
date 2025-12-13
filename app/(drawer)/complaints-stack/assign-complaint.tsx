@@ -435,8 +435,8 @@ export default function AssignComplaintScreen() {
   };
 
   const handleDesignationSelect = () => {
-    if (!department) return;
-    const des = designations.filter((d) => Number(d.departmentId) === Number(department.id));
+    if (!division) return;
+    const des = designations.filter((d) => Number(d.departmentId) === Number(division.id));
     router.push({
       pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
@@ -491,8 +491,8 @@ export default function AssignComplaintScreen() {
       attachments: [], // leave empty for now
     };
 
-    if (!payload.user_id && !payload.designation_id && !payload.department_id && !payload.subdivision_id && !payload.division_id) {
-      setToastMessage('Please select a target (user/designation/department/subdivision/division)');
+    if (!payload.designation_id && !payload.division_id) {
+      setToastMessage('Please select a target (division/designation)');
       setToastVisible(true);
       return;
     }
@@ -559,7 +559,7 @@ export default function AssignComplaintScreen() {
             placeholder="Select a division"
             onPress={handleDivisionSelect}
           />
-
+          {/* 
           <DropdownField
             label="Sub-Division"
             value={subDivision?.name}
@@ -574,15 +574,16 @@ export default function AssignComplaintScreen() {
             placeholder="Select a department"
             onPress={handleDepartmentSelect}
             disabled={!subDivision}
-          />
-
+          /> */}
+          
           <DropdownField
             label="Designation"
             value={designation?.name}
             placeholder="Select a designation"
             onPress={handleDesignationSelect}
-            disabled={!department}
+            disabled={!division}
           />
+          {/*
           <Text style={styles.sectionTitle}>Assign to a Specific User</Text>
           <Text style={styles.sectionSubtitle}>
             Search and select any user directly
@@ -593,8 +594,8 @@ export default function AssignComplaintScreen() {
             value={user?.name}
             placeholder="Search for a user"
             onPress={handleUserSelect}
-          />
-        </View>
+          /> */}
+        </View> 
 
         
 

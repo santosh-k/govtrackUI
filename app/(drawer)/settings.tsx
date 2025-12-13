@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,11 +56,30 @@ export default function SettingsScreen() {
   };
 
   const { logout } = useContext(AuthContext);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          setIsLoggingOut(true);
+          try {
+            const ApiManagerModule = await import('@/src/services/ApiManager');
+            const ApiManager = ApiManagerModule.default;
+            await ApiManager.getInstance().logout();
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Could not logout';
+            //Alert.alert('Logout Failed', message);
+          } finally {
+            setIsLoggingOut(false);
+            // Always clear local user data and navigate to login
+            logout();
+          }
+        },
+      },
     ]);
   };
 
@@ -163,6 +183,12 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {isLoggingOut && (
+          <View style={styles.loadingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" color={COLORS.blue} />
+            <Text style={styles.loadingText}>Logging out...</Text>
+          </View>
+        )}
         <View style={styles.settingsCard}>
           {settingsItems.map((item, index) => (
             <View key={index}>
@@ -272,5 +298,18 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.border,
     marginLeft: 56,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

@@ -32,6 +32,7 @@ import { AppDispatch } from '@/src/store/index';
 import { selectAssignment, clearLastAssignment } from '@/src/store/assignmentSlice';
 import moment from 'moment';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RootState } from '@/src/store/index';
 // const insets = useSafeAreaInsets();
 const COLORS = {
   background: '#F5F5F5',
@@ -278,6 +279,7 @@ export default function ComplaintDetailsScreen() {
   const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const handleCall = (number: string) => {
    if (!number) return;
@@ -751,6 +753,7 @@ export default function ComplaintDetailsScreen() {
 
       {/* Floating Action Bar */}
       <View style={styles.floatingActionBar}>
+        {/* 
         <TouchableOpacity
           style={[styles.actionBarButton, styles.assignButton]}
           onPress={handleAssignTask}
@@ -758,7 +761,7 @@ export default function ComplaintDetailsScreen() {
         >
           <Ionicons name="person-add-outline" size={20} color={COLORS.cardBackground} />
           <Text style={styles.actionBarButtonText}>Assign Task</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={[styles.actionBarButton, styles.updateButton]}

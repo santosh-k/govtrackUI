@@ -35,6 +35,11 @@ class ApiManager {
  // private baseUrl = 'http://192.168.1.58:3005/cms/api';
  // private adminPmsUrl = 'http://192.168.1.58:3005/admin/pms/api';
 
+ // For Live Server
+  //private baseUrl = 'https://pwddelhi.gov.in/cms/api';
+  //private adminBaseUrl = 'https://pwddelhi.gov.in/admin/api';
+  //private adminPmsUrl = 'https://pwddelhi.gov.in/admin/pms/api';
+
 
 
   private constructor() {}
@@ -133,12 +138,14 @@ class ApiManager {
 
     // If non-OK HTTP status
     if (!response.ok) {
+      console.warn('Non-OK HTTP response', { url, options, status: response.status, data });
       const msg = (data && (data.message || data.error?.message)) || 'Request failed';
       throw new Error(msg);
     }
 
     // If API returned success:false for other reasons
     if (data && data.success === false) {
+      console.warn('API returned success:false', { url, options, data: data });
       const msg = data.message || data.error?.message || 'Request failed';
       throw new Error(msg);
     }
@@ -768,10 +775,35 @@ divisionId: string | number
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminBaseUrl}/pwdsewa/inspector/update-complaint-status`;
+      console.log('ApiManager.updateComplaintStatus: sending payload summary:', {
+        complaint_id: payload?.complaint_id,
+        user_id: payload?.user_id,
+        status: payload?.status,
+        attachments_count: Array.isArray(payload?.attachments) ? payload.attachments.length : 0,
+      });
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      //console.log('ApiManager.updateComplaintStatus: response', data);
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- LOGOUT ---------------- */
+  public async logout(): Promise<any> {
+    try {
+      // Use fetchWithAuth so Authorization header is sent when token exists
+      const response = await this.fetchWithAuth('/auth/logout', { method: 'POST' });
+      const data = await response.json();
+      // Expecting { success: true, message: 'Logged out successfully' }
+      if (!response.ok || (data && data.success === false)) {
+        const msg = data?.message || 'Logout failed';
+        throw new Error(msg);
+      }
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';

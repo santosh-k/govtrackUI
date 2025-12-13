@@ -93,6 +93,7 @@ export const fetchComplaintDetails = createAsyncThunk(
       const response = await ApiManager.getInstance().getComplaintDetails(complaintId);
 
       if (response?.success && response?.data) {
+        console.log(JSON.stringify(response))
         return response.data;
       } else {
         return rejectWithValue(response?.message || 'Failed to fetch complaint details');

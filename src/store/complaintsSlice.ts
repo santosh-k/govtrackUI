@@ -67,6 +67,8 @@ export const fetchComplaints = createAsyncThunk(
   ) => {
     try {
       // Use dynamic import to avoid circular dependency
+      console.log('StartDateSl==', start_date)
+      console.log('EndDateSl==', end_date)
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getComplaints(
         stats_filter,

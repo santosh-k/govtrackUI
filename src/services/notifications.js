@@ -96,7 +96,7 @@ async function sendTokenToBackend(token) {
         const resp = await api.fetchWithAuth('/api/notifications/register-token', {
           method: 'POST',
           body: JSON.stringify({ fcmToken: token, platform: Platform.OS }),
-        });
+        });``
         // parse response if any
         let json = null;
         try {
