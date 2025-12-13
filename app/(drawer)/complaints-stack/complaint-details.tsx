@@ -18,6 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+// NOTE: video thumbnail functionality is loaded dynamically to avoid build-time
+// dependency errors if expo-video-thumbnails is not installed. We will try to
+// import it inside useEffect when generating poster frames.
 import { useDispatch, useSelector } from 'react-redux';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import Toast from '@/components/Toast';
@@ -57,9 +60,11 @@ const COLORS = {
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface MediaItem {
-  type: 'image' | 'video';
+  id: number | string;
+  type: 'image' | 'video' | 'document';
   uri: string;
   thumbnail?: string;
+  filename?: string;
 }
 
 interface ComplaintDetails {
@@ -280,6 +285,7 @@ export default function ComplaintDetailsScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const user = useSelector((state: RootState) => state.auth.user);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
   const handleCall = (number: string) => {
    if (!number) return;
@@ -427,6 +433,61 @@ export default function ComplaintDetailsScreen() {
     setToastMessage('Activity updated successfully!');
     setToastVisible(true);
   };
+
+  // Determine media type by URL extension (avoid relying on imageType)
+  const detectMediaTypeFromUrl = (url?: string) => {
+    if (!url) return 'image';
+    const ext = url.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase();
+    if (!ext) return 'image';
+    const videoExts = ['mp4', 'mov', 'mkv', 'webm', '3gp', 'avi', 'mpeg', 'mpg'];
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'heic', 'heif'];
+    const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'ppt', 'pptx'];
+    if (videoExts.includes(ext)) return 'video';
+    if (imageExts.includes(ext)) return 'image';
+    if (docExts.includes(ext)) return 'document';
+    return 'image';
+  };
+
+  // Build mediaItems and generate thumbnail for video items (poster frame)
+  useEffect(() => {
+    if (!complaintData || !complaintData.images) {
+      setMediaItems([]);
+      return;
+    }
+
+    // Initial map
+    const initial = complaintData.images.map((img) => ({
+      id: img.id,
+      type: detectMediaTypeFromUrl(img.imagePath) as 'image' | 'video' | 'document',
+      uri: img.imagePath,
+      thumbnail: (img as any).thumbnail || undefined,
+      filename: img.caption || undefined,
+    })) as MediaItem[];
+
+    setMediaItems(initial);
+
+    // Generate thumbnails for videos where needed
+    (async () => {
+      try {
+        // @ts-ignore - optional runtime import; package may be absent
+        const VT: any = await import('expo-video-thumbnails');
+        for (const item of initial) {
+          if (item.type === 'video' && !item.thumbnail) {
+            try {
+              const result = await VT.getThumbnailAsync(item.uri, { time: 1000 });
+              if (result && result.uri) {
+                setMediaItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, thumbnail: result.uri } : p)));
+              }
+            } catch (err) {
+              console.warn('Thumbnail generation failed for', item.uri, err);
+            }
+          }
+        }
+      } catch (importErr) {
+        console.warn('expo-video-thumbnails module not available', importErr);
+      }
+    })();
+  }, [complaintData]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -609,6 +670,48 @@ export default function ComplaintDetailsScreen() {
               </View>
             </View>
 
+            {/* Card 4: Media Attachments */}
+        {complaintData.images && complaintData.images.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Media Attachments</Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaScrollContent}
+            >
+              {mediaItems.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.mediaThumbnail}
+                  onPress={() => handleMediaPress(index)}
+                  activeOpacity={0.7}
+                >
+                  {item.type === 'video' ? (
+                    <>
+                      {item.thumbnail ? (
+                        <Image source={{ uri: item.thumbnail }} style={styles.thumbnailImage} />
+                      ) : (
+                        <View style={[styles.thumbnailImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }]}> 
+                          <Ionicons name="videocam" size={36} color="#FFFFFF" />
+                        </View>
+                      )}
+                      <View style={styles.playIconContainer} pointerEvents="none">
+                        <Ionicons name="play-circle" size={36} color="#FFFFFF" />
+                      </View>
+                    </>
+                  ) : (
+                        <Image
+                          source={{ uri: item.uri }}
+                          style={styles.thumbnailImage}
+                        />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
        {/* Card 2: Interactive Map Card */}
         <TouchableOpacity
         style={styles.mapCard}
@@ -668,32 +771,7 @@ export default function ComplaintDetailsScreen() {
           </View>
         </View>
 
-        {/* Card 4: Media Attachments */}
-        {complaintData.images && complaintData.images.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Media Attachments</Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.mediaScrollContent}
-            >
-              {complaintData.images.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.mediaThumbnail}
-                  onPress={() => handleMediaPress(index)}
-                  activeOpacity={0.7}
-                >
-                  <Image
-                    source={{ uri: item.imagePath }}
-                    style={styles.thumbnailImage}
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        
      {/*  <View style={styles.card}>
           <Text style={styles.title}>History</Text>
           {statusSteps.map((step, index) => {
@@ -777,9 +855,12 @@ export default function ComplaintDetailsScreen() {
       {complaintData && (
         <MediaViewer
           visible={mediaViewerVisible}
-          media={complaintData.images.map((img) => ({
-            type: 'image' as const,
-            uri: img.imagePath,
+          media={mediaItems.map((m) => ({
+            id: m.id,
+            type: m.type,
+            uri: m.uri,
+            thumbnail: m.thumbnail,
+            filename: m.filename,
           }))}
           initialIndex={selectedMediaIndex}
           onClose={() => setMediaViewerVisible(false)}

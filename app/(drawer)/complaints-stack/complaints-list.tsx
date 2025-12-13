@@ -531,6 +531,9 @@ export default function ComplaintsScreen() {
   useEffect(() => {
     const categoryId = params.categoryId as string | number | undefined;
     const categoryName = params.categoryName as string | undefined;
+    const circleId = params.circleId as string | number | undefined;
+    const divisionId = params.divisionId as string | number | undefined;
+    const groupName = params.categoryName as string | undefined; // we use the existing categoryName param to carry group name
     const hasSearchParams = params.zoneId || params.circleId || params.divisionId;
     
     console.log('ComplaintList - CategoryId useEffect triggered - categoryId:', categoryId, 'categoryName:', categoryName, 'params.filter:', params.filter);
@@ -544,6 +547,24 @@ export default function ComplaintsScreen() {
       setSelectedCategoryId(categoryId as any);
       setSelectedCategory(categoryName);
       // Will fetch in next useEffect when selectedCategoryId is updated
+    } else if (circleId && groupName) {
+      // Coming from complaint group and it's a circle filter
+      expectedCategoryIdRef.current = null; // avoid categoryId fetch
+      dispatch({ type: 'complaints/clearComplaints' });
+      setSelectedCategoryId(null);
+      setSelectedCategory('');
+      setSelectedCircleId(circleId as any);
+      setSelectedCircle(groupName);
+      // Fetch immediately with the circle filter
+      handleFetchComplaints(1, currentStatusParam, false, null);
+    } else if (divisionId && groupName) {
+      expectedCategoryIdRef.current = null;
+      dispatch({ type: 'complaints/clearComplaints' });
+      setSelectedCategoryId(null);
+      setSelectedCategory('');
+      setSelectedDivisionId(divisionId as any);
+      setSelectedDivision(groupName);
+      handleFetchComplaints(1, currentStatusParam, false, null);
     } else if (!categoryId && params.filter && !hasSearchParams) {
       // Coming from stat card (NOT from search screen with zone/circle/division)
       // Skip this if search params are present - let the search params effect handle it

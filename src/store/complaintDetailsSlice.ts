@@ -5,6 +5,7 @@ interface Image {
   id: number;
   imagePath: string;
   imageType: string;
+  thumbnail?: string;
   caption: string;
 }
 

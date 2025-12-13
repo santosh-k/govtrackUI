@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/src/store';
 
 interface ComplaintItem {
-  category_id: number;
+  id: number;
   name: string;
   total: number;
   progress: number;
@@ -35,7 +35,7 @@ const COLORS = {
 
 const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('division');
+  const [activeTab, setActiveTab] = useState('category');
 
   // Get stats data from Redux
   const statsData = useSelector((state: RootState) => state.stats.data);
@@ -52,8 +52,20 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
   const tabs = useMemo(() => {
     const tabsFromRedux = statsData?.complaint_summary?.tabs ?? [];
     console.log('ComplaintGroup - tabs from Redux:', tabsFromRedux);
-    return tabsFromRedux.length > 0 ? tabsFromRedux : ['division', 'zone', 'circle'];
+    return tabsFromRedux.length > 0 ? tabsFromRedux : ['category', 'circle', 'division'];
   }, [statsData]);
+
+  // Map activeTab -> header label
+  const headerLabel = useMemo(() => {
+    const key = String(activeTab || '').toLowerCase();
+    const map: Record<string, string> = {
+      category: 'Category',
+      circle: 'Circle',
+      division: 'Division',
+      zone: 'Circle',
+    };
+    return map[key] ?? (key.charAt(0).toUpperCase() + key.slice(1));
+  }, [activeTab]);
 
   // Get the data for the active tab
   const complaintData = useMemo(() => {
@@ -80,12 +92,36 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
       ...params,
       // Add complaint summary specific params
       groupType: item.name,
-      groupId: item.category_id,
-      categoryId: item.category_id, // Add category_id as a filter for the API
+      groupId: item.id,
       categoryName: item.name,
       // Preserve date filter params
       dateFilter,
     };
+
+    // Pass different ID param depending on which tab is active
+    // activeTab -> headerLabel mapping is: division -> Category, zone -> Circle, circle -> Division
+    if (activeTab === 'category') {
+      // division tab shows categories (keep categoryId param)
+      navigationParams.categoryId = item.id;
+    } else if (activeTab === 'circle') {
+      // zone tab shows 'Circle' header; pass circleId
+      navigationParams.circleId = item.id;
+    } else if (activeTab === 'division') {
+      // circle tab shows 'Division' header; pass divisionId
+      navigationParams.divisionId = item.id;
+    } else {
+      navigationParams.categoryId = item.id;
+    }
+    // Remove other id params to avoid confusion from previous params
+    if (navigationParams.categoryId && navigationParams.circleId) {
+      delete navigationParams.categoryId;
+    }
+    if (navigationParams.categoryId && navigationParams.divisionId) {
+      delete navigationParams.categoryId;
+    }
+    if (navigationParams.circleId && navigationParams.divisionId) {
+      delete navigationParams.divisionId;
+    }
 
     // Add custom date params if they exist
     if (selectedStartDate) {
@@ -98,7 +134,7 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
     console.log('ComplaintGroup - Navigation params:', navigationParams);
 
     router.push({
-      pathname: '/complaints-stack/complaints-list',
+      pathname: '/(drawer)/complaints-stack/complaints-list',
       params: navigationParams,
     });
   };
@@ -159,7 +195,7 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
 
       {/* TABLE HEADER */}
       <View style={styles.tableHeader}>
-        <Text style={[styles.headerCell, styles.categoryCell]}>Category</Text>
+        <Text style={[styles.headerCell, styles.categoryCell]}>{headerLabel}</Text>
         <Text style={styles.headerCell}>Total</Text>
         <Text style={styles.headerCell}>Progress</Text>
         <Text style={styles.headerCell}>Closed</Text>
@@ -170,7 +206,7 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
         data={complaintData}
         renderItem={renderRow}
         keyExtractor={(item, index) =>
-  item?.category_id ? item.category_id.toString() : index.toString()
+        item?.id ? item.id.toString() : index.toString()
 }
         showsVerticalScrollIndicator={false}
         scrollEnabled={false}
