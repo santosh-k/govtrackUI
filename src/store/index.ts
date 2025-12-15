@@ -9,6 +9,8 @@ import assignmentReducer from './assignmentSlice';
 import selectionReducer from './selectionSlice';
 import updateComplaintReducer from './updateComplaintSlice';
 import locationReducer from './locationSlice';
+import tasksReducer from './tasksSlice';
+import taskDetailsReducer from './taskDetailsSlice';
 
 // Persist the root reducer and only whitelist the `auth` slice for persistence.
 const persistConfig = {
@@ -26,6 +28,8 @@ const rootReducer = combineReducers({
   selection: selectionReducer,
   updateComplaint: updateComplaintReducer,
   location: locationReducer,
+  tasks: tasksReducer,
+  taskDetails: taskDetailsReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

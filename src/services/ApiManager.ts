@@ -104,6 +104,15 @@ class ApiManager {
       headers.set('Content-Type', 'application/json');
     }
 
+    // Debug: log request metadata (mask token)
+    try {
+      const authHeader = headers.get('Authorization');
+      const authPresence = authHeader ? `present ${authHeader.substr(0, 10)}...` : 'absent';
+      console.log('[ApiManager] fetchExternalWithRetry request:', { url, method: options.method || 'GET', auth: authPresence });
+    } catch (e) {
+      // ignore logging errors
+    }
+
     const response = await fetch(url, {
       ...options,
       headers,
@@ -112,8 +121,16 @@ class ApiManager {
     let data: any = undefined;
     try {
       data = await response.json();
+      console.log('Response',JSON.stringify(response.json))
     } catch (e) {
       // ignore JSON parse errors
+    }
+
+    // Debug: log response metadata
+    try {
+      console.log('[ApiManager] fetchExternalWithRetry response:', { url, status: response.status, ok: response.ok, data: data && (data.success !== undefined ? (data.success ? 'success' : 'failure') : 'no-success-flag'), rawData: data });
+    } catch (e) {
+      // ignore logging errors
     }
 
     // If API returned a structured error indicating token expired, try refresh once
@@ -468,6 +485,94 @@ class ApiManager {
       const url = `${this.adminPmsUrl}/projects/search?department_id=${department_id}&page=${page}&limit=${limit}`;
       console.log(url)
       const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- MY TASKS (EXTERNAL ADMIN PMS API) ---------------- */
+  public async getMyTasks(
+    page: number = 1,
+    limit: number = 20,
+    search: string = ''
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const params = new URLSearchParams({
+        my_tasks: 'true',
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (search && search.trim().length > 0) params.append('search', search.trim());
+
+      const url = `${this.adminPmsUrl}/tasks?${params.toString()}`;
+      console.log('FetchTask URL==', url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- TASKS ASSIGNED BY ME (EXTERNAL ADMIN PMS API) ---------------- */
+  public async getAssignedTasks(
+    page: number = 1,
+    limit: number = 20,
+    search: string = ''
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const params = new URLSearchParams({
+      //  assigned_by_you: 'true',
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (search && search.trim().length > 0) params.append('search', search.trim());
+
+      const url = `${this.adminPmsUrl}/tasks?${params.toString()}`;
+      console.log('[ApiManager] getMyTasks url=', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      try {
+        // log exact structure and tasks info for debugging
+        console.log('[ApiManager] getMyTasks raw:', JSON.stringify(data, null, 2));
+        const tasks = data && data.data && data.data.tasks;
+        console.log('[ApiManager] getMyTasks tasks-type:', Array.isArray(tasks) ? 'array' : typeof tasks, 'length:', Array.isArray(tasks) ? tasks.length : 'n/a');
+        if (Array.isArray(tasks) && tasks.length > 0) {
+          console.log('[ApiManager] getMyTasks sampleTask:', JSON.stringify(tasks[0]));
+        }
+      } catch (e) {
+        console.warn('[ApiManager] getMyTasks logging failed', e);
+      }
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- TASK DETAILS ---------------- */
+  public async getTask(taskId: string | number): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks/${taskId}`;
+      console.log('[ApiManager] getTask url=', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      try {
+        console.log('[ApiManager] getTask raw:', JSON.stringify(data));
+      } catch (e) {
+        // ignore
+      }
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';

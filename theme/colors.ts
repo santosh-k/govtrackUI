@@ -33,6 +33,12 @@ export const COLORS = {
   error: '#F44336',
   info: '#2196F3',
 
+  // Status colors
+  statusOpen: '#F44336',
+  statusInProgress: '#2196F3',
+  statusResolved: '#4CAF50',
+  statusClosed: '#757575',
+
   // Additional semantic colors
   white: '#FFFFFF',
   black: '#000000',

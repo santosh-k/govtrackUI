@@ -51,6 +51,7 @@ const COLORS = {
   iconOrange: '#F57C00',
   iconTeal: '#00838F',
   iconPeach: '#D84315',
+  
 };
 
 type QuickFilter = 'all' | 'today' | 'week' | 'month' | 'custom';

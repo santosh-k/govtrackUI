@@ -15,6 +15,7 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   ScrollView,
   Platform,
   Image,
@@ -36,6 +37,9 @@ import Toast from '@/components/Toast';
 import { Video, ResizeMode } from 'expo-av';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch } from '@/src/store';
+import { fetchTaskDetails, selectTaskDetails, selectTaskDetailsLoading } from '@/src/store/taskDetailsSlice';
 
 
 // Types
@@ -71,6 +75,7 @@ interface HistoryItem {
 interface TaskDetails {
   id: string;
   taskId: string;
+  title: string;
   category: string;
   description: string;
   location: string;
@@ -81,6 +86,7 @@ interface TaskDetails {
 const MOCK_TASK: TaskDetails = {
   id: '1',
   taskId: 'TSK-2024-001',
+  title: '',
   category: 'Road Inspection',
   description: 'Conduct a thorough inspection of the NH-44 road section between KM 15 to KM 25. Check for potholes, cracks, drainage issues, and road markings. Document all findings with photos and prepare a detailed report.',
   location: 'National Highway 44, Sector 15, New Delhi, India',
@@ -140,17 +146,18 @@ const MOCK_HISTORY: HistoryItem[] = [
 
 // Helper function to get status color
 const getStatusColor = (status: TaskStatus) => {
+  console.log('History Status==', status)
   switch (status) {
     case 'Completed':
-      return COLORS.success;
+      return COLORS.statusClosed;
     case 'In Progress':
-      return COLORS.info;
+      return COLORS.statusInProgress;
     case 'Pending':
-      return COLORS.warning;
+      return COLORS.statusOpen;
     case 'Overdue':
       return COLORS.error;
     default:
-      return COLORS.textSecondary;
+      return COLORS.statusOpen;
   }
 };
 
@@ -163,8 +170,25 @@ interface MediaViewerProps {
 }
 
 function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps) {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const currentMedia = media[currentIndex];
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (!Array.isArray(media) || media.length === 0) return 0;
+    const idx = typeof initialIndex === 'number' ? initialIndex : 0;
+    return Math.min(Math.max(idx, 0), media.length - 1);
+  });
+
+  // Keep index in-range when media or initialIndex changes
+  React.useEffect(() => {
+    if (!visible) return;
+    if (!Array.isArray(media) || media.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+    const idx = typeof initialIndex === 'number' ? initialIndex : 0;
+    const clamped = Math.min(Math.max(idx, 0), media.length - 1);
+    setCurrentIndex(clamped);
+  }, [visible, media.length, initialIndex]);
+
+  const currentMedia = media && media.length > 0 ? media[currentIndex] : undefined;
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (direction === 'left' && currentIndex < media.length - 1) {
@@ -187,13 +211,18 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
         {/* Media Counter */}
         <View style={styles.mediaCounter}>
           <Text style={styles.mediaCounterText}>
-            {currentIndex + 1} / {media.length}
+            {media && media.length > 0 ? `${currentIndex + 1} / ${media.length}` : '0 / 0'}
           </Text>
         </View>
 
         {/* Media Content */}
         <View style={styles.mediaContent}>
-          {currentMedia.type === 'image' ? (
+          {!currentMedia ? (
+            <View style={styles.documentViewerPlaceholder}>
+              <Ionicons name="alert-circle" size={64} color={COLORS.white} />
+              <Text style={[styles.documentFilename, { marginTop: 12 }]}>No media available</Text>
+            </View>
+          ) : currentMedia.type === 'image' ? (
             <Image source={{ uri: currentMedia.uri }} style={styles.fullScreenImage} resizeMode="contain" />
           ) : currentMedia.type === 'video' ? (
             <Video
@@ -207,6 +236,18 @@ function MediaViewer({ visible, media, initialIndex, onClose }: MediaViewerProps
             <View style={styles.documentViewerPlaceholder}>
               <Ionicons name="document-text" size={100} color={COLORS.white} />
               <Text style={styles.documentFilename}>{currentMedia.filename}</Text>
+              <TouchableOpacity
+                style={styles.openDocumentButton}
+                onPress={async () => {
+                  try {
+                    await Linking.openURL(currentMedia.uri);
+                  } catch {
+                    Alert.alert('Error', 'Unable to open document');
+                  }
+                }}
+              >
+                <Text style={styles.openDocumentText}>Open Document</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -242,7 +283,12 @@ export default function TaskDetailsScreen() {
   const taskId = params.taskId as string;
   const [activeTab, setActiveTab] = useState<TabName>('Details');
   // In a real app, fetch task data based on taskId
-  const [taskData] = useState<TaskDetails>(MOCK_TASK);
+  const dispatch = useDispatch<AppDispatch>();
+  const taskDetails = useSelector(selectTaskDetails);
+  const taskDetailsLoading = useSelector(selectTaskDetailsLoading);
+
+  // Local UI state is still used for interactions (replies add, media viewer, etc.)
+  const [taskData, setTaskData] = useState<TaskDetails>(MOCK_TASK);
 
   // Gesture support for swiping tabs - using simple state tracking
   const lastGestureX = useRef(0);
@@ -274,10 +320,88 @@ export default function TaskDetailsScreen() {
       console.log('Task ID:', taskId);
     }
   }, [taskId]);
+
+  // Fetch task details on mount or when taskId changes
+  React.useEffect(() => {
+    if (taskId) {
+      dispatch(fetchTaskDetails(taskId));
+    }
+  }, [taskId]);
+
+  // Map server task payload to UI models when taskDetails changes
+  React.useEffect(() => {
+    if (!taskDetails || !taskDetails.task) return;
+
+    const t = taskDetails.task;
+
+    // Map basic task info
+    const mapped: TaskDetails = {
+      id: String(t.id),
+      taskId: t.task_code || String(t.id),
+      title: t.title,
+      category: t.task_type || (t.project?.project_name ?? 'Task'),
+      description: t.description || '',
+      location: t.project?.project_name || (t.creator?.Zone?.name ?? '—'),
+      status: (function mapStatus(s: string) {
+        if (!s) return 'Pending';
+        const key = s.toLowerCase();
+        if (key.includes('pending')) return 'Pending';
+        if (key.includes('in_progress') || key.includes('in progress')) return 'In Progress';
+        if (key.includes('completed') || key.includes('resolved')) return 'Completed';
+        if (key.includes('overdue')) return 'Overdue';
+        return 'Pending';
+      })(t.status || ''),
+    };
+
+    setTaskData(mapped);
+    setTaskStatus(mapped.status);
+
+    // Map attachments to media items
+    const attachments = Array.isArray(t.attachments) ? t.attachments : [];
+    const mappedMedia: MediaItem[] = attachments.map((a: any) => {
+      const fileType: string = String(a.file_type || '').toLowerCase();
+      let type: MediaItem['type'] = 'document';
+      if (fileType.startsWith('image/')) type = 'image';
+      else if (fileType.startsWith('video/')) type = 'video';
+
+      return {
+        id: String(a.id),
+        type,
+        uri: a.file_path,
+        thumbnail: a.thumbnail || a.file_path,
+        filename: a.file_name || '',
+        timestamp: a.uploaded_at || a.created_at || new Date().toISOString(),
+      };
+    });
+    setMediaItems(mappedMedia);
+
+    // Map comments to replies
+    const comments = Array.isArray(t.comments) ? t.comments : [];
+    const mappedReplies: ReplyItem[] = comments.map((c: any) => ({
+      id: String(c.id),
+      user: c.user ? `${c.user.first_name || ''} ${c.user.last_name || ''}`.trim() || c.user.username || '—' : '—',
+      message: c.comment || c.message || '',
+      timestamp: c.created_at ? new Date(c.created_at).toLocaleString() : '',
+    }));
+    setReplies(mappedReplies);
+
+    // Map history
+    const history = Array.isArray(t.history) ? t.history : [];
+    const mappedHistory: HistoryItem[] = history.map((h: any) => ({
+      id: String(h.id),
+      user: h.user ? `${h.user.first_name || ''} ${h.user.last_name || ''}`.trim() || h.user.username || '—' : '—',
+      designation: h.user?.designation || '',
+      timestamp: h.created_at ? new Date(h.created_at).toLocaleString() : '',
+      statusFrom: undefined,
+      statusTo: h.new_value || undefined,
+      event: h.action || h.new_value || '',
+    }));
+    setHistoryItems(mappedHistory);
+  }, [taskDetails]);
   const [taskStatus, setTaskStatus] = useState<TaskStatus>(MOCK_TASK.status);
-  const [mediaItems] = useState<MediaItem[]>(MOCK_MEDIA);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(MOCK_MEDIA);
   const [replies, setReplies] = useState<ReplyItem[]>(MOCK_REPLIES);
-  const [historyItems] = useState<HistoryItem[]>(MOCK_HISTORY);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>(MOCK_HISTORY);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showMediaSheet, setShowMediaSheet] = useState(false);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
@@ -311,6 +435,34 @@ export default function TaskDetailsScreen() {
       Alert.alert('Error', 'Unable to open maps');
     }
   };
+
+  // Keyboard / reply helpers
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [replyFocused, setReplyFocused] = useState(false);
+
+  React.useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e: any) => {
+      console.log('[task-details] keyboard show event', e?.endCoordinates?.height);
+      setKeyboardVisible(true);
+      setKeyboardHeight(e?.endCoordinates?.height || 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      console.log('[task-details] keyboard hide event');
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+      setReplyFocused(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
 
   const handleStatusUpdate = (status: string, description: string, attachments: any[]) => {
     setTaskStatus(status as TaskStatus);
@@ -365,14 +517,16 @@ export default function TaskDetailsScreen() {
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
   const renderDetailsTab = () => {
   return (
+    <TouchableWithoutFeedback onPress={() => { console.log('[TaskDetails] Outer TouchableWithoutFeedback pressed (dismiss)'); Keyboard.dismiss(); setReplyFocused(false); }}>
     <KeyboardAwareScrollView
       ref={scrollRef}
       style={styles.tabContent}
       contentContainerStyle={styles.tabContentPadding}
       enableOnAndroid={true}
       enableAutomaticScroll={true}
-      keyboardShouldPersistTaps="always"
-      extraScrollHeight={0}  
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      extraScrollHeight={0}
       extraHeight={0}
       keyboardOpeningTime={0}
       showsVerticalScrollIndicator={false}
@@ -442,18 +596,18 @@ export default function TaskDetailsScreen() {
             value={replyText}
             onChangeText={setReplyText}
             onFocus={() => {
+              setReplyFocused(true);
               // Force scroll to bottom when keyboard opens
               setTimeout(() => {
                 scrollRef.current?.scrollToEnd(true);
               }, 20);
             }}
+            onBlur={() => setReplyFocused(false)}
           />
 
+          {/* Inline button is hidden when keyboard is visible to prefer floating send */}
           <TouchableOpacity
-            style={[
-              styles.addReplyButton,
-              !replyText.trim() && styles.addReplyButtonDisabled
-            ]}
+            style={styles.addReplyButton}
             disabled={!replyText.trim()}
             activeOpacity={0.8}
             onPress={handleAddReply}
@@ -465,13 +619,59 @@ export default function TaskDetailsScreen() {
       </View>
       <View style={{ height: 40 }} />
     </KeyboardAwareScrollView>
+    </TouchableWithoutFeedback>
+
+    // Floating send button above keyboard
   );
 };
+
+// Dismiss overlay shown behind the floating button when replying
+function KeyboardDismissOverlay({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
+  if (!visible) return null;
+  return (
+    <TouchableWithoutFeedback onPress={() => { console.log('[TaskDetails] KeyboardDismissOverlay pressed'); onDismiss(); }}>
+      <View style={styles.keyboardDismissOverlay} />
+    </TouchableWithoutFeedback>
+  );
+}
+
+// Floating send button (absolute, appears above keyboard when typing)
+function FloatingSendButton({ visible, bottom, disabled, onPress }: { visible: boolean; bottom: number; disabled: boolean; onPress: () => void }) {
+  if (!visible) return null;
+  console.log('[TaskDetails] FloatingSendButton rendered visible, bottom=', bottom, 'disabled=', disabled);
+  return (
+    <View style={[floatingStyles.container, { bottom: bottom || 0 }] } pointerEvents="box-none">
+      <TouchableOpacity
+        style={[styles.addReplyButton, disabled && styles.addReplyButtonDisabled]}
+        disabled={disabled}
+        activeOpacity={0.85}
+        onPress={onPress}
+      >
+        <Ionicons name="send" size={18} color="#fff" />
+        <Text style={styles.addReplyButtonText}>Send Reply</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const floatingStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    alignItems: 'flex-end',
+    zIndex: 60,
+  },
+});
+  const sortedMedia = React.useMemo(() => {
+    return [...mediaItems].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [mediaItems]);
+
   const renderMediaTab = () => {
     // Unified media grid - no filtering
-    const sortedMedia = [...mediaItems].sort((a, b) =>
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    // const sortedMedia = [...mediaItems].sort((a, b) =>
+    //   new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    // );
 
     return (
       <View style={styles.tabContent}>
@@ -590,7 +790,7 @@ export default function TaskDetailsScreen() {
         {/* Center: Task Category */}
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {taskData.category}
+            {taskData.title}
           </Text>
         </View>
 
@@ -659,10 +859,16 @@ export default function TaskDetailsScreen() {
       {/* Media Viewer */}
       <MediaViewer
         visible={showMediaViewer}
-        media={mediaItems}
+        media={sortedMedia}
         initialIndex={selectedMediaIndex}
         onClose={() => setShowMediaViewer(false)}
       />
+
+      {/* Dismiss overlay while reply is focused (behind floating button) */}
+      <KeyboardDismissOverlay visible={keyboardVisible && replyFocused} onDismiss={() => { Keyboard.dismiss(); setReplyFocused(false); }} />
+
+      {/* Floating Send Button (shows when keyboard is visible and user is focused on reply) */}
+      <FloatingSendButton visible={keyboardVisible && replyFocused} bottom={keyboardHeight + 12} disabled={!replyText.trim()} onPress={handleAddReply} />
 
       {/* Toast */}
       <Toast visible={toastVisible} message={toastMessage} type="success" onHide={() => setToastVisible(false)} />
@@ -915,6 +1121,7 @@ const styles = StyleSheet.create({
   addReplyButtonDisabled: {
     opacity: 0.5,
   },
+  hidden: { display: 'none' },
   addReplyButtonText: {
     fontSize: 15,
     fontWeight: '600',
@@ -1138,6 +1345,18 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     marginTop: 16,
     textAlign: 'center',
+  },
+  openDocumentButton: { marginTop: 16, paddingHorizontal: 18, paddingVertical: 10, backgroundColor: COLORS.primary, borderRadius: 10 },
+  openDocumentText: { color: COLORS.white, fontWeight: '700' },
+  // Keyboard dismiss overlay style (full screen transparent view)
+  keyboardDismissOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 50,
   },
   navButton: {
     position: 'absolute',

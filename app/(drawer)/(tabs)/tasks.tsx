@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, FlatList, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, FlatList, TouchableOpacity, Dimensions, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '@/components/Header';
 import { COLORS, SPACING } from '@/theme';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchMyTasks,
+  fetchAssignedTasks,
+  selectTasks,
+  selectTasksLoading,
+  selectTasksFetchingMore,
+  selectTasksRefreshing,
+  selectTasksPage,
+  selectTasksHasMore,
+  selectAssignedTasks,
+  selectAssignedTasksLoading,
+  selectAssignedTasksFetchingMore,
+  selectAssignedTasksRefreshing,
+  selectAssignedTasksPage,
+  selectAssignedTasksHasMore,
+} from '@/src/store/tasksSlice';
+import { AppDispatch } from '@/src/store';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
 // Types
@@ -12,43 +30,33 @@ interface Task {
   id: string;
   taskId: string;
   category: string;
+  title: string;
   assignedBy: string;
   office: string;
   department: string;
   date: string;
   time: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Overdue';
+  status: 'PENDING' | 'In Progress' | 'COMPLETED' | 'Overdue';
 }
 type TabName = 'My Tasks' | 'Assigned by Me';
 
-// Sample data
-const MY_TASKS: Task[] = [
-  { id: '1', taskId: 'TSK-2024-001', category: 'Road Inspection', assignedBy: 'Er Sabir Ali', office: 'Central Department', date: '15 Jan 2024', time: '10:30 AM', status: 'In Progress', department: 'Roads Dept.' },
-  { id: '2', taskId: 'TSK-2024-002', category: 'Building Safety Audit', assignedBy: 'Dr Priya Sharma', office: 'Safety Division', date: '14 Jan 2024', time: '02:15 PM', status: 'Pending', department: 'Safety Dept.' },
-  { id: '3', taskId: 'TSK-2024-003', category: 'Material Quality Check', assignedBy: 'Ar Rajesh Kumar', office: 'Quality Assurance', date: '13 Jan 2024', time: '09:00 AM', status: 'Completed', department: 'Quality Dept.' },
-  { id: '4', taskId: 'TSK-2024-004', category: 'Site Documentation', assignedBy: 'Er Mohammed Ali', office: 'Documentation Wing', date: '10 Jan 2024', time: '11:45 AM', status: 'Overdue', department: 'Admin Dept.' },
-];
-const ASSIGNED_BY_ME_TASKS: Task[] = [
-  { id: '5', taskId: 'TSK-2024-005', category: 'Equipment Maintenance', assignedBy: 'You', office: 'Mechanical Wing', date: '12 Jan 2024', time: '03:30 PM', status: 'In Progress', department: 'Mechanical Dept.' },
-  { id: '6', taskId: 'TSK-2024-006', category: 'Structural Assessment', assignedBy: 'You', office: 'Structural Engineering', date: '11 Jan 2024', time: '01:00 PM', status: 'Pending', department: 'Structural Dept.' },
-  { id: '7', taskId: 'TSK-2024-007', category: 'Electrical Safety Check', assignedBy: 'You', office: 'Electrical Division', date: '09 Jan 2024', time: '09:15 AM', status: 'Completed', department: 'Electrical Dept.' },
-  { id: '8', taskId: 'TSK-2024-008', category: 'Water Pipeline Inspection', assignedBy: 'You', office: 'Water Resources', date: '08 Jan 2024', time: '02:00 PM', status: 'In Progress', department: 'Water Dept.' },
-];
+// Tasks are fetched from the API and stored in Redux
 
 // Helper for status colors
 const getStatusColor = (status: Task['status']) => {
   switch (status) {
-    case 'Completed': return COLORS.success;
-    case 'In Progress': return COLORS.info;
-    case 'Pending': return COLORS.warning;
-    case 'Overdue': return COLORS.error;
-    default: return COLORS.textSecondary;
+    case 'COMPLETED': return COLORS.statusClosed;
+    case 'In Progress': return COLORS.statusInProgress;
+    case 'PENDING': return COLORS.statusOpen;
+    case 'Overdue': return COLORS.statusResolved;
+    default: return COLORS.statusOpen;
   }
 };
 
 // TaskCard
 interface TaskCardProps { task: Task; onPress: () => void; }
 function TaskCard({ task, onPress }: TaskCardProps) {
+  console.log('Current task Status == ', task.status)
   const statusColor = getStatusColor(task.status);
   return (
     <TouchableOpacity style={styles.taskCard} onPress={onPress} activeOpacity={0.7}>
@@ -58,16 +66,16 @@ function TaskCard({ task, onPress }: TaskCardProps) {
           <Text style={styles.statusText}>{task.status}</Text>
         </View>
       </View>
-      <Text style={styles.categoryTitle}>{task.category}</Text>
+      <Text style={styles.categoryTitle}>{task.title}</Text>
       <View style={styles.assignedByContainer}>
         <View style={styles.infoRow}>
           <Ionicons name="business-outline" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoText}>{task.office}</Text>
+          <Text style={styles.infoText}>{task.category}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.assignedByText}>
-            by <Text style={styles.assignedByName}>{task.assignedBy}</Text>
-            <Text style={styles.departmentText}> ({task.department})</Text>
+            Assigned To: <Text style={styles.assignedByName}>{task.assignedBy}</Text>
+           {/*  <Text style={styles.departmentText}> ({task.department})</Text> */}
           </Text>
         </View>
       </View>
@@ -114,22 +122,97 @@ export default function TasksScreen() {
   const renderTask = ({ item }: { item: Task }) => <TaskCard task={item} onPress={() => handleTaskPress(item)} />;
 
   // Scenes
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Selectors
+  const tasks = useSelector(selectTasks);
+  const isLoading = useSelector(selectTasksLoading);
+  const isFetchingMore = useSelector(selectTasksFetchingMore);
+  const isRefreshing = useSelector(selectTasksRefreshing);
+  const page = useSelector(selectTasksPage);
+  const hasMore = useSelector(selectTasksHasMore);
+
+  // Assigned-by-me selectors
+  const assignedTasks = useSelector(selectAssignedTasks);
+  const assignedIsLoading = useSelector(selectAssignedTasksLoading);
+  const assignedIsFetchingMore = useSelector(selectAssignedTasksFetchingMore);
+  const assignedIsRefreshing = useSelector(selectAssignedTasksRefreshing);
+  const assignedPageState = useSelector(selectAssignedTasksPage);
+  const assignedHasMore = useSelector(selectAssignedTasksHasMore);
+
+  // Map server task to UI Task shape
+  const mapServerTaskToTask = (t: any): Task => ({
+    id: String(t.id),
+    taskId: t.task_code || t.id,
+    title: t.title,
+    category: t.task_type || (t.project?.project_name ?? 'Task'),
+    assignedBy: t.assignedUser ? `${t.assignedUser.first_name || ''} ${t.assignedUser.last_name || ''}`.trim() : (t.creator?.first_name ? `${t.creator.first_name} ${t.creator.last_name || ''}` : '—'),
+    office: t.project?.project_name || '—',
+    department: t.assign_department_id ? String(t.assign_department_id) : '',
+    date: t.due_date ? t.due_date : (t.start_date || ''),
+    time: '',
+    status: (t.status || 'Pending') as Task['status'],
+  });
+
+  const onEndReached = () => {
+    if (isFetchingMore || isLoading) return;
+    if (!hasMore) return;
+    dispatch(fetchMyTasks({ page: page + 1 }));
+  };
+
+  const onRefresh = () => {
+    dispatch(fetchMyTasks({ page: 1, refresh: true }));
+  };
+
+  const onAssignedEndReached = () => {
+    if (assignedIsFetchingMore || assignedIsLoading) return;
+    if (!assignedHasMore) return;
+    dispatch(fetchAssignedTasks({ page: assignedPageState + 1 }));
+  };
+
+  const onAssignedRefresh = () => {
+    dispatch(fetchAssignedTasks({ page: 1, refresh: true }));
+  };
+
+  useEffect(() => {
+    // Load when tab is active
+    if (index === 0 && tasks.length === 0 && !isLoading) {
+      dispatch(fetchMyTasks({ page: 1 }));
+    }
+
+    if (index === 1 && assignedTasks.length === 0 && !assignedIsLoading) {
+      dispatch(fetchAssignedTasks({ page: 1 }));
+    }
+  }, [index]);
+
   const MyTasksRoute = () => (
     <FlatList
-      data={MY_TASKS}
+      data={tasks.map(mapServerTaskToTask)}
       renderItem={renderTask}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
       showsVerticalScrollIndicator={false}
+      onEndReachedThreshold={0.6}
+      onEndReached={onEndReached}
+      refreshing={isRefreshing}
+      onRefresh={onRefresh}
+      ListFooterComponent={isFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
+      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
     />
   );
   const AssignedByMeRoute = () => (
     <FlatList
-      data={ASSIGNED_BY_ME_TASKS}
+      data={assignedTasks.map(mapServerTaskToTask)}
       renderItem={renderTask}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
       showsVerticalScrollIndicator={false}
+      onEndReachedThreshold={0.6}
+      onEndReached={onAssignedEndReached}
+      refreshing={assignedIsRefreshing}
+      onRefresh={onAssignedRefresh}
+      ListFooterComponent={assignedIsFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
+      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
     />
   );
 

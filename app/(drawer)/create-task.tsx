@@ -32,7 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 import * as Location from 'expo-location';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Types
 interface LocationData {
@@ -44,6 +44,7 @@ interface LocationData {
 export default function CreateTaskScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
+  const insets = useSafeAreaInsets();
 
   // State
   const [taskName, setTaskName] = useState('');
@@ -224,6 +225,33 @@ export default function CreateTaskScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Task Details</Text>
 
+        {/* Task Type Dropdown */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Task Type</Text>
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => {
+                router.push({
+                  pathname: '/(drawer)/selection-screen',
+                  params: {
+                    title: 'Select Task Type',
+                    dataKey: 'taskCategories',
+                    currentValue: selectedCategory,
+                    returnTo: 'create-task',
+                    returnField: 'selectedCategory',
+                    projectId: projectId || '',
+                  },
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.dropdownText, !selectedCategory && styles.placeholderText]}>
+                {selectedCategory || 'Select task type'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
           {/* Task Name */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Task Name</Text>
@@ -236,32 +264,7 @@ export default function CreateTaskScreen() {
             />
           </View>
 
-          {/* Category Dropdown */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Category</Text>
-            <TouchableOpacity
-              style={styles.dropdownTrigger}
-              onPress={() => {
-                router.push({
-                  pathname: '/(drawer)/selection-screen',
-                  params: {
-                    title: 'Select Category',
-                    dataKey: 'taskCategories',
-                    currentValue: selectedCategory,
-                    returnTo: 'create-task',
-                    returnField: 'selectedCategory',
-                    projectId: projectId || '',
-                  },
-                });
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.dropdownText, !selectedCategory && styles.placeholderText]}>
-                {selectedCategory || 'Select category'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
+         
 
           {/* Task Description */}
           <View style={styles.fieldContainer}>
@@ -364,7 +367,7 @@ export default function CreateTaskScreen() {
       </ScrollView>
 
       {/* Fixed Submit Button */}
-      <View style={styles.submitButtonContainer}>
+      <View style={[styles.submitButtonContainer, { bottom: insets.bottom }]}>
         <TouchableOpacity
           style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
           onPress={handleSubmit}
@@ -597,7 +600,6 @@ const styles = StyleSheet.create({
   },
   submitButtonContainer: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.cardBackground,
