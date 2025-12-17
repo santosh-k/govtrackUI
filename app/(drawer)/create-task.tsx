@@ -14,7 +14,7 @@
  * @screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -36,6 +36,7 @@ import * as Location from 'expo-location';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Types
 interface LocationData {
@@ -48,7 +49,6 @@ export default function CreateTaskScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
   const insets = useSafeAreaInsets();
-
   // State
   const [taskName, setTaskName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');

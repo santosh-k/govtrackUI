@@ -636,8 +636,15 @@ export default function TaskDetailsScreen() {
   }
 };
   
-  const moveToTransfer = async (taskId: string) => {
-     router.push({ pathname: '/(drawer)/task-transfer', params: { taskId: taskId } });
+  const moveToTransfer = async (passedTaskId?: string | null) => {
+    // Resolve best available task id: param > server taskDetails > local taskData
+    const effectiveId = passedTaskId || (taskDetails && taskDetails.task && String(taskDetails.task.id)) || taskData?.id || null;
+    if (!effectiveId) {
+      Alert.alert('Error', 'Unable to transfer: task information is not available yet. Please try again after the task loads.');
+      return;
+    }
+
+    router.push({ pathname: '/(drawer)/task-transfer', params: { taskId: effectiveId } });
   }
   const handleAddReply = async () => {
     const message = replyText.trim();
@@ -756,15 +763,21 @@ export default function TaskDetailsScreen() {
                     <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
                     <Text style={styles.footerText}>{taskData.date}</Text>
                   </View>
-                  <TouchableOpacity
-                      style={[styles.detailsIconContainer]}
-                      activeOpacity={0.8}
-                       onPress={() => moveToTransfer(taskData.id)} 
-                    >
-                  <View style={styles.detailsIconContainer}>
-                    <Ionicons name="swap-horizontal-outline" size={24} color={COLORS.primary} />
-                  </View>
-                  </TouchableOpacity>
+                  {(() => {
+                    const effectiveTaskIdInRender = taskData?.id || (taskDetails && taskDetails.task && String(taskDetails.task.id)) || null;
+                    return (
+                      <TouchableOpacity
+                        style={[styles.detailsIconContainer, !effectiveTaskIdInRender ? { opacity: 0.5 } : null]}
+                        activeOpacity={0.8}
+                        onPress={() => moveToTransfer(effectiveTaskIdInRender ?? undefined)}
+                        disabled={!effectiveTaskIdInRender}
+                      >
+                        <View style={styles.detailsIconContainer}>
+                          <Ionicons name="swap-horizontal-outline" size={24} color={COLORS.primary} />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })()}
                 </View>
         </View>
       </View>

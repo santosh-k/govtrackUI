@@ -38,7 +38,7 @@ interface Task {
   time: string;
   status: 'PENDING' | 'In Progress' | 'COMPLETED' | 'Overdue';
 }
-type TabName = 'My Tasks' | 'Assigned by Me';
+type TabName = 'My Tasks' | 'All Task';
 
 // Tasks are fetched from the API and stored in Redux
 
@@ -102,7 +102,7 @@ export default function TasksScreen() {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: 'myTasks', title: 'My Tasks' },
-    { key: 'assignedByMe', title: 'Assigned by Me' },
+    { key: 'assignedByMe', title: 'All Tasks' },
   ]);
 
   // Deep link support
@@ -197,7 +197,16 @@ export default function TasksScreen() {
       refreshing={isRefreshing}
       onRefresh={onRefresh}
       ListFooterComponent={isFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
-      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
+      ListEmptyComponent={isLoading ? (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>Tasks Loading</Text>
+        </View>
+      ) : (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textSecondary }}>No tasks found</Text>
+        </View>
+      )}
     />
   );
   const AssignedByMeRoute = () => (
@@ -212,7 +221,16 @@ export default function TasksScreen() {
       refreshing={assignedIsRefreshing}
       onRefresh={onAssignedRefresh}
       ListFooterComponent={assignedIsFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
-      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
+      ListEmptyComponent={assignedIsLoading ? (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>Tasks Loading</Text>
+        </View>
+      ) : (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textSecondary }}>No tasks found</Text>
+        </View>
+      )}
     />
   );
 
@@ -253,7 +271,6 @@ export default function TasksScreen() {
         initialLayout={{ width: layout.width }}
         renderTabBar={() => null} // hide default tab bar
       />
-
       <TouchableOpacity style={styles.fab} onPress={handleCreateTask} activeOpacity={0.85}>
         <Ionicons name="add" size={24} color={COLORS.white} />
         <Text style={styles.fabText}>Create Task</Text>

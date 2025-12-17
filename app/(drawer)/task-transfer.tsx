@@ -34,6 +34,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 import * as Location from 'expo-location';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/src/store';
+import { selectTaskDetails } from '@/src/store/taskDetailsSlice';
 
 import moment from 'moment';
 
@@ -47,10 +50,14 @@ interface LocationData {
 export default function TaskTransferScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
+  const taskId = params.taskId as string;
   const insets = useSafeAreaInsets();
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [missingTaskId, setMissingTaskId] = useState<boolean>(!taskId);
+  const [effectiveTaskId, setEffectiveTaskId] = useState<string | null>(taskId || null);
+  const taskDetails = useSelector(selectTaskDetails);
   const [selectedZone, setSelectedZone] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [selectedCircle, setSelectedCircle] = useState('');
@@ -63,6 +70,7 @@ export default function TaskTransferScreen() {
   const [selectedDesignationId, setSelectedDesignationId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [transferReason, setTransferReason] = useState('');
   
   
   /**
@@ -154,6 +162,16 @@ export default function TaskTransferScreen() {
     }
   };
 
+  React.useEffect(() => {
+    // Resolve effective task id from params or from store if absent
+    const idFromStore = taskDetails?.task?.id ? String(taskDetails.task.id) : null;
+    const resolved = taskId || idFromStore || null;
+    setEffectiveTaskId(resolved);
+    setMissingTaskId(!resolved);
+    // helpful debug info when diagnosing intermittent null taskId issues
+    console.log('TaskTransfer resolved task id:', resolved, 'params.taskId:', taskId, 'storeId:', idFromStore);
+  }, [taskId, taskDetails]);
+
   /**
    * Handles form submission
    */
@@ -176,14 +194,19 @@ export default function TaskTransferScreen() {
   };
 
   const handleSubmit = async () => {
-    // Validate assignment location: at least one of department/zone/circle/division/subDivision/designation/user
-    const hasAssignment = !!(
-      selectedDepartmentId || selectedZoneId || selectedCircleId || selectedDivisionId || selectedSubDivisionId || selectedDesignationId || selectedUserId ||
-      selectedDepartment || selectedZone || selectedCircle || selectedDivision || selectedSubDivision || selectedDesignation || selectedUser
-    );
+    // Validation: require Department -> Zone -> User selected in order
+    if (!selectedDepartmentId) {
+      Alert.alert('Validation Error', 'Please select a Department first');
+      return;
+    }
 
-    if (!hasAssignment) {
-      Alert.alert('Validation Error', 'Please select at least one Assignment Location (Department, Zone, Circle, Division, Sub-Division, Designation or User)');
+    if (!selectedZoneId) {
+      Alert.alert('Validation Error', 'Please select a Zone after selecting a Department');
+      return;
+    }
+
+    if (!selectedUserId) {
+      Alert.alert('Validation Error', 'Please select a User to transfer the task to');
       return;
     }
 
@@ -191,60 +214,29 @@ export default function TaskTransferScreen() {
 
     try {
      
-      // Build payload (map to API fields)
-      const mapTaskType = (type: string | null | undefined) => {
-        if (!type) return undefined;
-        if (type === 'Standalone Task') return 'STANDALONE';
-        if (type === 'Project Task') return 'PROJECT';
-        if (type === 'Form Inspection') return 'INSPECTION';
-        return undefined;
-      };
-
-      const mapPriority = (type: string | null | undefined) => {
-        if (!type) return undefined;
-        if (type === 'Low') return 'LOW';
-        if (type === 'Medium') return 'MEDIUM';
-        if (type === 'High') return 'HIGH';
-        if (type === 'Urgent') return 'URGENT';
-        return undefined;
-      };
-
-      const payload: any = {
-        
-       
-      };
-
-      // Assignment fields (use IDs when available)
-      if (selectedUserId) payload.assigned_to = Number(selectedUserId);
-      if (selectedDesignationId) payload.designation_id = Number(selectedDesignationId);
-      if (selectedDepartmentId) payload.assign_department_id = Number(selectedDepartmentId);
-      if (selectedZoneId) payload.assign_zone_id = Number(selectedZoneId);
-      if (selectedCircleId) payload.assign_circle_id = Number(selectedCircleId);
-      if (selectedDivisionId) payload.assign_division_id = Number(selectedDivisionId);
-      if (selectedSubDivisionId) payload.assign_sub_division_id = Number(selectedSubDivisionId);
-
-      // Call createTask API
-      console.log('Submitting task payload:', payload);
       try {
         const ApiManagerModule = await import('@/src/services/ApiManager');
         const ApiManager = ApiManagerModule.default;
         const api = ApiManager.getInstance();
-        const res = await api.createTask(payload);
+        if (!effectiveTaskId) {
+          // Avoid throwing—show user friendly alert and bail out to preserve UX
+          setIsSubmitting(false);
+          Alert.alert('Error', 'No task selected to transfer. Please open Transfer from a task context and try again.');
+          return;
+        }
+
+        const res = await api.transferTask(effectiveTaskId, { to_user_id: Number(selectedUserId), transfer_reason: transferReason });
 
         if (res && res.success) {
-          // clear form then inform user and navigate back
+          // clear form then inform user and close transfer screen
           setIsSubmitting(false);
           resetForm();
-          Alert.alert('Success', res.message || 'Task created successfully!', [
+          Alert.alert('Success', res.message || 'Task transferred successfully', [
             {
               text: 'OK',
               onPress: () => {
-                // Navigate back to project details if we have projectId else go back
-                if (projectId) {
-                  router.push({ pathname: '/(drawer)/project-details', params: { projectId } });
-                } else {
-                  router.back();
-                }
+                // Close transfer screen
+                router.back();
               },
             },
           ]);
@@ -254,7 +246,7 @@ export default function TaskTransferScreen() {
           Alert.alert('Error', msg);
         }
       } catch (err: any) {
-        console.error('createTask error', err);
+        console.error('transferTask error', err);
         setIsSubmitting(false);
         Alert.alert('Error', err?.message || 'Failed to Transfer task');
       }
@@ -288,6 +280,13 @@ export default function TaskTransferScreen() {
         keyboardVerticalOffset={insets.bottom}
         style={{ flex: 1 }}
       >
+        {missingTaskId && (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>
+              No task context detected. Please open Transfer from a task's details to ensure the transfer applies to a specific task.
+            </Text>
+          </View>
+        )}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -449,7 +448,7 @@ export default function TaskTransferScreen() {
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
 
-           <Text style={styles.fieldLabel1}>User</Text>
+           <Text style={styles.fieldLabel1}>Transfer To</Text>
           <TouchableOpacity
             style={styles.dropdownTrigger}
             onPress={() => {
@@ -463,6 +462,9 @@ export default function TaskTransferScreen() {
                   returnField: 'selectedUser',
                   projectId: projectId || '',
                   department: selectedDepartment || '',
+                  departmentId: selectedDepartmentId || '',
+                  zoneId: selectedZoneId || '',
+                  circleId: selectedCircleId || '',
                   divisionId: selectedDivisionId || '',
                   subdivisionId: selectedSubDivisionId || '',
                 },
@@ -475,7 +477,20 @@ export default function TaskTransferScreen() {
             </Text>
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
+            {/* Transfer Reason */}
+            <View style={styles.fieldContainer}>
+                <Text style={styles.fieldLabel1}>Transfer Reason</Text>
+                <TextInput
+                style={styles.textInput}
+                value={transferReason}
+                onChangeText={setTransferReason}
+                placeholder="(Optionl) Explain why this task is transfer"
+                placeholderTextColor={COLORS.textSecondary}
+                />
+            </View>
+
         </View>
+       
           
         {/* Bottom spacing for fixed button */}
         <View style={{ height: 48 }} />
@@ -485,9 +500,9 @@ export default function TaskTransferScreen() {
       {/* Fixed Submit Button */}
       <View style={[styles.submitButtonContainer, { bottom: insets.bottom }]}>
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (isSubmitting || !effectiveTaskId) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !effectiveTaskId}
           activeOpacity={0.8}
         >
           {isSubmitting ? (
@@ -815,5 +830,19 @@ const styles = StyleSheet.create({
   statusOptionTextSelected: {
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  banner: {
+    backgroundColor: '#FFF3E0',
+    padding: SPACING.md,
+    borderRadius: 8,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#FFCC80',
+  },
+  bannerText: {
+    color: '#6A4E00',
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

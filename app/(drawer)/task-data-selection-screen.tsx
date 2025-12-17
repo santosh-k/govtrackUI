@@ -214,15 +214,47 @@ export default function TaskDataSelectionScreen() {
       const api = ApiManager.getInstance();
       const res = await api.getAssignmentOptions();
       if (res && res.success && res.data) {
-        // designations and users
+        // designations
         if (dataKey === 'designation') {
           setItems((res.data.designations || []).map((d: any) => ({ id: String(d.id), name: d.name })));
-        } else if (dataKey === 'user') {
-          setItems((res.data.users || []).map((u: any) => ({ id: String(u.id), name: u.name })));
         }
       } else setItems([]);
     } catch (err) {
       console.warn('getAssignmentOptions error', err);
+      setItems([]);
+    } finally { setLoading(false); }
+  };
+
+  const fetchUsersByLocation = async () => {
+    try {
+      setLoading(true);
+
+      // Accept several param name variants and only send numeric IDs
+      const rawDepartment = (params.departmentId as string) || (params.department_id as string) || (params.department as string);
+      const rawZone = (params.zoneId as string) || (params.zone_id as string);
+      const rawCircle = (params.circleId as string) || (params.circle_id as string);
+      const rawDivision = (params.divisionId as string) || (params.division_id as string) || (params.division as string);
+
+      const toNum = (v?: string) => {
+        if (!v) return undefined;
+        const s = String(v).trim();
+        return /^\d+$/.test(s) ? s : undefined;
+      };
+
+      const department_id = toNum(rawDepartment);
+      const zone_id = toNum(rawZone);
+      const circle_id = toNum(rawCircle);
+      const division_id = toNum(rawDivision);
+
+      const ApiManagerModule = await import('@/src/services/ApiManager');
+      const ApiManager = ApiManagerModule.default;
+      const api = ApiManager.getInstance();
+      const res = await api.getUsersByLocation(department_id, zone_id, circle_id, division_id);
+      if (res && res.success && Array.isArray(res.data)) {
+        setItems(res.data.map((u: any) => ({ id: String(u.id), name: u.username || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || String(u.id) })));
+      } else setItems([]);
+    } catch (err) {
+      console.warn('getUsersByLocation error', err);
       setItems([]);
     } finally { setLoading(false); }
   };
@@ -244,8 +276,10 @@ export default function TaskDataSelectionScreen() {
       fetchDivisions();
     } else if (dataKey === 'subDivision' || dataKey === 'subDivisions') {
       fetchSubDivisions();
-    } else if (dataKey === 'designation' || dataKey === 'user') {
+    } else if (dataKey === 'designation') {
       fetchAssignmentOptions();
+    } else if (dataKey === 'user') {
+      fetchUsersByLocation();
     } else {
       // static data (selectionData) will be used
       setLoading(false);
@@ -266,7 +300,16 @@ export default function TaskDataSelectionScreen() {
   }, [searchQuery, dataKey]);
 
   const handleBack = () => {
-    router.back();
+    let pathname: any;
+    if (returnTo) {
+      pathname = returnTo.startsWith('/')
+        ? returnTo
+        : `/(drawer)/${returnTo}`;
+        router.replace(pathname)
+    } else {
+      router.back();
+    }
+    
   };
 
   const handleSelectItem = (item: SelectionItem) => {

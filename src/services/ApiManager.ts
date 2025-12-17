@@ -669,6 +669,24 @@ class ApiManager {
     }
   }
 
+  /**
+   * Transfer a task to another user
+   * POST /admin/pms/api/tasks/{taskId}/transfer
+   */
+  public async transferTask(taskId: string | number, payload: { to_user_id: number; transfer_reason?: string }): Promise<any> {
+    try {
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/transfer`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
 
    public async getProjectDetail(
      projectID: string | number,
@@ -1067,6 +1085,38 @@ divisionId: string | number
       throw new Error(message);
     }
   }
+  /** ---------------- FETCH USERS BY LOCATION (EXTERNAL ADMIN PMS API) ---------------- */
+  /**
+   * GET /admin/pms/api/tasks/users-by-location
+   * Optional query params: department_id, zone_id, circle_id, division_id
+   */
+  public async getUsersByLocation(
+    department_id?: string | number,
+    zone_id?: string | number,
+    circle_id?: string | number,
+    division_id?: string | number
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const q = new URLSearchParams();
+      if (department_id !== undefined && department_id !== null && String(department_id) !== '') q.append('department_id', String(department_id));
+      if (zone_id !== undefined && zone_id !== null && String(zone_id) !== '') q.append('zone_id', String(zone_id));
+      if (circle_id !== undefined && circle_id !== null && String(circle_id) !== '') q.append('circle_id', String(circle_id));
+      if (division_id !== undefined && division_id !== null && String(division_id) !== '') q.append('division_id', String(division_id));
+
+      const url = `${this.adminPmsUrl}/tasks/users-by-location${q.toString() ? `?${q.toString()}` : ''}`;
+      console.log('[ApiManager] getUsersByLocation ->', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+  
+
 
   /** ---------------- SEARCH PROJECTS (LIGHTWEIGHT) (EXTERNAL ADMIN PMS API) ---------------- */
   public async searchProjectList(search: string = '', page: number = 1, limit: number = 50): Promise<any> {
