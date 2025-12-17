@@ -55,18 +55,29 @@ class ApiManager {
     return store.getState().auth.token;
   }
 
+  // Helper to detect FormData-like bodies (covers RN/Expo variations)
+  private isFormData(body: any): boolean {
+    if (!body) return false;
+    if (typeof FormData !== 'undefined' && body instanceof FormData) return true;
+    // Expo/React Native FormData implementations often expose append() or _parts
+    if (typeof body.append === 'function') return true;
+    if (typeof body === 'object' && '_parts' in body) return true;
+    return false;
+  }
+
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const headers = new Headers(options.headers);
     const token = this.getToken();
-
+    const isUpload = options.body instanceof FormData;
+  
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
 
-    // Only set JSON Content-Type if body is not FormData
-    if (!(options.body instanceof FormData)) {
-      headers.set('Content-Type', 'application/json');
-    }
+    // Only set JSON Content-Type if body is not FormData (handle RN/Expo FormData variants)
+   if (!isUpload && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
@@ -93,14 +104,15 @@ class ApiManager {
    */
   private async fetchExternalWithRetry(url: string, options: RequestInit = {}, retry: boolean = true): Promise<any> {
     // attach token header
-    const headers = new Headers(options.headers);
+    const headers = new Headers(options.headers || {});
     const token = this.getToken();
-
-    
 
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    if (!(options.body instanceof FormData)) {
+    // If body is FormData (including RN/Expo variants), DO NOT set Content-Type so the bridge can set proper multipart boundary
+    if (this.isFormData(options.body)) {
+      headers.delete('Content-Type');
+    } else {
       headers.set('Content-Type', 'application/json');
     }
 
@@ -395,6 +407,64 @@ class ApiManager {
   }
 }
 
+  /** ---------------- TASK REPLIES (EXTERNAL ADMIN PMS API) ---------------- */
+  /**
+   * Create a reply/comment for a task
+   * POST /admin/pms/api/tasks/{taskId}/replies
+   */
+  public async createTaskReply(taskId: string | number, payload: { comment: string; is_internal?: boolean; comment_type?: string }): Promise<any> {
+    try {
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/replies`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Upload attachments for a task (multipart/form-data)
+   * POST /admin/pms/api/tasks/{taskId}/attachments
+   * Form key: attachments (can be appended multiple times)
+   */
+  public async uploadTaskAttachments(taskId: string | number, formData: FormData): Promise<any> {
+    try {
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/attachments`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: formData,
+      });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Review (approve/reject) a task reply
+   * PATCH /admin/pms/api/tasks/{taskId}/replies/{replyId}/review
+   * Note: endpoint may vary on backend; adjust as required.
+   */
+  public async reviewTaskReply(replyId: string | number, action: 'APPROVE' | 'REJECT', payload: { remarks?: string } = {}): Promise<any> {
+    try {
+      const verb = action === 'APPROVE' ? 'approve' : 'reject';
+      const url = `${this.adminPmsUrl}/tasks/replies/${replyId}/${verb}`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
   public async getComplaints(
     stats_filter: string,
@@ -573,6 +643,25 @@ class ApiManager {
       } catch (e) {
         // ignore
       }
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- CREATE TASK (EXTERNAL ADMIN PMS API) ---------------- */
+  public async createTask(payload: any): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks`;
+      console.log('[ApiManager] createTask url=', url);
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -963,6 +1052,55 @@ divisionId: string | number
       throw new Error(message);
     }
   }
+  /** ---------------- FETCH SUBDIVISIONS BY DIVISION ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchSubDivisions(divisionId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- SEARCH PROJECTS (LIGHTWEIGHT) (EXTERNAL ADMIN PMS API) ---------------- */
+  public async searchProjectList(search: string = '', page: number = 1, limit: number = 50): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const q = `search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
+      const url = `${this.adminPmsUrl}/projects/search-lightweight?${q}`;
+      console.log('searchProjectList ->', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH FILTERED INSPECTIONS (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchFilteredInspections(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks/filtered-inspections`;
+      console.log('fetchFilteredInspections ->', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
 }
+
 
 export default ApiManager;

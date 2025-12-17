@@ -52,7 +52,7 @@ const ComplaintGroup: React.FC<ComplaintGroupProps> = ({ params = {} }) => {
   const tabs = useMemo(() => {
     const tabsFromRedux = statsData?.complaint_summary?.tabs ?? [];
     console.log('ComplaintGroup - tabs from Redux:', tabsFromRedux);
-    return tabsFromRedux.length > 0 ? tabsFromRedux : ['category', 'circle', 'division'];
+    return tabsFromRedux.length > 0 ? tabsFromRedux : [];
   }, [statsData]);
 
   // Map activeTab -> header label

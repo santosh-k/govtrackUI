@@ -272,7 +272,6 @@ export default function ComplaintDetailsScreen() {
   // In a real app, fetch complaint details based on ID using useLocalSearchParams()
   const params = useLocalSearchParams();
   const dispatch = useDispatch<AppDispatch>();
-
   // Redux selectors
   const complaintData = useSelector(selectComplaintDetails);
   const loading = useSelector(selectComplaintDetailsLoading);
@@ -285,6 +284,8 @@ export default function ComplaintDetailsScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const user = useSelector((state: RootState) => state.auth.user);
+  // Hide update status button for non-privileged users (level_rank 1-4)
+  const hideUpdateButton = [1, 2, 3, 4].includes(Number(user?.level_rank ?? -999));
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
   const handleCall = (number: string) => {
@@ -593,13 +594,15 @@ export default function ComplaintDetailsScreen() {
                 {/* Two-Column Row: Complaint Type and Poll Number */}
                 <View style={styles.gridRow}>
                   <GridItem label="Complaint Type" value={complaintData.complaintType} />
-                  <GridItem label="Poll Number" value={complaintData.pollNumber} />
+                  <GridItem label="Poll Number" value={complaintData.pollNumber ? complaintData.pollNumber : ''} />
                 </View>
 
                 {/* Full-Width Row: Category */}
-                <View style={styles.fullWidthRow}>
-                  <Text style={styles.gridLabel}>Category</Text>
-                  <Text style={styles.gridValue}>{complaintData.category}</Text>
+                <View style={styles.gridRow}>
+                  <GridItem label="Category" value={complaintData.category} />
+                  {complaintData.constituencyName ? (
+                    <GridItem label="Constituency" value={complaintData.constituencyName} />
+                  ) : null}
                 </View>
                 <View style={styles.fullWidthRow}>
                   <Text style={styles.gridLabel}>Description</Text>
@@ -624,7 +627,7 @@ export default function ComplaintDetailsScreen() {
 
                     <TouchableOpacity
                       style={{ marginLeft: 8 }}
-                      onPress={() => handleCall(complaintData.reportedBy?.contactNumber)}
+                      onPress={() => complaintData.reportedBy?.contactNumber && handleCall(complaintData.reportedBy.contactNumber)}
                     >
                       <Ionicons name="call-outline" size={20} color="#030303ff" />
                     </TouchableOpacity>
@@ -841,6 +844,7 @@ export default function ComplaintDetailsScreen() {
           <Text style={styles.actionBarButtonText}>Assign Task</Text>
         </TouchableOpacity> */}
 
+        {!hideUpdateButton && (
         <TouchableOpacity
           style={[styles.actionBarButton, styles.updateButton]}
           onPress={handleUpdateStatus}
@@ -849,6 +853,7 @@ export default function ComplaintDetailsScreen() {
           <Ionicons name="refresh-outline" size={20} color={COLORS.cardBackground} />
           <Text style={styles.actionBarButtonText}>Update Status</Text>
         </TouchableOpacity>
+        )}
       </View>
 
       {/* Media Viewer Modal */}
@@ -872,6 +877,7 @@ export default function ComplaintDetailsScreen() {
         visible={updateSheetVisible}
         complaintId={Array.isArray(params.id) ? params.id[0] : params.id}
         currentStatus={complaintData.statusDisplay}
+        statusOptions={complaintData.statusList}
         onClose={() => setUpdateSheetVisible(false)}
         onStatusUpdated={() => {
               // 1️⃣ Close sheet

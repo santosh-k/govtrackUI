@@ -34,7 +34,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING } from '@/theme';
 import * as Location from 'expo-location';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
 import moment from 'moment';
 
 // Types
@@ -44,33 +44,13 @@ interface LocationData {
   address: string;
 }
 
-export default function CreateTaskScreen() {
+export default function TaskTransferScreen() {
   const params = useLocalSearchParams();
   const projectId = params.projectId as string;
   const insets = useSafeAreaInsets();
-
-  // State
-  const [taskName, setTaskName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState<LocationData | null>(null);
-  const [landmark, setLandmark] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
-  const [showMapModal, setShowMapModal] = useState(false);
-  const [tempLocation, setTempLocation] = useState<LocationData | null>(null);
-  const [currentTaskType, setCurrentTaskType] = useState('Standalone Task');
-  const [selectedTaskType, setSelectedTaskType] = useState(currentTaskType);
-  const [showTaskTypePicker, setShowTaskTypePicker] = useState(false);
-  const [selectedProject, setSelectedProject] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedInspection, setSelectedInspection] = useState('');
-  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
-   const [currentPriority, setCurrentPriority] = useState('Low');
-  const [selectedPriority, setSelectedPriority] = useState(currentPriority);
-  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [selectedZone, setSelectedZone] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [selectedCircle, setSelectedCircle] = useState('');
@@ -83,83 +63,13 @@ export default function CreateTaskScreen() {
   const [selectedDesignationId, setSelectedDesignationId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [tags, setTags] = useState('');
   
-
-  // Date fields
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showDuePicker, setShowDuePicker] = useState(false);
-
-   const Task_Type = [
-  'Standalone Task',
-  'Project Task',
-  'Form Inspection',
-];
- const PRIORITY = [
-  'Low',
-  'Medium',
-  'High',
-  'Urgent'
-];
-
-  // Read back selections returned from SelectionScreen / ProjectList
-  useEffect(() => {
-    if (params.selectedProject) {
-      setSelectedProject(params.selectedProject as string);
-    }
-    if (params.selectedProjectId) {
-      setSelectedProjectId(params.selectedProjectId as string);
-    }
-    if (params.selectedInspection) {
-      setSelectedInspection(params.selectedInspection as string);
-    }
-    if (params.selectedInspectionId) {
-      setSelectedInspectionId(params.selectedInspectionId as string);
-    }
-  }, [params.selectedProject, params.selectedProjectId, params.selectedInspection, params.selectedInspectionId]);
-
-  /**
-   * Request location permissions and get current location on mount
-   */
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to create a task');
-          setIsLoadingLocation(false);
-          return;
-        }
-
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = currentLocation.coords;
-
-        // Reverse geocode to get address
-        const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
-        const address = addresses[0]
-          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${addresses[0].region || ''}`
-          : 'Unknown Location';
-
-        setLocation({ latitude, longitude, address });
-        setTempLocation({ latitude, longitude, address });
-        setIsLoadingLocation(false);
-      } catch (error) {
-        console.error('Error getting location:', error);
-        Alert.alert('Error', 'Failed to get current location');
-        setIsLoadingLocation(false);
-      }
-    })();
-  }, []);
-
+  
   /**
    * Update selected values when returning from SelectionScreen
    */
   useEffect(() => {
-    if (params.selectedCategory) {
-      setSelectedCategory(params.selectedCategory as string);
-    }
+   
     if (params.selectedDepartment) {
       setSelectedDepartment(params.selectedDepartment as string);
     }
@@ -227,19 +137,8 @@ export default function CreateTaskScreen() {
     params.selectedUserId,
   ]);
 
-  /**
-   * Pre-fill form fields when coming from asset observation
-   */
-  useEffect(() => {
-    if (params.assetName) {
-      // Pre-fill task name with asset name if provided
-      setTaskName(`Task for ${params.assetName as string}`);
-    }
-    if (params.observation) {
-      // Pre-fill description with observation text
-      setDescription(params.observation as string);
-    }
-  }, [params.assetName, params.observation]);
+  
+ 
 
   /**
    * Handles back navigation
@@ -256,52 +155,11 @@ export default function CreateTaskScreen() {
   };
 
   /**
-   * Confirms the adjusted location from the map modal
-   */
-  const handleConfirmLocation = async () => {
-    if (tempLocation) {
-      try {
-        // Reverse geocode the new coordinates
-        const addresses = await Location.reverseGeocodeAsync({
-          latitude: tempLocation.latitude,
-          longitude: tempLocation.longitude,
-        });
-        const address = addresses[0]
-          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${addresses[0].region || ''}`
-          : 'Unknown Location';
-
-        setLocation({
-          latitude: tempLocation.latitude,
-          longitude: tempLocation.longitude,
-          address,
-        });
-        setShowMapModal(false);
-      } catch (error) {
-        console.error('Error reverse geocoding:', error);
-        Alert.alert('Error', 'Failed to get address for selected location');
-      }
-    }
-  };
-
-  /**
    * Handles form submission
    */
   const resetForm = () => {
-    setTaskName('');
-    setSelectedCategory('');
-    setDescription('');
-    setLocation(null);
-    setLandmark('');
     setSelectedDepartment('');
     setSelectedDepartmentId(null);
-    setCurrentTaskType('Standalone Task');
-    setSelectedTaskType('Standalone Task');
-    setSelectedProject('');
-    setSelectedProjectId(null);
-    setSelectedInspection('');
-    setSelectedInspectionId(null);
-    setCurrentPriority('Low');
-    setSelectedPriority('Low');
     setSelectedZone('');
     setSelectedZoneId(null);
     setSelectedCircle('');
@@ -314,36 +172,10 @@ export default function CreateTaskScreen() {
     setSelectedDesignationId(null);
     setSelectedUser('');
     setSelectedUserId(null);
-    setTags('');
-    setStartDate(null);
-    setDueDate(null);
-    setShowStartPicker(false);
-    setShowDuePicker(false);
+    
   };
 
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!selectedTaskType || selectedTaskType.trim() === '') {
-      Alert.alert('Validation Error', 'Please select a Task Type');
-      return;
-    }
-
-    if (!taskName.trim()) {
-      Alert.alert('Validation Error', 'Task name is required');
-      return;
-    }
-
-    // Validate project/inspection selection more strictly using returned IDs when available
-    if (selectedTaskType === 'Project Task' && !selectedProjectId && !selectedProject) {
-      Alert.alert('Validation Error', 'Please select a Project for Project Task');
-      return;
-    }
-
-    if (selectedTaskType === 'Form Inspection' && !selectedInspectionId && !selectedInspection) {
-      Alert.alert('Validation Error', 'Please select an Inspection for Form Inspection');
-      return;
-    }
-
     // Validate assignment location: at least one of department/zone/circle/division/subDivision/designation/user
     const hasAssignment = !!(
       selectedDepartmentId || selectedZoneId || selectedCircleId || selectedDivisionId || selectedSubDivisionId || selectedDesignationId || selectedUserId ||
@@ -358,13 +190,7 @@ export default function CreateTaskScreen() {
     setIsSubmitting(true);
 
     try {
-      // Validate dates if provided
-      if (startDate && dueDate && moment(dueDate).isBefore(startDate, 'day')) {
-        Alert.alert('Validation Error', 'Due date cannot be earlier than start date');
-        setIsSubmitting(false);
-        return;
-      }
-
+     
       // Build payload (map to API fields)
       const mapTaskType = (type: string | null | undefined) => {
         if (!type) return undefined;
@@ -384,30 +210,9 @@ export default function CreateTaskScreen() {
       };
 
       const payload: any = {
-        title: taskName.trim(),
-        description: description || undefined,
-        task_type: mapTaskType(selectedTaskType),
-        priority: mapPriority(selectedPriority),
-        status: 'PENDING',
-        start_date: startDate ? moment(startDate).format('YYYY-MM-DD') : undefined,
-        due_date: dueDate ? moment(dueDate).format('YYYY-MM-DD') : undefined,
-        tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+        
+       
       };
-
-      // Attach project / inspection IDs when available
-      if (selectedProjectId) {
-        payload.project_id = Number(selectedProjectId);
-      } else if (selectedProject) {
-        // fallback: we only have name, not ID
-        // optionally map project name, but API expects id — warn in console
-        console.warn('Project selected without id; consider selecting project from list to get id');
-      }
-
-      if (selectedInspectionId) {
-        // API sample uses source_type/source_id for inspections — map if desired
-        payload.source_type = 'inspection';
-        payload.source_id = Number(selectedInspectionId);
-      }
 
       // Assignment fields (use IDs when available)
       if (selectedUserId) payload.assigned_to = Number(selectedUserId);
@@ -444,18 +249,18 @@ export default function CreateTaskScreen() {
             },
           ]);
         } else {
-          const msg = res?.message || 'Failed to create task';
+          const msg = res?.message || 'Failed to Transfer task';
           setIsSubmitting(false);
           Alert.alert('Error', msg);
         }
       } catch (err: any) {
         console.error('createTask error', err);
         setIsSubmitting(false);
-        Alert.alert('Error', err?.message || 'Failed to create task');
+        Alert.alert('Error', err?.message || 'Failed to Transfer task');
       }
     } catch (error) {
       console.error('Error creating task:', error);
-      Alert.alert('Error', 'Failed to create task. Please try again.');
+      Alert.alert('Error', 'Failed to Transfer task. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -474,7 +279,7 @@ export default function CreateTaskScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Task</Text>
+        <Text style={styles.headerTitle}>Transfer Task</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -489,257 +294,11 @@ export default function CreateTaskScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-        {/* Card 1: Task Details */}
-         <View style={styles.card}>
-          <View style={styles.section}>
-            <Text style={styles.fieldLabel}>Task Type</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setShowTaskTypePicker(!showTaskTypePicker)}
-            >
-              <Text style={styles.dropdownText}>{selectedTaskType}</Text>
-              <Ionicons
-                name={showTaskTypePicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={COLORS.textSecondary}
-              />
-            </TouchableOpacity>
-
-            {/* Task Type Options */}
-            {showTaskTypePicker && (
-              <View style={styles.statusOptions}>
-                {Task_Type.map((type) => (
-                  <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.statusOption,
-                      selectedTaskType === type && styles.statusOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedTaskType(type);
-                      setCurrentTaskType(type)
-                      setShowTaskTypePicker(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.statusOptionText,
-                        selectedTaskType === type && styles.statusOptionTextSelected,
-                      ]}
-                    >
-                      {type}
-                    </Text>
-                    {selectedTaskType === type && (
-                      <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-          {/* Select Project / Inspection (dynamic based on Task Type) */}
-          {selectedTaskType !== 'Standalone Task' && (
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>{selectedTaskType === 'Project Task' ? 'Project' : 'Inspection'}</Text>
-              <TouchableOpacity
-                style={styles.dropdownTrigger}
-                onPress={() => {
-                  if (selectedTaskType === 'Project Task') {
-                    // Open project list in picker mode (returns selected project back to this screen)
-                    router.push({
-                      pathname: '/(drawer)/task-data-selection-screen',
-                     params: {
-                        title: 'Select Projects',
-                        dataKey: 'taskProjects',
-                        currentValue: selectedProject,
-                        returnTo: 'create-task',
-                        returnField: 'selectedProject',
-                      },
-                    });
-                  } else if (selectedTaskType === 'Form Inspection') {
-                    // Use selection-screen for inspections (falls back to taskCategories for now)
-                    router.push({
-                      pathname: '/(drawer)/task-data-selection-screen',
-                      params: {
-                        title: 'Select Inspection',
-                        dataKey: 'taskInspections',
-                        currentValue: selectedInspection,
-                        returnTo: 'create-task',
-                        returnField: 'selectedInspection',
-                      },
-                    });
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.dropdownTriggerText, !(selectedTaskType === 'Project Task' ? selectedProject : selectedInspection) && styles.placeholderText]}>
-                  {(selectedTaskType === 'Project Task' ? selectedProject : selectedInspection) || (selectedTaskType === 'Project Task' ? 'Select Project' : 'Select Inspection')}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-            {/* Task Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Task Name</Text>
-              <TextInput
-                style={styles.textInput}
-                value={taskName}
-                onChangeText={setTaskName}
-                placeholder="Enter task name..."
-                placeholderTextColor={COLORS.textSecondary}
-              />
-            </View>
-
-          
-
-            {/* Task Description */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Task Description (Optional)</Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Enter task description..."
-                placeholderTextColor={COLORS.textSecondary}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.fieldLabel}>Priority</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setShowPriorityPicker(!showPriorityPicker)}
-            >
-              <Text style={styles.dropdownText}>{selectedPriority}</Text>
-              <Ionicons
-                name={showPriorityPicker ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={COLORS.textSecondary}
-              />
-            </TouchableOpacity>
-            {/* Priority Options */}
-            {showPriorityPicker && (
-              <View style={styles.statusOptions}>
-                {PRIORITY.map((priority) => (
-                  <TouchableOpacity
-                    key={priority}
-                    style={[
-                      styles.statusOption,
-                      selectedTaskType === priority && styles.statusOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedPriority(priority);
-                      setCurrentPriority(priority)
-                      setShowPriorityPicker(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.statusOptionText,
-                        selectedPriority === priority && styles.statusOptionTextSelected,
-                      ]}
-                    >
-                      {priority}
-                    </Text>
-                    {selectedPriority === priority && (
-                      <Ionicons name="checkmark" size={20} color={COLORS.primary} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Start Date & Due Date */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel1}>Start Date</Text>
-              <TouchableOpacity
-                style={styles.dropdownTrigger}
-                onPress={() => setShowStartPicker(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.dropdownTriggerText, !startDate && styles.placeholderText]}>
-                  {startDate ? moment(startDate).format('DD MMM YYYY') : 'Select start date'}
-                </Text>
-                <Ionicons name="calendar" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Due Date</Text>
-              <TouchableOpacity
-                style={styles.dropdownTrigger}
-                onPress={() => setShowDuePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.dropdownTriggerText, !dueDate && styles.placeholderText]}>
-                  {dueDate ? moment(dueDate).format('DD MMM YYYY') : 'Select due date'}
-                </Text>
-                <Ionicons name="calendar" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        {/* Card 2: Task Location 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Task Location</Text> */}
-
-          {/* Location/Address Field 
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Address</Text>
-            {isLoadingLocation ? (
-              <View style={styles.loadingAddressContainer}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingAddressText}>Getting your location...</Text>
-              </View>
-            ) : (
-              <TextInput
-                style={styles.textInput}
-                value={location?.address || ''}
-                editable={false}
-                placeholder="Address will appear here"
-                placeholderTextColor={COLORS.textSecondary}
-              />
-            )}
-          </View> */}
-
-          {/* Tappable Link to Adjust Location 
-          <TouchableOpacity
-            style={styles.adjustLocationLink}
-            onPress={() => {
-              if (location) {
-                setTempLocation(location);
-                setShowMapModal(true);
-              } else {
-                Alert.alert('Location Unavailable', 'Please wait for location to be detected');
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="location" size={18} color={COLORS.primary} />
-            <Text style={styles.adjustLocationText}>Tap to adjust location on map</Text>
-          </TouchableOpacity> */}
-
-          {/* Landmark Field 
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
-            <TextInput
-              style={styles.textInput}
-              value={landmark}
-              onChangeText={setLandmark}
-              placeholder="e.g., Opposite the main gate"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-          </View>
-        </View> */}
-
+      
+        
         {/* Card 3: Assign to Office/Department */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Assignment Location</Text>
+          <Text style={styles.cardTitle}>Transfer Location</Text>
           <Text style={styles.fieldLabel}>Department</Text>
           <TouchableOpacity
             style={styles.dropdownTrigger}
@@ -750,7 +309,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Department',
                   dataKey: 'departments',
                   currentValue: selectedDepartment,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedDepartment',
                   projectId: projectId || '',
                 },
@@ -774,7 +333,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Zone',
                   dataKey: 'zone',
                   currentValue: selectedZone,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedZone',
                   projectId: projectId || '',
                 },
@@ -798,7 +357,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Circle',
                   dataKey: 'circle',
                   currentValue: selectedCircle,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedCircle',
                   projectId: projectId || '',
                   zoneId: selectedZoneId || '',
@@ -823,7 +382,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Division',
                   dataKey: 'division',
                   currentValue: selectedDivision,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedDivision',
                   projectId: projectId || '',
                   circleId: selectedCircleId || '',
@@ -848,7 +407,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Sub-Division',
                   dataKey: 'subDivision',
                   currentValue: selectedSubDivision,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedSubDivision',
                   projectId: projectId || '',
                   divisionId: selectedDivisionId || '',
@@ -873,7 +432,7 @@ export default function CreateTaskScreen() {
                   title: 'Select Designation',
                   dataKey: 'designation',
                   currentValue: selectedDesignation,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedDesignation',
                   projectId: projectId || '',
                   department: selectedDepartment || '',
@@ -900,7 +459,7 @@ export default function CreateTaskScreen() {
                   title: 'Select User',
                   dataKey: 'user',
                   currentValue: selectedUser,
-                  returnTo: 'create-task',
+                  returnTo: 'task-transfer',
                   returnField: 'selectedUser',
                   projectId: projectId || '',
                   department: selectedDepartment || '',
@@ -916,18 +475,6 @@ export default function CreateTaskScreen() {
             </Text>
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
-
-          {/* Tag Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel1}>Tag's</Text>
-              <TextInput
-                style={styles.textInput}
-                value={tags}
-                onChangeText={setTags}
-                placeholder="Enter comma seperated tag"
-                placeholderTextColor={COLORS.textSecondary}
-              />
-            </View>
         </View>
           
         {/* Bottom spacing for fixed button */}
@@ -946,114 +493,10 @@ export default function CreateTaskScreen() {
           {isSubmitting ? (
             <ActivityIndicator size="small" color={COLORS.white} />
           ) : (
-            <Text style={styles.submitButtonText}>Create Task</Text>
+            <Text style={styles.submitButtonText}>Transfer Task</Text>
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Date Pickers (rendered when requested) */}
-      {showStartPicker && (
-        <DateTimePicker
-          value={startDate || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selected) => {
-            setShowStartPicker(Platform.OS === 'ios');
-            if (selected) setStartDate(selected);
-          }}
-        />
-      )}
-
-      {showDuePicker && (
-        <DateTimePicker
-          value={dueDate || (startDate || new Date())}
-          minimumDate={startDate || undefined}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selected) => {
-            setShowDuePicker(Platform.OS === 'ios');
-            if (selected) setDueDate(selected);
-          }}
-        />
-      )}
-
-      {/* Location Adjustment Modal */}
-      <Modal visible={showMapModal} animationType="slide" onRequestClose={() => setShowMapModal(false)}>
-        <SafeAreaView style={styles.mapModalContainer}>
-          {/* Modal Header */}
-          <View style={styles.mapModalHeader}>
-            <TouchableOpacity onPress={() => setShowMapModal(false)} activeOpacity={0.7}>
-              <Text style={styles.mapModalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.mapModalTitle}>Adjust Location</Text>
-            <TouchableOpacity onPress={handleConfirmLocation} activeOpacity={0.7}>
-              <Text style={styles.mapModalConfirm}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Location Adjustment UI */}
-          {tempLocation && (
-            <ScrollView style={styles.locationAdjustmentContainer} contentContainerStyle={styles.locationAdjustmentContent}>
-              <View style={styles.locationIconContainer}>
-                <Ionicons name="location" size={100} color={COLORS.primary} />
-              </View>
-
-              <Text style={styles.locationAdjustmentHint}>
-                Current location coordinates. You can manually adjust them if needed.
-              </Text>
-
-              <View style={styles.coordinateInputContainer}>
-                <Text style={styles.coordinateLabel}>Latitude</Text>
-                <TextInput
-                  style={styles.coordinateInput}
-                  value={tempLocation.latitude.toString()}
-                  onChangeText={(text) => {
-                    const lat = parseFloat(text);
-                    if (!isNaN(lat)) {
-                      setTempLocation({ ...tempLocation, latitude: lat });
-                    }
-                  }}
-                  keyboardType="numeric"
-                  placeholder="Latitude"
-                />
-              </View>
-
-              <View style={styles.coordinateInputContainer}>
-                <Text style={styles.coordinateLabel}>Longitude</Text>
-                <TextInput
-                  style={styles.coordinateInput}
-                  value={tempLocation.longitude.toString()}
-                  onChangeText={(text) => {
-                    const lng = parseFloat(text);
-                    if (!isNaN(lng)) {
-                      setTempLocation({ ...tempLocation, longitude: lng });
-                    }
-                  }}
-                  keyboardType="numeric"
-                  placeholder="Longitude"
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.refreshLocationButton}
-                onPress={async () => {
-                  try {
-                    const currentLocation = await Location.getCurrentPositionAsync({});
-                    const { latitude, longitude } = currentLocation.coords;
-                    setTempLocation({ ...tempLocation, latitude, longitude });
-                  } catch {
-                    Alert.alert('Error', 'Failed to get current location');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="refresh" size={20} color={COLORS.white} />
-                <Text style={styles.refreshLocationButtonText}>Refresh to Current Location</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }

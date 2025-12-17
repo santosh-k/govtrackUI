@@ -11,9 +11,9 @@ interface Image {
 
 interface ReportedBy {
   name: string;
-  contactNumber: string;
-  email: string;
-  address: string;
+  contactNumber: string | null;
+  email: string | null;
+  address: string | null;
 }
 
 interface AssignedUser {
@@ -30,16 +30,26 @@ interface Permissions {
   can_resolve: boolean;
 }
 
+interface StatusOption {
+  label: string;
+  value: string;
+}
+
 interface ComplaintDetail {
   complaintNumber: string;
   status: string;
   statusDisplay: string;
+  statusList?: StatusOption[];
   title: string;
   location: string;
+  complaintAddress?: string | null;
   latitude: string;
   longitude: string;
   complaintType: string;
-  pollNumber: string;
+  pollNumber?: string | null;
+  odeNumber?: string | null;
+  constituencyId : string | number | null;
+  constituencyName: string | null;
   category: string;
   description: string;
   assignedTo: string | AssignedUser | null;
@@ -52,22 +62,25 @@ interface ComplaintDetail {
   lastUpdatedFormatted: string;
   images: Image[];
   reportedBy: ReportedBy;
-  flatNo: string;
+  flatNo: string | null;
   assignedDepartment: string | null;
   permissions: Permissions;
-  history: History[]
+  history: History[];
 }
 
 interface History{
   id: string | number;
   status: string;
   statusValue: string;
+  icon?: string | null;
   date: string;
   time: string;
   timestamp: string;
-  actionBy: string;
-  designation: string;
+  actionBy: string | null;
+  actionByEmail?: string | null;
+  designation: string | null;
   remark: string;
+  isPending?: boolean;
 
 }
 

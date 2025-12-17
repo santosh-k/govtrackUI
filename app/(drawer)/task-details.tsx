@@ -26,7 +26,9 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Keyboard,
+  findNodeHandle,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,9 +38,11 @@ import AddMediaSheet from '@/components/AddMediaSheet';
 import Toast from '@/components/Toast';
 import { Video, ResizeMode } from 'expo-av';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch } from '@/src/store';
+import { AppDispatch, RootState } from '@/src/store';
+import ApiManager from '@/src/services/ApiManager';
 import { fetchTaskDetails, selectTaskDetails, selectTaskDetailsLoading } from '@/src/store/taskDetailsSlice';
 
 
@@ -53,6 +57,7 @@ interface MediaItem {
   thumbnail?: string;
   filename?: string;
   timestamp: string;
+  uploading?: boolean;
 }
 
 interface ReplyItem {
@@ -60,6 +65,9 @@ interface ReplyItem {
   user: string;
   message: string;
   timestamp: string;
+  userId?: number | string;
+  reviewerRemarks?: string | null;
+  raw?: any;
 }
 
 interface HistoryItem {
@@ -78,6 +86,8 @@ interface TaskDetails {
   title: string;
   category: string;
   description: string;
+  assignedBy: string;
+  date: string;
   location: string;
   status: TaskStatus;
 }
@@ -88,6 +98,8 @@ const MOCK_TASK: TaskDetails = {
   taskId: 'TSK-2024-001',
   title: '',
   category: 'Road Inspection',
+  assignedBy: '',
+  date: '',
   description: 'Conduct a thorough inspection of the NH-44 road section between KM 15 to KM 25. Check for potholes, cracks, drainage issues, and road markings. Document all findings with photos and prepare a detailed report.',
   location: 'National Highway 44, Sector 15, New Delhi, India',
   status: 'In Progress',
@@ -340,6 +352,8 @@ export default function TaskDetailsScreen() {
       taskId: t.task_code || String(t.id),
       title: t.title,
       category: t.task_type || (t.project?.project_name ?? 'Task'),
+      assignedBy: t.assignedUser ? `${t.assignedUser.first_name || ''} ${t.assignedUser.last_name || ''}`.trim() : (t.creator?.first_name ? `${t.creator.first_name} ${t.creator.last_name || ''}` : '—'),
+      date: t.due_date ? t.due_date : (t.start_date || ''),
       description: t.description || '',
       location: t.project?.project_name || (t.creator?.Zone?.name ?? '—'),
       status: (function mapStatus(s: string) {
@@ -382,8 +396,13 @@ export default function TaskDetailsScreen() {
       user: c.user ? `${c.user.first_name || ''} ${c.user.last_name || ''}`.trim() || c.user.username || '—' : '—',
       message: c.comment || c.message || '',
       timestamp: c.created_at ? new Date(c.created_at).toLocaleString() : '',
+      userId: c.user?.id || c.user_id,
+      reviewerRemarks: c.reviewer_remarks ?? null,
+      raw: c,
     }));
     setReplies(mappedReplies);
+    const creatorId = t.created_by || t.creator?.id || null;
+    setTaskCreatorId(creatorId);
 
     // Map history
     const history = Array.isArray(t.history) ? t.history : [];
@@ -400,6 +419,7 @@ export default function TaskDetailsScreen() {
   }, [taskDetails]);
   const [taskStatus, setTaskStatus] = useState<TaskStatus>(MOCK_TASK.status);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(MOCK_MEDIA);
+  const [uploadingAttachments, setUploadingAttachments] = useState<Record<string, boolean>>({});
   const [replies, setReplies] = useState<ReplyItem[]>(MOCK_REPLIES);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>(MOCK_HISTORY);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
@@ -409,6 +429,10 @@ export default function TaskDetailsScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [reviewingReplyId, setReviewingReplyId] = useState<string | null>(null);
+  const [taskCreatorId, setTaskCreatorId] = useState<number | string | null>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const statusColor = getStatusColor(taskStatus);
 
@@ -440,6 +464,34 @@ export default function TaskDetailsScreen() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [replyFocused, setReplyFocused] = useState(false);
+  const insets = useSafeAreaInsets();
+  // Track focus in a ref to avoid stale closures inside keyboard listeners
+  const replyFocusedRef = React.useRef(false);
+  const replyInputRef = React.useRef<TextInput | null>(null);
+
+  // Helper to ensure reply input scrolls into view with retries
+  const scrollReplyIntoView = (attempt = 0) => {
+    try {
+      const node = replyInputRef.current ? findNodeHandle(replyInputRef.current) : null;
+
+      if (node && scrollRef?.current && typeof (scrollRef.current as any).scrollToFocusedInput === 'function') {
+        try {
+          (scrollRef.current as any).scrollToFocusedInput(node);
+        } catch (err) {
+          console.warn('scrollToFocusedInput failed, falling back to scrollToEnd', err);
+          scrollRef?.current?.scrollToEnd(true);
+        }
+      } else {
+        scrollRef?.current?.scrollToEnd(true);
+      }
+    } catch (err) {
+      console.warn('scrollReplyIntoView error', err);
+    }
+
+    if (attempt < 3) {
+      setTimeout(() => scrollReplyIntoView(attempt + 1), 48);
+    }
+  };
 
   React.useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -449,6 +501,11 @@ export default function TaskDetailsScreen() {
       console.log('[task-details] keyboard show event', e?.endCoordinates?.height);
       setKeyboardVisible(true);
       setKeyboardHeight(e?.endCoordinates?.height || 0);
+
+      // If user is focused on the reply input, ensure it is visible above keyboard
+      if (replyFocusedRef.current) {
+        setTimeout(() => scrollReplyIntoView(0), 50);
+      }
     });
     const hideSub = Keyboard.addListener(hideEvent, () => {
       console.log('[task-details] keyboard hide event');
@@ -476,43 +533,175 @@ export default function TaskDetailsScreen() {
     setShowMediaViewer(true);
   };
 
+  const handleMediaSelected = async (result: any) => {
+  if (!result || result.canceled) return;
+
+  const asset = result.assets?.[0];
+  if (!asset || !asset.uri) return;
+
+  if (!taskId) {
+    Alert.alert('Error', 'No task id available to attach media');
+    return;
+  }
+
+  const tempId = `tmp-${Date.now()}`;
+  const type = (asset.type === 'video' ? 'video' : 'image') as MediaItem['type'];
+
+  const tempItem: MediaItem = {
+    id: tempId,
+    type,
+    uri: asset.uri,
+    thumbnail: asset.uri,
+    filename: asset.fileName || `upload.${(asset.uri || '').split('.').pop() || 'jpg'}`,
+    timestamp: new Date().toISOString(),
+    uploading: true,
+  };
+
+  setMediaItems(prev => [tempItem, ...prev]);
+  setUploadingAttachments(prev => ({ ...prev, [tempId]: true }));
+
+  try {
+    // ----------------------------
+    // Normalize URI
+    // ----------------------------
+    const fileUri = asset.uri.startsWith('file://')
+      ? asset.uri
+      : `file://${asset.uri.replace('content://', '')}`;
+
+    // ----------------------------
+    // Build FormData
+    // ----------------------------
+    const form = new FormData();
+    form.append('attachments', {
+      uri: fileUri,
+      name: asset.fileName || tempItem.filename,
+      type:
+        asset.mimeType ||
+        (asset.type === 'video'
+          ? 'video/mp4'
+          : 'image/jpeg'),
+    } as any);
+
+    const api = ApiManager.getInstance();
+
+    // ----------------------------
+    // Upload to server
+    // ----------------------------
+    const res: any = await api.uploadTaskAttachments(taskId, form);
+
+    const uploaded = res?.data?.attachments?.[0];
+    if (!uploaded) throw new Error('Upload failed');
+
+    const mapped: MediaItem = {
+      id: String(uploaded.id),
+      type:
+        uploaded.file_type?.startsWith('image')
+          ? 'image'
+          : uploaded.file_type?.startsWith('video')
+          ? 'video'
+          : 'document',
+      uri: uploaded.file_path,
+      thumbnail: uploaded.file_path,
+      filename: uploaded.file_name,
+      timestamp:
+        uploaded.created_at ||
+        uploaded.uploaded_at ||
+        new Date().toISOString(),
+    };
+
+    setMediaItems(prev => prev.map(it => (it.id === tempId ? mapped : it)));
+    setToastMessage(res.message || 'File uploaded successfully');
+    setToastVisible(true);
+
+  } catch (err: any) {
+    console.warn('UPLOAD ERROR:', err);
+    setMediaItems(prev =>
+      prev.map(it =>
+        it.id === tempId ? { ...it, uploading: false } : it
+      )
+    );
+
+    Alert.alert(
+      'Upload failed',
+      err?.message ||
+        'Unable to upload attachment. Tap the item to retry.'
+    );
+
+  } finally {
+    setUploadingAttachments(prev => {
+      const next = { ...prev };
+      delete next[tempId];
+      return next;
+    });
+  }
+};
+  
+  const moveToTransfer = async (taskId: string) => {
+     router.push({ pathname: '/(drawer)/task-transfer', params: { taskId: taskId } });
+  }
   const handleAddReply = async () => {
     const message = replyText.trim();
     if (!message) {
       Alert.alert('Required', 'Please enter a reply message');
       return;
     }
+    // Prevent duplicate sends
+    if (isSendingReply) return;
 
-    const newReply: ReplyItem = {
-      id: `${replies.length + 1}`,
-      user: 'You',
-      message: message,
-      timestamp: new Date().toLocaleString('en-US', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
+    setIsSendingReply(true);
+    try {
+      const api = ApiManager.getInstance();
+      const payload = { comment: message, is_internal: false, comment_type: 'REPLY' };
+      const res = await api.createTaskReply(taskId, payload);
 
-    // 1️⃣ Update reply list
-    setReplies(prev => [...prev, newReply]);
+      // Expecting created comment at res.data
+      const created = res && res.data ? res.data : null;
+      const newReply: ReplyItem = {
+        id: created && created.id ? String(created.id) : `${Math.random()}`,
+        user: created && created.user ? `${created.user.first_name || ''} ${created.user.last_name || ''}`.trim() || created.user.username || 'You' : 'You',
+        message: created?.comment || message,
+        timestamp: created?.created_at ? new Date(created.created_at).toLocaleString() : new Date().toLocaleString(),
+        userId: created?.user?.id || user?.id,
+        reviewerRemarks: created?.reviewer_remarks ?? null,
+        raw: created,
+      };
 
-    // 2️⃣ Clear input
-    setReplyText('');
+      setReplies(prev => [...prev, newReply]);
+      setReplyText('');
+      setToastMessage('Reply added successfully!');
+      setToastVisible(true);
+      Keyboard.dismiss();
 
-    // 3️⃣ Show toast
-    setToastMessage('Reply added successfully!');
-    setToastVisible(true);
+      setTimeout(() => {
+        scrollRef?.current?.scrollToEnd(true);
+      }, 300);
+    } catch (err: any) {
+      console.warn('Failed to add reply', err);
+      Alert.alert('Error', err?.message || 'Failed to add reply');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
 
-    // 4️⃣ Hide keyboard AFTER state updates
-    Keyboard.dismiss();
+  const handleReviewReply = async (replyId: string, action: 'APPROVED' | 'REJECTED') => {
+    if (reviewingReplyId) return;
 
-    // 5️⃣ Scroll AFTER re-render
-    setTimeout(() => {
-      scrollRef?.current?.scrollToEnd(true);
-    }, 300);
+    setReviewingReplyId(replyId);
+    try {
+      const api = ApiManager.getInstance();
+      const remark = action === 'REJECTED' ? 'Work not completed properly. Please fix the issues and resubmit.' : 'Reply approved. Good work completed on time.';
+      const res = await api.reviewTaskReply(replyId, action === 'APPROVED' ? 'APPROVE' : 'REJECT', { remarks: remark });
+
+      // Update local reply state to include reviewer remark (backend returns success message only)
+      setReplies(prev => prev.map(r => (r.id === replyId ? { ...r, reviewerRemarks: remark } : r)));
+      setToastMessage(action === 'APPROVED' ? 'Reply approved successfully' : 'Reply rejected successfully');
+      setToastVisible(true);
+    } catch (err: any) {
+      console.warn('Review reply failed', err);
+      Alert.alert('Error', err?.message || 'Failed to review reply');
+    } finally {
+      setReviewingReplyId(null);
+    }
   };
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
   const renderDetailsTab = () => {
@@ -526,8 +715,8 @@ export default function TaskDetailsScreen() {
       enableAutomaticScroll={true}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      extraScrollHeight={0}
-      extraHeight={0}
+      extraScrollHeight={keyboardHeight ? keyboardHeight - insets.bottom : 140}
+      extraHeight={keyboardHeight ? keyboardHeight - insets.bottom : 140}
       keyboardOpeningTime={0}
       showsVerticalScrollIndicator={false}
     >
@@ -540,9 +729,20 @@ export default function TaskDetailsScreen() {
         {/* Location Section */}
         <View style={styles.locationSection}>
           <View style={styles.locationDivider} />
-          <Text style={styles.locationLabel}>Location</Text>
-
-          <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress}>
+          {/* <Text style={styles.locationLabel}>Location</Text> */}
+          <View style={styles.assignedByContainer}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="business-outline" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.infoText}>{taskData.category}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.assignedByText}>
+                      Assigned To: <Text style={styles.assignedByName}>{taskData.assignedBy}</Text>
+                     {/*  <Text style={styles.departmentText}> ({task.department})</Text> */}
+                    </Text>
+                  </View>
+                </View>
+         {/*  <TouchableOpacity style={styles.locationContainer} onPress={handleLocationPress}>
             <Ionicons name="location" size={20} color={COLORS.info} />
             <Text style={styles.locationText}>{taskData.location}</Text>
           </TouchableOpacity>
@@ -550,7 +750,22 @@ export default function TaskDetailsScreen() {
           <TouchableOpacity style={styles.mapLink} onPress={handleLocationPress}>
             <Ionicons name="map-outline" size={16} color={COLORS.primary} />
             <Text style={styles.mapLinkText}>Tap to view location on map</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <View style={styles.cardFooter}>
+                  <View style={styles.dateTimeRow}>
+                    <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
+                    <Text style={styles.footerText}>{taskData.date}</Text>
+                  </View>
+                  <TouchableOpacity
+                      style={[styles.detailsIconContainer]}
+                      activeOpacity={0.8}
+                       onPress={() => moveToTransfer(taskData.id)} 
+                    >
+                  <View style={styles.detailsIconContainer}>
+                    <Ionicons name="swap-horizontal-outline" size={24} color={COLORS.primary} />
+                  </View>
+                  </TouchableOpacity>
+                </View>
         </View>
       </View>
 
@@ -571,6 +786,25 @@ export default function TaskDetailsScreen() {
                   <Text style={styles.replyTimestamp}>{reply.timestamp}</Text>
                 </View>
                 <Text style={styles.replyMessage}>{reply.message}</Text>
+                {/* Approve / Reject buttons - visible only to task owner and when reply is not reviewed */}
+                {user && taskCreatorId && Number(user.id) === Number(taskCreatorId) && !reply.reviewerRemarks && (
+                  <View style={styles.replyActions}>
+                    <TouchableOpacity
+                      style={[styles.approveButton, reviewingReplyId === reply.id ? styles.actionDisabled : null]}
+                      onPress={() => handleReviewReply(reply.id, 'APPROVED')}
+                      disabled={reviewingReplyId === reply.id}
+                    >
+                      <Text style={styles.approveButtonText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.rejectButton, reviewingReplyId === reply.id ? styles.actionDisabled : null]}
+                      onPress={() => handleReviewReply(reply.id, 'REJECTED')}
+                      disabled={reviewingReplyId === reply.id}
+                    >
+                      <Text style={styles.rejectButtonText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))}
           </View>
@@ -587,6 +821,7 @@ export default function TaskDetailsScreen() {
           <Text style={styles.addReplyLabel}>Add Reply</Text>
 
           <TextInput
+            ref={replyInputRef}
             style={styles.replyInput}
             placeholder="Type your reply here..."
             placeholderTextColor={COLORS.textSecondary}
@@ -597,18 +832,21 @@ export default function TaskDetailsScreen() {
             onChangeText={setReplyText}
             onFocus={() => {
               setReplyFocused(true);
-              // Force scroll to bottom when keyboard opens
-              setTimeout(() => {
-                scrollRef.current?.scrollToEnd(true);
-              }, 20);
+              replyFocusedRef.current = true;
+
+              // Try scrolling a few times to avoid timing issues with different keyboards
+              scrollReplyIntoView(0);
             }}
-            onBlur={() => setReplyFocused(false)}
+            onBlur={() => {
+              setReplyFocused(false);
+              replyFocusedRef.current = false;
+            }}
           />
 
           {/* Inline button is hidden when keyboard is visible to prefer floating send */}
           <TouchableOpacity
-            style={styles.addReplyButton}
-            disabled={!replyText.trim()}
+            style={[styles.addReplyButton, keyboardVisible && replyFocused ? styles.hidden : null, !replyText.trim() && styles.addReplyButtonDisabled]}
+            disabled={!replyText.trim() || isSendingReply}
             activeOpacity={0.8}
             onPress={handleAddReply}
           >
@@ -617,7 +855,7 @@ export default function TaskDetailsScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={{ height: 40 }} />
+      <View style={{ height: keyboardVisible ? keyboardHeight + (insets.bottom || 0) + 24 : 40 }} />
     </KeyboardAwareScrollView>
     </TouchableWithoutFeedback>
 
@@ -642,7 +880,7 @@ function FloatingSendButton({ visible, bottom, disabled, onPress }: { visible: b
   return (
     <View style={[floatingStyles.container, { bottom: bottom || 0 }] } pointerEvents="box-none">
       <TouchableOpacity
-        style={[styles.addReplyButton, disabled && styles.addReplyButtonDisabled]}
+        style={[styles.addReplyButton, { width: '100%' }, disabled && styles.addReplyButtonDisabled]}
         disabled={disabled}
         activeOpacity={0.85}
         onPress={onPress}
@@ -659,7 +897,7 @@ const floatingStyles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     right: 12,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     zIndex: 60,
   },
 });
@@ -675,7 +913,12 @@ const floatingStyles = StyleSheet.create({
 
     return (
       <View style={styles.tabContent}>
-        {sortedMedia.length > 0 ? (
+        {taskDetailsLoading && sortedMedia.length === 0 ? (
+          <View style={styles.emptyMediaContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.emptyMediaText, { marginTop: 12 }]}>Loading attachments…</Text>
+          </View>
+        ) : sortedMedia.length > 0 ? (
           <FlatList
             data={sortedMedia}
             keyExtractor={(item) => item.id}
@@ -685,7 +928,17 @@ const floatingStyles = StyleSheet.create({
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 style={styles.mediaThumbnail}
-                onPress={() => handleMediaPress(index)}
+                onPress={() => {
+                  // If an upload failed (uploading === false but id starts with tmp-), treat press as retry
+                  if (item.id.startsWith('tmp-') && !item.uploading) {
+                    // reattempt upload using the original local uri
+                    handleMediaSelected({ canceled: false, assets: [{ uri: item.uri, fileName: item.filename, type: item.type === 'video' ? 'video' : 'image' }] });
+                    // show spinner again
+                    setMediaItems(prev => prev.map(it => (it.id === item.id ? { ...it, uploading: true } : it)));
+                    return;
+                  }
+                  handleMediaPress(index);
+                }}
                 activeOpacity={0.7}
               >
                 {item.type === 'document' ? (
@@ -696,7 +949,19 @@ const floatingStyles = StyleSheet.create({
                     </Text>
                   </View>
                 ) : (
-                  <Image source={{ uri: item.type === 'video' ? item.thumbnail : item.uri }} style={styles.thumbnailImage} />
+                  <View>
+                    <Image source={{ uri: item.type === 'video' ? item.thumbnail : item.uri }} style={styles.thumbnailImage} />
+                    {item.uploading && (
+                      <View style={styles.uploadOverlay}>
+                        <ActivityIndicator size="small" color="#fff" />
+                      </View>
+                    )}
+                    {!item.uploading && item.id.startsWith('tmp-') && (
+                      <View style={[styles.uploadOverlay, { backgroundColor: 'rgba(0,0,0,0.25)' }]}>
+                        <Text style={{ color: '#fff', fontWeight: '700' }}>Retry</Text>
+                      </View>
+                    )}
+                  </View>
                 )}
                 {item.type === 'video' && (
                   <View style={styles.playIconOverlay}>
@@ -797,7 +1062,7 @@ const floatingStyles = StyleSheet.create({
         {/* Right: Status Badge */}
         <TouchableOpacity
           style={[styles.headerStatusBadge, { backgroundColor: statusColor }]}
-          onPress={() => setShowStatusSheet(true)}
+          onPress={() => setShowStatusSheet(false)}
           activeOpacity={0.7}
         >
           <Text style={styles.headerStatusText}>{taskStatus}</Text>
@@ -846,13 +1111,12 @@ const floatingStyles = StyleSheet.create({
       <AddMediaSheet
         visible={showMediaSheet}
         onClose={() => setShowMediaSheet(false)}
-        onPhotoTaken={() => {
-          setToastMessage('Photo captured successfully!');
-          setToastVisible(true);
+        onPhotoTaken={(result) => {
+          // Use the same handler for camera capture
+          handleMediaSelected(result);
         }}
-        onMediaSelected={() => {
-          setToastMessage('Media added successfully!');
-          setToastVisible(true);
+        onMediaSelected={(result) => {
+          handleMediaSelected(result);
         }}
       />
 
@@ -868,7 +1132,7 @@ const floatingStyles = StyleSheet.create({
       <KeyboardDismissOverlay visible={keyboardVisible && replyFocused} onDismiss={() => { Keyboard.dismiss(); setReplyFocused(false); }} />
 
       {/* Floating Send Button (shows when keyboard is visible and user is focused on reply) */}
-      <FloatingSendButton visible={keyboardVisible && replyFocused} bottom={keyboardHeight + 12} disabled={!replyText.trim()} onPress={handleAddReply} />
+      <FloatingSendButton visible={keyboardVisible && replyFocused} bottom={keyboardHeight + (insets.bottom || 0) + 16} disabled={!replyText.trim() || isSendingReply} onPress={handleAddReply} />
 
       {/* Toast */}
       <Toast visible={toastVisible} message={toastMessage} type="success" onHide={() => setToastVisible(false)} />
@@ -1068,6 +1332,45 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: COLORS.text,
     lineHeight: 20,
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  replyActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  approveButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.success || '#22c55e',
+    borderRadius: 6,
+  },
+  approveButtonText: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  rejectButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.error || '#ef4444',
+    borderRadius: 6,
+  },
+  rejectButtonText: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  actionDisabled: {
+    opacity: 0.6,
   },
   emptyReplies: {
     alignItems: 'center',
@@ -1373,4 +1676,13 @@ const styles = StyleSheet.create({
   navButtonRight: {
     right: 20,
   },
+  assignedByContainer: { marginBottom: 12, gap: 6 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  infoText: { fontSize: 14, fontWeight: '500', color: COLORS.textSecondary },
+  assignedByText: { fontSize: 14, fontWeight: '400', color: COLORS.textSecondary },
+  assignedByName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
+  dateTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  footerText: { fontSize: 13, fontWeight: '500', color: COLORS.textSecondary },
+  detailsIconContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
 });

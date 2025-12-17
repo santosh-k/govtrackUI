@@ -5,18 +5,22 @@ import {
   Circle,
   Division,
   LocationState,
+  SubDivision,
 } from '@/src/types/location.types';
 
 const initialState: LocationState = {
   zones: [],
   circles: [],
   divisions: [],
+  subDivision: [],
   selectedZoneId: null,
   selectedCircleId: null,
   selectedDivisionId: null,
+  selectedSubDivisionId: null,
   isLoadingZones: false,
   isLoadingCircles: false,
   isLoadingDivisions: false,
+  isLoadingSubDivisions: false,
   error: null,
 };
 
@@ -82,6 +86,26 @@ export const fetchDivisions = createAsyncThunk(
   }
 );
 
+// Async Thunk to fetch divisions by circle ID
+export const fetchSubDivisions = createAsyncThunk(
+  'location/fetchSubDivisions',
+  async (divisionId: number | string, { rejectWithValue }) => {
+    try {
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().fetchSubDivisions(divisionId);
+
+      if (response?.success && response?.data) {
+        return response.data as SubDivision[];
+      } else {
+        return rejectWithValue(response?.message || 'Failed to fetch sub divisions');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const locationSlice = createSlice({
   name: 'location',
   initialState,
@@ -91,25 +115,36 @@ const locationSlice = createSlice({
       // Clear circles and divisions when zone changes
       state.circles = [];
       state.divisions = [];
+      state.subDivision = []
       state.selectedCircleId = null;
       state.selectedDivisionId = null;
+      state.selectedSubDivisionId = null;
     },
     setSelectedCircle: (state, action: PayloadAction<number | null>) => {
       state.selectedCircleId = action.payload;
       // Clear divisions when circle changes
       state.divisions = [];
+      state.subDivision = []
       state.selectedDivisionId = null;
+      state.selectedSubDivisionId = null;
     },
     setSelectedDivision: (state, action: PayloadAction<number | null>) => {
       state.selectedDivisionId = action.payload;
+      state.subDivision = []
+      state.selectedSubDivisionId = null;
+    },
+    setSelectedSubDivision: (state, action: PayloadAction<number | null>) => {
+      state.selectedSubDivisionId = action.payload;
     },
     clearLocation: (state) => {
       state.zones = [];
       state.circles = [];
       state.divisions = [];
+      state.subDivision = [];
       state.selectedZoneId = null;
       state.selectedCircleId = null;
       state.selectedDivisionId = null;
+      state.selectedSubDivisionId = null;
       state.error = null;
     },
   },
@@ -165,6 +200,7 @@ export const {
   setSelectedZone,
   setSelectedCircle,
   setSelectedDivision,
+  setSelectedSubDivision,
   clearLocation,
 } = locationSlice.actions;
 
@@ -172,12 +208,15 @@ export const {
 export const selectZones = (state: RootState) => state.location.zones;
 export const selectCircles = (state: RootState) => state.location.circles;
 export const selectDivisions = (state: RootState) => state.location.divisions;
+export const selectedSubDivision = (state: RootState) => state.location.subDivision;
 export const selectSelectedZoneId = (state: RootState) =>
   state.location.selectedZoneId;
 export const selectSelectedCircleId = (state: RootState) =>
   state.location.selectedCircleId;
 export const selectSelectedDivisionId = (state: RootState) =>
   state.location.selectedDivisionId;
+export const selectSelectedSubDivisionId = (state: RootState) =>
+  state.location.selectedSubDivisionId;
 export const selectLocationError = (state: RootState) => state.location.error;
 export const selectIsLoadingZones = (state: RootState) =>
   state.location.isLoadingZones;
@@ -185,5 +224,7 @@ export const selectIsLoadingCircles = (state: RootState) =>
   state.location.isLoadingCircles;
 export const selectIsLoadingDivisions = (state: RootState) =>
   state.location.isLoadingDivisions;
+export const selectIsLoadingSubDivisions = (state: RootState) =>
+  state.location.isLoadingSubDivisions;
 
 export default locationSlice.reducer;

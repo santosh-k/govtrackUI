@@ -43,6 +43,9 @@ export const COLORS = {
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
+
+  divider: '#EEEEEE',
+  inputBackground: '#F5F5F5',
 } as const;
 
 // Type for color keys (for TypeScript autocompletion)

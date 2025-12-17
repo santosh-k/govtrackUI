@@ -38,6 +38,19 @@ export interface Division {
   updated_at: string;
 }
 
+// Sub-Division Types
+export interface SubDivision {
+  id: number;
+  department_id: number;
+  pwd_zone_id: number;
+  pwd_circle_id: number;
+  pwd_division_id: number;
+  name: string;
+  code: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // API Response Types
 export interface LocationApiResponse<T> {
   success: boolean;
@@ -50,11 +63,14 @@ export interface LocationState {
   zones: Zone[];
   circles: Circle[];
   divisions: Division[];
+  subDivision: SubDivision[];
   selectedZoneId: number | null;
   selectedCircleId: number | null;
   selectedDivisionId: number | null;
+  selectedSubDivisionId: number | null;
   isLoadingZones: boolean;
   isLoadingCircles: boolean;
   isLoadingDivisions: boolean;
+  isLoadingSubDivisions: boolean;
   error: string | null;
 }

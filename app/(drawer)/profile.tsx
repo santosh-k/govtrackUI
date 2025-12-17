@@ -49,6 +49,41 @@ export default function ProfileScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   // ✅ Safe data extraction (no more crashes)
+  // Compute user data with safe defaults and dynamic level/area labeling
+  const computedLevel = user?.isAdminUser
+    ? 'Admin'
+    : user?.isZonalUser
+    ? 'Zone'
+    : user?.isCircleUser
+    ? 'Circle'
+    : user?.isDivisionUser
+    ? 'Division'
+    : user?.isSubDivisionUser
+    ? 'SubDivision'
+    : Array.isArray(user?.designations) && user.designations.length > 0
+    ? user.designations[0]?.level?.name ?? ''
+    : '';
+
+  const areaLabel = user?.isZonalUser
+    ? 'Zone'
+    : user?.isCircleUser
+    ? 'Circle'
+    : user?.isDivisionUser
+    ? 'Division'
+    : user?.isSubDivisionUser
+    ? 'SubDivision'
+    : 'Division';
+
+  const areaValue = user?.isZonalUser
+    ? user?.zone?.name
+    : user?.isCircleUser
+    ? user?.circle?.name
+    : user?.isDivisionUser
+    ? user?.division?.name
+    : user?.isSubDivisionUser
+    ? user?.subDivision?.name
+    : user?.division?.name;
+
   const userData = {
     fullName: user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '',
     email: user?.email ?? '',
@@ -62,10 +97,10 @@ export default function ProfileScreen() {
         : '',
     address: user?.address ?? '',
     profile_Image: user?.profile_image,
-    level:  Array.isArray(user?.designations) && user.designations.length > 0
-        ? user.designations[0]?.level.name ?? ''
-        : '',
-    division: user?.division?.name,    
+    level: computedLevel,
+    // dynamic area label/value (Zone/Circle/Division/SubDivision)
+    areaLabel,
+    areaValue,
   };
 
   return (
@@ -117,8 +152,8 @@ export default function ProfileScreen() {
             icon="star"
           />
            <ProfileItem
-            label="Division"
-            value={userData.division || 'Not provided'}
+            label={userData.areaLabel || 'Division'}
+            value={userData.areaValue || 'Not provided'}
             icon="folder"
           />
           <ProfileItem

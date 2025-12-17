@@ -14,6 +14,7 @@ import {
   ActionSheetIOS,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -45,11 +46,13 @@ const COLORS = {
 };
 
 const STATUS_OPTIONS = [
-  'Assigned',
-  'In Progress',
-  'Closed',
-  'Reopened',
+  ''
 ];
+
+interface StatusOption {
+  label: string;
+  value: string;
+}
 
 interface Attachment {
   uri: string;
@@ -62,6 +65,7 @@ interface UpdateActivityBottomSheetProps {
   complaintId: number | string;
   currentStatus: string;
   onClose: () => void;
+  statusOptions?: StatusOption[]; // dynamic status list from server
   onSubmit?: (status: string, description: string, attachments: Attachment[]) => void;
   onStatusUpdated?: () => void; // Callback after successful status update
 }
@@ -71,6 +75,7 @@ export default function UpdateActivityBottomSheet({
   complaintId,
   currentStatus,
   onClose,
+  statusOptions,
   onSubmit,
   onStatusUpdated,
 }: UpdateActivityBottomSheetProps) {
@@ -79,6 +84,7 @@ export default function UpdateActivityBottomSheet({
   const error = useSelector(selectUpdateComplaintError);
   const successMessage = useSelector(selectUpdateComplaintSuccess);
   const currentUser = useSelector((state: any) => state.auth?.user);
+  const insets = useSafeAreaInsets();
 
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [description, setDescription] = useState('');
@@ -253,17 +259,26 @@ export default function UpdateActivityBottomSheet({
       }
 
       try {
-        // 💠 Convert UI label → API value
-        const statusMap: Record<string, string> = {
-          Assigned: "assigned",
-          "In Progress": "in_progress",
-          Closed: "closed",
-          Reopened: "reopened",
-        };
+        // 💠 Determine API status value
+        let apiStatus: string | undefined;
 
-        const apiStatus =
-          statusMap[selectedStatus] ||
-          selectedStatus.toLowerCase().replace(/\s+/g, "_");
+        // If server provided statusOptions, use matching value
+        if (statusOptions && statusOptions.length > 0) {
+          const opt = statusOptions.find((o) => o.label === selectedStatus);
+          apiStatus = opt ? opt.value : undefined;
+        }
+
+        // Fallback mapping (legacy)
+        if (!apiStatus) {
+          const statusMap: Record<string, string> = {
+            Assigned: "assigned",
+            "In Progress": "in_progress",
+            Closed: "closed",
+            Reopened: "reopened",
+          };
+
+          apiStatus = statusMap[selectedStatus] || selectedStatus.toLowerCase().replace(/\s+/g, "_");
+        }
 
         console.log("Submitting status update:", {
           complaintId,
@@ -410,7 +425,7 @@ export default function UpdateActivityBottomSheet({
               {/* Status Options */}
               {showStatusPicker && (
                 <View style={styles.statusOptions}>
-                  {STATUS_OPTIONS.map((status) => (
+                  {(statusOptions && statusOptions.length > 0 ? statusOptions.map((s) => s.label) : STATUS_OPTIONS).map((status) => (
                     <TouchableOpacity
                       key={status}
                       style={[
@@ -510,7 +525,10 @@ export default function UpdateActivityBottomSheet({
           </ScrollView>
 
           {/* Submit Button */}
-          <View style={styles.footer}>
+          <View style={[
+            styles.footer,
+            { paddingBottom: insets.bottom ? insets.bottom + 16 : (Platform.OS === 'ios' ? 34 : 24) },
+          ]}>
             <TouchableOpacity
               style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
@@ -735,8 +753,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   footer: {
-    padding: 48,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: COLORS.divider,
   },

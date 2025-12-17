@@ -70,6 +70,7 @@ export interface User {
   address: string | null;
   profile_image?: string;
   level:string;
+  level_rank: number | string | null;
   isAdminUser: boolean;
   isZonalUser: boolean;
   isCircleUser: boolean;
