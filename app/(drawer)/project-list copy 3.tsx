@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -23,13 +23,12 @@ import {Ionicons} from '@expo/vector-icons';
 import {router, useLocalSearchParams} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useSelector} from 'react-redux';
-import {RootState, store} from '@/src/store';
+import {RootState} from '@/src/store';
 import moment from 'moment';
 import ProjectFilterBottomSheet, {
   InlinePickerModal,
   ProjectFilters,
 } from '@/components/ProjectFilterBottomSheet';
-import {useFocusEffect} from '@react-navigation/native';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.85;
@@ -740,8 +739,6 @@ export default function ProjectListScreen() {
   const [filterStatusList, setFilterStatusList] = useState([]);
   const [filterFundingList, setFilterFundingList] = useState([]);
   const [filterWorkTypeList, setFilterWorkTypeList] = useState([]);
-  const [minBugetText, setMinBugetText] = useState('');
-  const [maxBugetText, setMaxBugetText] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [isLoading, setIsLoading] = useState(false);
@@ -749,20 +746,6 @@ export default function ProjectListScreen() {
   const [pickerTitle, setPickerTitle] = useState('');
   const [filterData, setFilterData] = useState([]);
   const [pickerVisible, setPickerVisible] = useState(false);
-
-  const [filters, setFilters] = useState({
-    department_id: null,
-    zone_id: null,
-    circle_id: null,
-    division_id: null,
-    sub_division_id: null,
-    sector_id: null,
-    sub_sector_id: null,
-    work_type_id: null,
-    funding_source_id: null,
-    status: null,
-    // budget_range: null,
-  });
 
   const [selectedId, setSelectedId] = useState(null);
   const [selectedName, setSelectedName] = useState(null);
@@ -825,17 +808,13 @@ export default function ProjectListScreen() {
     projectId?: string,
     projectName?: string,
     projectCode?: string,
-    projectStatus?: string,
   ) => {
-    // alert(projectStatus);
-    // return;
     router.replace({
       pathname: '/(drawer)/project-details',
       params: {
         projectId: projectId ?? '',
         projectName: projectName ?? '',
         projectCode: projectCode ?? '',
-        projectStatus: projectStatus ?? '',
       },
     });
   };
@@ -847,25 +826,14 @@ export default function ProjectListScreen() {
 
   const displayDesignation = user?.departments?.[0]?.id as number | undefined;
 
-  // useEffect(() => {
-  //   if (displayDesignation !== undefined) {
-  //     setPage(1);
-  //     setProjects([]); // reset list
-  //     setIsListEnd(false);
-  //     fetchProjectList(displayDesignation, 1, limit);
-  //   }
-  // }, [displayDesignation]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (displayDesignation !== undefined) {
-        setPage(1);
-        setProjects([]); // reset list
-        setIsListEnd(false);
-        fetchProjectList(displayDesignation, 1, limit);
-      }
-    }, [displayDesignation]),
-  );
+  useEffect(() => {
+    if (displayDesignation !== undefined) {
+      setPage(1);
+      setProjects([]); // reset list
+      setIsListEnd(false);
+      fetchProjectList(displayDesignation, 1, limit);
+    }
+  }, [displayDesignation]);
 
   useEffect(() => {
     fetchFilterSectorList();
@@ -1017,7 +985,6 @@ export default function ProjectListScreen() {
   };
 
   const fetchFilterZoneList = async id => {
-    setFilterZoneList([]);
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getFilterZoneOption(id);
@@ -1047,7 +1014,6 @@ export default function ProjectListScreen() {
   };
 
   const fetchFilterCircleList = async id => {
-    setFilterCircleList([]);
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getFilterCircleOption(id);
@@ -1077,7 +1043,6 @@ export default function ProjectListScreen() {
   };
 
   const fetchFilterDivisionList = async id => {
-    setFilterDivisionList([]);
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getFilterDivisionOption(
@@ -1109,7 +1074,6 @@ export default function ProjectListScreen() {
   };
 
   const fetchFilterSubDivisionList = async id => {
-    setFilterSubDivisionList([]);
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response =
@@ -1156,7 +1120,6 @@ export default function ProjectListScreen() {
   };
 
   const fetchFilterSubSectorList = async id => {
-    setFilterSubSectorList([]);
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getFilterSubSectorOption(
@@ -1240,7 +1203,7 @@ export default function ProjectListScreen() {
   };
 
   const handleResetFilters = () => {
-    // setActiveFilters(emptyFilters);
+    setActiveFilters(emptyFilters);
   };
 
   // Count active filters for badge
@@ -1400,16 +1363,13 @@ export default function ProjectListScreen() {
   const renderProjectItem = ({item}: {item: Project}) => (
     <ProjectCard
       project={item}
-      onPress={() => {
-        // alert(item?.status);
-        // return;
+      onPress={() =>
         navigateToProjectDetails(
           item?.id ?? '',
           item?.project_name ?? item?.name ?? '',
           item?.project_id ?? item?.id ?? '',
-          item?.status ?? '',
-        );
-      }}
+        )
+      }
     />
   );
 
@@ -1420,26 +1380,16 @@ export default function ProjectListScreen() {
     );
   };
 
-  const renderEmptyState = () => {
-    return (
-      <>
-        {isLoading === false && (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="search-outline"
-              size={64}
-              color={COLORS.textLight}
-            />
-            <Text style={styles.emptyStateTitle}>No projects found</Text>
-            <Text style={styles.emptyStateText}>
-              No projects match your search criteria.{'\n'}
-              Try adjusting your search terms.
-            </Text>
-          </View>
-        )}
-      </>
-    );
-  };
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="search-outline" size={64} color={COLORS.textLight} />
+      <Text style={styles.emptyStateTitle}>No projects found</Text>
+      <Text style={styles.emptyStateText}>
+        No projects match your search criteria.{'\n'}
+        Try adjusting your search terms.
+      </Text>
+    </View>
+  );
 
   const openPicker = (label, dataKey) => {
     console.log('dddddd', dataKey);
@@ -1468,39 +1418,12 @@ export default function ProjectListScreen() {
     setIsDropDownVisible(true);
   };
 
+
   const onResetFilter = () => {
-    // setSelectedName(null);
-    setSelectedZoneId(null);
-    setSelectedCircleId(null);
-    setSelectedDivisionId(null);
-    setSelectedSubDivisionId(null);
-    setSelectedSectorId(null);
-    setSelectedSubSectorId(null);
-    setSelectedStatusId(null);
-    setSelectedFundingId(null);
-    setSelectedWorkTypeId(null);
 
-    setSelectedZoneName(null);
-    setSelectedCircleName(null);
-    setSelectedDivisionName(null);
-    setSelectedSubDivisionName(null);
-    setSelectedSectorName(null);
-    setSelectedSubSectorName(null);
-    setSelectedStatusName(null);
-    setSelectedFundingName(null);
-    setSelectedWorkTypeName(null);
+    setFilterDepartmentList
 
-    setIsDisabledZone(true);
-    setIsDisabledCircle(true);
-    setIsDisabledDivision(true);
-    setIsDisabledSubDivision(true);
-
-    setIsDisabledSubSector(true);
-
-    setTimeout(() => {
-      setIsFilterVisible(false);
-    }, 300);
-  };
+  }
 
   const renderDropdown = (
     label,
@@ -1671,7 +1594,7 @@ export default function ProjectListScreen() {
           ListEmptyComponent={
             searchQuery.length > 0 || getActiveFilterCount() > 0
               ? renderEmptyState
-              : renderEmptyState
+              : null
           }
           keyboardShouldPersistTaps="handled"
           onEndReached={searchQuery.length === 0 ? loadMore : null}
@@ -1724,7 +1647,7 @@ export default function ProjectListScreen() {
                   </View>
                   <View style={styles.headerRight}>
                     <TouchableOpacity
-                      onPress={() => onResetFilter()}
+                      onPress={handleResetFilters}
                       style={styles.resetHeaderButton}>
                       <Text style={styles.resetHeaderText}>Reset</Text>
                     </TouchableOpacity>
@@ -1813,7 +1736,7 @@ export default function ProjectListScreen() {
                           marginBottom: 16,
                           flex: 1,
                         }}>
-                        <Text style={styles.inputLabel}>Sub-Division</Text>
+                        <Text style={styles.inputLabel}>Division</Text>
                         {renderDropdown(
                           'Sub-Division',
                           filterSubDivisionList,
@@ -1926,8 +1849,10 @@ export default function ProjectListScreen() {
                             style={styles.budgetInput}
                             placeholder="0"
                             placeholderTextColor={COLORS.textPlaceholder}
-                            value={minBugetText}
-                            onChangeText={text => setMinBugetText(text)}
+                            // value={filters.budgetMin}
+                            // onChangeText={text =>
+                            //   setFilters(prev => ({...prev, budgetMin: text}))
+                            // }
                             keyboardType="numeric"
                           />
                           <Text style={styles.currencySuffix}>Cr</Text>
@@ -1941,8 +1866,10 @@ export default function ProjectListScreen() {
                             style={styles.budgetInput}
                             placeholder="100"
                             placeholderTextColor={COLORS.textPlaceholder}
-                            value={maxBugetText}
-                            onChangeText={text => setMaxBugetText(text)}
+                            // value={filters.budgetMax}
+                            // onChangeText={text =>
+                            //   setFilters(prev => ({...prev, budgetMax: text}))
+                            // }
                             keyboardType="numeric"
                           />
                           <Text style={styles.currencySuffix}>Cr</Text>
@@ -1957,7 +1884,7 @@ export default function ProjectListScreen() {
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.applyButton}
-                  // onPress={() => applyFilters()}
+                  // onPress={handleApply}
                   activeOpacity={0.8}>
                   <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
                   <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -2622,7 +2549,7 @@ const styles = StyleSheet.create({
   },
   projectName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 6,
     lineHeight: 24,

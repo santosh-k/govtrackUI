@@ -17,7 +17,7 @@
  * @screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -32,12 +32,12 @@ import {
   Modal,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { COLORS, SPACING } from '@/theme';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useLocalSearchParams} from 'expo-router';
+import {COLORS, SPACING} from '@/theme';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 // Types
 interface Attachment {
@@ -102,8 +102,8 @@ export default function CreateComplaintScreen() {
     if (departmentSearch.trim() === '') {
       return DEPARTMENTS;
     }
-    return DEPARTMENTS.filter((dept) =>
-      dept.toLowerCase().includes(departmentSearch.toLowerCase())
+    return DEPARTMENTS.filter(dept =>
+      dept.toLowerCase().includes(departmentSearch.toLowerCase()),
     );
   };
 
@@ -113,24 +113,32 @@ export default function CreateComplaintScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        const {status} = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to create a complaint');
+          Alert.alert(
+            'Permission Denied',
+            'Location permission is required to create a complaint',
+          );
           setIsLoadingLocation(false);
           return;
         }
 
         const currentLocation = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = currentLocation.coords;
+        const {latitude, longitude} = currentLocation.coords;
 
         // Reverse geocode to get address
-        const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const addresses = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
         const address = addresses[0]
-          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${addresses[0].region || ''}`
+          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${
+              addresses[0].region || ''
+            }`
           : 'Unknown Location';
 
-        setLocation({ latitude, longitude, address });
-        setTempLocation({ latitude, longitude, address });
+        setLocation({latitude, longitude, address});
+        setTempLocation({latitude, longitude, address});
         setIsLoadingLocation(false);
       } catch (error) {
         console.error('Error getting location:', error);
@@ -147,7 +155,7 @@ export default function CreateComplaintScreen() {
     if (projectId) {
       router.push({
         pathname: '/(drawer)/project-details',
-        params: { projectId },
+        params: {projectId},
       });
     } else {
       router.back();
@@ -162,7 +170,7 @@ export default function CreateComplaintScreen() {
       {
         text: 'Take Photo',
         onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          const {status} = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') {
             Alert.alert('Permission needed', 'Camera permission is required');
             return;
@@ -187,7 +195,8 @@ export default function CreateComplaintScreen() {
       {
         text: 'Choose from Gallery',
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          const {status} =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') {
             Alert.alert('Permission needed', 'Gallery permission is required');
             return;
@@ -209,7 +218,7 @@ export default function CreateComplaintScreen() {
           }
         },
       },
-      { text: 'Cancel', style: 'cancel' },
+      {text: 'Cancel', style: 'cancel'},
     ]);
   };
 
@@ -217,7 +226,7 @@ export default function CreateComplaintScreen() {
    * Removes an attachment
    */
   const removeAttachment = (id: string) => {
-    setAttachments(attachments.filter((att) => att.id !== id));
+    setAttachments(attachments.filter(att => att.id !== id));
   };
 
   /**
@@ -232,10 +241,12 @@ export default function CreateComplaintScreen() {
           longitude: tempLocation.longitude,
         });
         const address = addresses[0]
-          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${addresses[0].region || ''}`
+          ? `${addresses[0].street || ''}, ${addresses[0].city || ''}, ${
+              addresses[0].region || ''
+            }`
           : 'Unknown Location';
 
-        setLocation({ ...tempLocation, address });
+        setLocation({...tempLocation, address});
         setShowMapModal(false);
       } catch (error) {
         console.error('Error reverse geocoding:', error);
@@ -251,7 +262,10 @@ export default function CreateComplaintScreen() {
   const handleSubmit = async () => {
     // Validation
     if (!location) {
-      Alert.alert('Required Field', 'Please select a location for the complaint');
+      Alert.alert(
+        'Required Field',
+        'Please select a location for the complaint',
+      );
       return;
     }
 
@@ -274,7 +288,7 @@ export default function CreateComplaintScreen() {
       // Navigate back to Project Details
       router.push({
         pathname: '/(drawer)/project-details',
-        params: { projectId },
+        params: {projectId},
       });
 
       // Show success message
@@ -286,11 +300,17 @@ export default function CreateComplaintScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.cardBackground}
+      />
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack} activeOpacity={0.6}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleGoBack}
+          activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Complaint</Text>
@@ -300,23 +320,23 @@ export default function CreateComplaintScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+        contentContainerStyle={styles.scrollContent}>
         {/* Card 1: Complaint Details (WHAT) */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Select Complaint Type</Text>
 
           {/* Complaint Type Radio List */}
           <View style={styles.radioList}>
-            {COMPLAINT_TYPES.map((type) => (
+            {COMPLAINT_TYPES.map(type => (
               <TouchableOpacity
                 key={type}
                 style={styles.radioOption}
                 onPress={() => setSelectedType(type)}
-                activeOpacity={0.7}
-              >
+                activeOpacity={0.7}>
                 <View style={styles.radioButton}>
-                  {selectedType === type && <View style={styles.radioButtonInner} />}
+                  {selectedType === type && (
+                    <View style={styles.radioButtonInner} />
+                  )}
                 </View>
                 <Text style={styles.radioText}>{type}</Text>
               </TouchableOpacity>
@@ -344,9 +364,12 @@ export default function CreateComplaintScreen() {
             <TouchableOpacity
               style={styles.initialAddTile}
               onPress={handleAddAttachment}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera-outline" size={40} color={COLORS.primary} />
+              activeOpacity={0.7}>
+              <Ionicons
+                name="camera-outline"
+                size={40}
+                color={COLORS.primary}
+              />
               <Text style={styles.initialAddTileText}>Add Photo/Video</Text>
             </TouchableOpacity>
           ) : (
@@ -355,21 +378,30 @@ export default function CreateComplaintScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.galleryScrollView}
-              contentContainerStyle={styles.galleryScrollContent}
-            >
-              {attachments.map((att) => (
+              contentContainerStyle={styles.galleryScrollContent}>
+              {attachments.map(att => (
                 <View key={att.id} style={styles.galleryThumbnail}>
-                  <Image source={{ uri: att.uri }} style={styles.galleryThumbImage} />
+                  <Image
+                    source={{uri: att.uri}}
+                    style={styles.galleryThumbImage}
+                  />
                   {att.type === 'video' && (
                     <View style={styles.videoIndicator}>
-                      <Ionicons name="play-circle" size={20} color={COLORS.white} />
+                      <Ionicons
+                        name="play-circle"
+                        size={20}
+                        color={COLORS.white}
+                      />
                     </View>
                   )}
                   <TouchableOpacity
                     style={styles.removeButton}
-                    onPress={() => removeAttachment(att.id)}
-                  >
-                    <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                    onPress={() => removeAttachment(att.id)}>
+                    <Ionicons
+                      name="close-circle"
+                      size={24}
+                      color={COLORS.error}
+                    />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -378,8 +410,7 @@ export default function CreateComplaintScreen() {
               <TouchableOpacity
                 style={styles.addMoreTile}
                 onPress={handleAddAttachment}
-                activeOpacity={0.7}
-              >
+                activeOpacity={0.7}>
                 <Ionicons name="add" size={32} color={COLORS.primary} />
               </TouchableOpacity>
             </ScrollView>
@@ -396,7 +427,9 @@ export default function CreateComplaintScreen() {
             {isLoadingLocation ? (
               <View style={styles.loadingAddressContainer}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingAddressText}>Getting your location...</Text>
+                <Text style={styles.loadingAddressText}>
+                  Getting your location...
+                </Text>
               </View>
             ) : (
               <TextInput
@@ -417,13 +450,17 @@ export default function CreateComplaintScreen() {
                 setTempLocation(location);
                 setShowMapModal(true);
               } else {
-                Alert.alert('Location Unavailable', 'Please wait for location to be detected');
+                Alert.alert(
+                  'Location Unavailable',
+                  'Please wait for location to be detected',
+                );
               }
             }}
-            activeOpacity={0.7}
-          >
+            activeOpacity={0.7}>
             <Ionicons name="location" size={18} color={COLORS.primary} />
-            <Text style={styles.adjustLocationText}>Tap to adjust location on map</Text>
+            <Text style={styles.adjustLocationText}>
+              Tap to adjust location on map
+            </Text>
           </TouchableOpacity>
 
           {/* Landmark Field */}
@@ -445,27 +482,36 @@ export default function CreateComplaintScreen() {
           <TouchableOpacity
             style={styles.dropdownTrigger}
             onPress={() => setShowDepartmentModal(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.dropdownText, !selectedDepartment && styles.placeholderText]}>
+            activeOpacity={0.7}>
+            <Text
+              style={[
+                styles.dropdownText,
+                !selectedDepartment && styles.placeholderText,
+              ]}>
               {selectedDepartment || 'Select department'}
             </Text>
-            <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
         </View>
 
         {/* Bottom spacing for fixed button */}
-        <View style={{ height: 100 }} />
+        <View style={{height: 100}} />
       </ScrollView>
 
       {/* Submit Button */}
       <View style={styles.submitButtonContainer}>
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
           disabled={isSubmitting}
-          activeOpacity={0.8}
-        >
+          activeOpacity={0.8}>
           {isSubmitting ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
@@ -475,28 +521,38 @@ export default function CreateComplaintScreen() {
       </View>
 
       {/* Location Adjustment Modal */}
-      <Modal visible={showMapModal} animationType="slide" onRequestClose={() => setShowMapModal(false)}>
-        <SafeAreaView style={styles.mapModalContainer}>
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        onRequestClose={() => setShowMapModal(false)}>
+        <View style={styles.mapModalContainer}>
           {/* Modal Header */}
           <View style={styles.mapModalHeader}>
-            <TouchableOpacity onPress={() => setShowMapModal(false)} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => setShowMapModal(false)}
+              activeOpacity={0.7}>
               <Text style={styles.mapModalCancel}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.mapModalTitle}>Adjust Location</Text>
-            <TouchableOpacity onPress={handleConfirmLocation} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={handleConfirmLocation}
+              activeOpacity={0.7}>
               <Text style={styles.mapModalConfirm}>Confirm</Text>
             </TouchableOpacity>
           </View>
 
           {/* Location Adjustment UI */}
           {tempLocation && (
-            <ScrollView style={styles.locationAdjustmentContainer} contentContainerStyle={styles.locationAdjustmentContent}>
+            <ScrollView
+              style={styles.locationAdjustmentContainer}
+              contentContainerStyle={styles.locationAdjustmentContent}>
               <View style={styles.locationIconContainer}>
                 <Ionicons name="location" size={100} color={COLORS.primary} />
               </View>
 
               <Text style={styles.locationAdjustmentHint}>
-                Current location coordinates. You can manually adjust them if needed.
+                Current location coordinates. You can manually adjust them if
+                needed.
               </Text>
 
               <View style={styles.coordinateInputContainer}>
@@ -504,10 +560,10 @@ export default function CreateComplaintScreen() {
                 <TextInput
                   style={styles.coordinateInput}
                   value={tempLocation.latitude.toString()}
-                  onChangeText={(text) => {
+                  onChangeText={text => {
                     const lat = parseFloat(text);
                     if (!isNaN(lat)) {
-                      setTempLocation({ ...tempLocation, latitude: lat });
+                      setTempLocation({...tempLocation, latitude: lat});
                     }
                   }}
                   keyboardType="numeric"
@@ -520,10 +576,10 @@ export default function CreateComplaintScreen() {
                 <TextInput
                   style={styles.coordinateInput}
                   value={tempLocation.longitude.toString()}
-                  onChangeText={(text) => {
+                  onChangeText={text => {
                     const lng = parseFloat(text);
                     if (!isNaN(lng)) {
-                      setTempLocation({ ...tempLocation, longitude: lng });
+                      setTempLocation({...tempLocation, longitude: lng});
                     }
                   }}
                   keyboardType="numeric"
@@ -535,37 +591,40 @@ export default function CreateComplaintScreen() {
                 style={styles.refreshLocationButton}
                 onPress={async () => {
                   try {
-                    const currentLocation = await Location.getCurrentPositionAsync({});
-                    const { latitude, longitude } = currentLocation.coords;
-                    setTempLocation({ ...tempLocation, latitude, longitude });
+                    const currentLocation =
+                      await Location.getCurrentPositionAsync({});
+                    const {latitude, longitude} = currentLocation.coords;
+                    setTempLocation({...tempLocation, latitude, longitude});
                   } catch {
                     Alert.alert('Error', 'Failed to get current location');
                   }
                 }}
-                activeOpacity={0.7}
-              >
+                activeOpacity={0.7}>
                 <Ionicons name="refresh" size={20} color={COLORS.white} />
-                <Text style={styles.refreshLocationButtonText}>Refresh to Current Location</Text>
+                <Text style={styles.refreshLocationButtonText}>
+                  Refresh to Current Location
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           )}
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* Department Selection Modal */}
       <Modal
         visible={showDepartmentModal}
         animationType="slide"
-        onRequestClose={() => setShowDepartmentModal(false)}
-      >
+        onRequestClose={() => setShowDepartmentModal(false)}>
         <SafeAreaView style={styles.departmentModalContainer}>
           {/* Modal Header */}
           <View style={styles.departmentModalHeader}>
-            <TouchableOpacity onPress={() => setShowDepartmentModal(false)} activeOpacity={0.7}>
+            <TouchableOpacity
+              onPress={() => setShowDepartmentModal(false)}
+              activeOpacity={0.7}>
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.departmentModalTitle}>Select Department</Text>
-            <View style={{ width: 24 }} />
+            <View style={{width: 24}} />
           </View>
 
           {/* Search Bar */}
@@ -582,37 +641,45 @@ export default function CreateComplaintScreen() {
             />
             {departmentSearch !== '' && (
               <TouchableOpacity onPress={() => setDepartmentSearch('')}>
-                <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             )}
           </View>
 
           {/* Department List */}
           <ScrollView style={styles.departmentList}>
-            {getFilteredDepartments().map((dept) => (
+            {getFilteredDepartments().map(dept => (
               <TouchableOpacity
                 key={dept}
                 style={[
                   styles.departmentOption,
-                  selectedDepartment === dept && styles.departmentOptionSelected,
+                  selectedDepartment === dept &&
+                    styles.departmentOptionSelected,
                 ]}
                 onPress={() => {
                   setSelectedDepartment(dept);
                   setShowDepartmentModal(false);
                   setDepartmentSearch('');
                 }}
-                activeOpacity={0.7}
-              >
+                activeOpacity={0.7}>
                 <Text
                   style={[
                     styles.departmentOptionText,
-                    selectedDepartment === dept && styles.departmentOptionTextSelected,
-                  ]}
-                >
+                    selectedDepartment === dept &&
+                      styles.departmentOptionTextSelected,
+                  ]}>
                   {dept}
                 </Text>
                 {selectedDepartment === dept && (
-                  <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={COLORS.primary}
+                  />
                 )}
               </TouchableOpacity>
             ))}
@@ -639,7 +706,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -677,7 +744,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -873,7 +940,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
+        shadowOffset: {width: 0, height: -2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },

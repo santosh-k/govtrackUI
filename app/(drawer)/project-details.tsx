@@ -15,6 +15,7 @@ import {
   Animated,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
@@ -37,6 +38,7 @@ import Video from 'react-native-video';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import {UrlObject} from 'expo-router/build/global-state/routeInfo';
+import {store} from '@/src/store';
 
 const {width, height} = Dimensions.get('window');
 
@@ -201,6 +203,18 @@ const getStatusColors = (status: ProjectStatus) => {
   }
 };
 
+const getStatusNewColors = (index: number) => {
+  const colorIndex = index % STATUS_COLORS.length;
+  return STATUS_COLORS[colorIndex];
+};
+
+const STATUS_COLORS = [
+  {bg: COLORS.statusOnTrackBg, text: COLORS.statusOnTrack},
+  {bg: COLORS.statusAtRiskBg, text: COLORS.statusAtRisk},
+  {bg: COLORS.statusDelayedBg, text: COLORS.statusDelayed},
+  {bg: COLORS.statusCompletedBg, text: COLORS.statusCompleted},
+];
+
 const colors = [
   {bg: '#E3FCEF', text: '#2ECC71'},
   {bg: '#FFF4E5', text: '#F5A623'},
@@ -287,9 +301,10 @@ export default function ProjectDetailsScreen() {
   const projectCode = params.projectCode as string;
 
   //const [activeTab, setActiveTab] = useState<TabName>('Overview');
-  const [projectStatus, setProjectStatus] = useState<ProjectStatus>('On Track');
+  const [projectStatus, setProjectStatus] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [newStatus, setNewStatus] = useState<ProjectStatus>('On Track');
+  const [newStatus, setNewStatus] = useState('');
+  const [currentStatus, setCurrentStatus] = useState(null);
   const [statusComment, setStatusComment] = useState('');
   const [showMediaViewer, setShowMediaViewer] = useState(false);
   const [showInspectionViewer, setShowInspectionViewer] = useState(false);
@@ -306,9 +321,12 @@ export default function ProjectDetailsScreen() {
   const [selectedInspection, setSelectedInspection] =
     useState<Inspection | null>(null);
   const [showBottleneckDetails, setShowBottleneckDetails] = useState(false);
+  const [filterStatusList, setFilterStatusList] = useState([]);
+
   const [selectedBottleneck, setSelectedBottleneck] =
     useState<Bottleneck | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showSuccessStatusToast, setShowSuccessStatusToast] = useState(false);
   const [projectNameItem, setProjectNameItem] = useState<string>('');
   const [projectCodeItem, setProjectCodeItem] = useState<string>('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -340,6 +358,7 @@ export default function ProjectDetailsScreen() {
     useState<ProgressUpdate | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   // Sample data
   // const projectName = 'National Highway 44 Widening and Resurfacing Project';
@@ -406,8 +425,54 @@ export default function ProjectDetailsScreen() {
     }, [projectIdD, activeTab]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchProjectOverViewDetails(projectIdD);
+    }, [projectIdD]),
+  );
+
+  const fetchProjectOverViewDetails = async (id: string) => {
+    setLoading(true);
+
+    try {
+      // Use dynamic import to avoid circular dependency
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().getProjectDetail(
+        id,
+        'overview',
+      );
+
+      if (response?.success && response?.data) {
+        console.log('dhdhdsdsd', JSON.stringify(response));
+
+        // if (tab != 'Media') {
+        setProjectData(response?.data);
+        setProjectStatus(response?.data?.statusDisplay);
+        setNewStatus(response?.data?.status);
+        // }
+        // setProjectStat(response?.data)
+        setLoading(false);
+      } else {
+        setProjectData(null);
+        // setProjectStat(0)
+        setLoading(false);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      console.log('21223321', message);
+      setLoading(false);
+      setProjectData(null);
+    }
+  };
+
   const fetchProjectDetails = async (id: string, tab: string) => {
     setLoading(true);
+
+    const statusNew = params?.projectStatus as string;
+
+    console.log('statusNew212', statusNew);
+
     try {
       // Use dynamic import to avoid circular dependency
       const ApiManager = (await import('@/src/services/ApiManager')).default;
@@ -421,6 +486,8 @@ export default function ProjectDetailsScreen() {
 
         // if (tab != 'Media') {
         setProjectData(response?.data);
+        // setProjectStatus(response?.data?.statusDisplay);
+        // setNewStatus(statusNew);
         // }
         // setProjectStat(response?.data)
         setLoading(false);
@@ -999,11 +1066,13 @@ export default function ProjectDetailsScreen() {
   };
 
   const handleStatusPress = () => {
-    setNewStatus(projectStatus);
+    setNewStatus(newStatus);
     setStatusComment('');
     setCapturedLocation(null);
     setStatusAttachments([]);
+    fetchFilterStatusList();
     setShowStatusModal(true);
+    setShowSuccessStatusToast(false);
   };
 
   const handleCaptureLocation = async () => {
@@ -1092,49 +1161,162 @@ export default function ProjectDetailsScreen() {
     setStatusAttachments(statusAttachments.filter(att => att.id !== id));
   };
 
-  const handleSaveStatus = () => {
-    const newActivity: StatusUpdateActivity = {
-      id: `activity-${Date.now()}`,
-      status: newStatus,
-      previousStatus: projectStatus !== newStatus ? projectStatus : undefined,
-      remarks: statusComment,
-      updatedBy: 'Current User',
-      designation: 'Engineer',
-      timestamp: new Date()
-        .toLocaleString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        })
-        .replace(',', ' at'),
-      location: capturedLocation || undefined,
-      attachments: statusAttachments,
-    };
+  // const handleSaveStatus = async () => {
+  //   try {
+  //     const newParms = {
+  //       status: newStatus,
+  //       comment: statusComment,
+  //     };
 
-    setActivityHistory([newActivity, ...activityHistory]);
-    setProjectStatus(newStatus);
-    setShowStatusModal(false);
+  //     console.log('prdedad', newParms);
 
-    // Show success toast
-    setShowSuccessToast(true);
-    Animated.sequence([
-      Animated.timing(toastOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.delay(2000),
-      Animated.timing(toastOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowSuccessToast(false);
-    });
+  //     const {default: ApiManager} = await import('@/src/services/ApiManager');
+
+  //     const response = await ApiManager.getInstance().updateProjectStatus(
+  //       newParms,
+  //       projectIdD,
+  //     );
+  //     alert('Test');
+  //     console.log('resa[filterdepartment', response);
+  //   } catch (error) {
+  //     console.log('Error fetching projects:', error);
+  //   } finally {
+  //     setShowStatusModal(false);
+  //     setShowSuccessToast(true);
+  //     Animated.sequence([
+  //       Animated.timing(toastOpacity, {
+  //         toValue: 1,
+  //         duration: 300,
+  //         useNativeDriver: true,
+  //       }),
+  //       Animated.delay(2000),
+  //       Animated.timing(toastOpacity, {
+  //         toValue: 0,
+  //         duration: 300,
+  //         useNativeDriver: true,
+  //       }),
+  //     ]).start(() => {
+  //       setShowSuccessToast(false);
+  //     });
+  //   }
+
+  //   // Show success toast
+  // };
+
+  const handleSaveStatus = async () => {
+    const tokenData = store.getState().auth.token;
+    setLoading(true);
+    // alert('Test');
+    // return;
+    setTimeout(() => {
+      updateProjectStatus(tokenData, projectIdD);
+    }, 100);
+  };
+
+  const updateProjectStatus = async (tokenData, projectIdD) => {
+    try {
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${tokenData}`);
+      myHeaders.append('Content-Type', 'application/json');
+
+      const raw = JSON.stringify({
+        status: newStatus,
+        comment: statusComment?.trim(),
+      });
+
+      const requestOptions = {
+        method: 'PUT',
+        headers: myHeaders,
+        body: raw,
+      };
+
+      fetch(
+        `https://pwddev.thesst.com/admin/pms/api/projects/${projectIdD}/status`,
+        requestOptions,
+      )
+        .then(response => response.json())
+        .then(async jsonResponse => {
+          console.log('jjddsdsds', jsonResponse);
+          setLoading(false);
+
+          if (jsonResponse.success === true) {
+            setShowSuccessStatusToast(true);
+
+            setTimeout(() => {
+              setShowStatusModal(false);
+            }, 2000);
+            fetchProjectOverViewDetails(projectIdD);
+            fetchFilterStatusList();
+
+            // Animated.sequence([
+            //   Animated.timing(toastOpacity, {
+            //     toValue: 1,
+            //     duration: 300,
+            //     useNativeDriver: true,
+            //   }),
+            //   Animated.delay(2000),
+            //   Animated.timing(toastOpacity, {
+            //     toValue: 0,
+            //     duration: 300,
+            //     useNativeDriver: true,
+            //   }),
+            // ]).start(() => {
+            //   setShowSuccessStatusToast(false);
+            // });
+          } else {
+            setTimeout(() => {
+              setShowStatusModal(false);
+            }, 2000);
+          }
+        });
+
+      // // handle response status
+      // if (!response.ok) {
+      //   const errorData = await response.json().catch(() => null);
+
+      //   throw {
+      //     status: response.status,
+      //     message: errorData?.message || 'Something went wrong',
+      //     data: errorData,
+      //   };
+      // }
+
+      // // parse success response
+      // const result = await response.json();
+      // setShowStatusModal(false);
+      // fetchProjectOverViewDetails(projectIdD);
+      // fetchFilterStatusList();
+      // return result;
+    } catch (error) {
+      // network or fetch error
+      console.log('ERROR:', error);
+      setTimeout(() => {
+        setShowStatusModal(false);
+      }, 2000);
+      setLoading(false);
+    }
+  };
+  const fetchFilterStatusList = async () => {
+    try {
+      const ApiManager = (await import('@/src/services/ApiManager')).default;
+      const response = await ApiManager.getInstance().getFilterStatusOption();
+
+      console.log('resaSector12122', response);
+
+      if (response?.success && response?.data?.length > 0) {
+        setFilterStatusList(response?.data);
+
+        const statusData = response?.data?.filter(item => {
+          return item?.name === newStatus;
+        });
+
+        setCurrentStatus(statusData[0].name);
+      } else {
+      }
+    } catch (error) {
+      console.log('Error fetching projects:', error);
+    } finally {
+    }
   };
 
   const handleUpdateProgressPress = () => {
@@ -2266,6 +2448,9 @@ export default function ProjectDetailsScreen() {
       )}
     </View>
   );
+  const currentStatusIndex = filterStatusList.findIndex(
+    status => status.name === currentStatus,
+  );
 
   return loading ? (
     //  {loading && (
@@ -2319,7 +2504,11 @@ export default function ProjectDetailsScreen() {
           ]}
           onPress={handleStatusPress}
           activeOpacity={0.7}>
-          <Text style={[styles.headerStatusText, {color: statusColors.text}]}>
+          <Text
+            style={[
+              styles.headerStatusText,
+              {color: statusColors.text, textTransform: 'capitalize'},
+            ]}>
             {projectStatus}
           </Text>
           <Ionicons
@@ -2440,157 +2629,100 @@ export default function ProjectDetailsScreen() {
       )}
 
       {/* Status Update Modal */}
-      <Modal
-        visible={showStatusModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowStatusModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.statusUpdateBottomSheet}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Update Project Status</Text>
-              <TouchableOpacity onPress={() => setShowStatusModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+      <Modal visible={showStatusModal} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.statusUpdateBottomSheet}>
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>Update Project Status</Text>
+                <TouchableOpacity onPress={() => setShowStatusModal(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.inputLabel}>Select Status</Text>
+                <View style={styles.statusOptions}>
+                  {filterStatusList.map((status, index) => {
+                    const isDisabled = index < currentStatusIndex;
+
+                    console.log('isDisabled2122', currentStatus);
+
+                    return (
+                      <TouchableOpacity
+                        key={status?.id}
+                        disabled={isDisabled}
+                        style={[
+                          styles.statusOption,
+                          newStatus === status?.name &&
+                            styles.selectedStatusOption,
+                          {
+                            borderColor: getStatusNewColors(index).bg,
+                            opacity: isDisabled ? 0.4 : 1,
+                          },
+                        ]}
+                        onPress={() => setNewStatus(status?.name)}>
+                        <Text
+                          style={[
+                            styles.statusOptionText,
+                            newStatus === status?.name && {
+                              color: getStatusNewColors(index).text,
+                            },
+                          ]}>
+                          {status?.display_name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.inputLabel}>Remarks (Optional)</Text>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Add a comment about the status change..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={statusComment}
+                  onChangeText={setStatusComment}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </ScrollView>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => handleSaveStatus()}>
+                <Text style={styles.saveButtonText}>Update</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Select Status</Text>
-              <View style={styles.statusOptions}>
-                {(
-                  [
-                    'On Track',
-                    'At Risk',
-                    'Delayed',
-                    'Completed',
-                  ] as ProjectStatus[]
-                ).map(status => (
-                  <TouchableOpacity
-                    key={status}
-                    style={[
-                      styles.statusOption,
-                      newStatus === status && styles.selectedStatusOption,
-                      {borderColor: getStatusColors(status).text},
-                    ]}
-                    onPress={() => setNewStatus(status)}>
-                    <Text
-                      style={[
-                        styles.statusOptionText,
-                        newStatus === status && {
-                          color: getStatusColors(status).text,
-                        },
-                      ]}>
-                      {status}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.inputLabel}>Remarks (Optional)</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Add a comment about the status change..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={statusComment}
-                onChangeText={setStatusComment}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-
-              {/* Capture Location Button */}
-              <TouchableOpacity
+            {showSuccessStatusToast && (
+              <Animated.View
                 style={[
-                  styles.locationButton,
-                  capturedLocation && styles.locationButtonSuccess,
-                ]}
-                onPress={handleCaptureLocation}
-                disabled={isCapturingLocation}
-                activeOpacity={0.7}>
-                {isCapturingLocation ? (
-                  <ActivityIndicator color={COLORS.primary} size="small" />
-                ) : (
-                  <>
-                    <Ionicons
-                      name={capturedLocation ? 'checkmark-circle' : 'location'}
-                      size={20}
-                      color={capturedLocation ? COLORS.success : COLORS.primary}
-                    />
-                    <Text
-                      style={[
-                        styles.locationButtonText,
-                        capturedLocation && styles.locationButtonTextSuccess,
-                      ]}>
-                      {capturedLocation
-                        ? 'Location Captured'
-                        : 'Capture Current Location'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              {/* Add Attachments Section */}
-              <Text style={styles.inputLabel}>Attachments (Optional)</Text>
-              <TouchableOpacity
-                style={styles.addAttachmentButton}
-                onPress={handleAddStatusAttachment}
-                activeOpacity={0.7}>
-                <Ionicons
-                  name="camera-outline"
-                  size={24}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.addAttachmentText}>Add Photo or Video</Text>
-              </TouchableOpacity>
-
-              {/* Attachment Thumbnails */}
-              {statusAttachments.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.attachmentScrollView}>
-                  {statusAttachments.map(attachment => (
-                    <View
-                      key={attachment.id}
-                      style={styles.attachmentThumbContainer}>
-                      <Image
-                        source={{uri: attachment.uri}}
-                        style={styles.attachmentThumb}
-                      />
-                      <TouchableOpacity
-                        style={styles.removeAttachmentButton}
-                        onPress={() =>
-                          handleRemoveStatusAttachment(attachment.id)
-                        }
-                        activeOpacity={0.8}>
-                        <Ionicons
-                          name="close-circle"
-                          size={24}
-                          color={COLORS.statusDelayed}
-                        />
-                      </TouchableOpacity>
-                      {attachment.type === 'video' && (
-                        <View style={styles.attachmentVideoIndicator}>
-                          <Ionicons
-                            name="play-circle"
-                            size={20}
-                            color="white"
-                          />
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </ScrollView>
-              )}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveStatus}>
-              <Text style={styles.saveButtonText}>Update</Text>
-            </TouchableOpacity>
+                  styles.successToast,
+                  {
+                    // opacity: toastOpacity,
+                    position: 'absolute',
+                    // transform: [
+                    //   {
+                    //     translateY: toastOpacity.interpolate({
+                    //       inputRange: [0, 1],
+                    //       outputRange: [-20, 0],
+                    //     }),
+                    //   },
+                    // ],
+                  },
+                ]}>
+                <Ionicons name="checkmark-circle" size={24} color="white" />
+                <Text style={styles.successToastText}>
+                  Status updated successfully!
+                </Text>
+              </Animated.View>
+            )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Inspection Details Bottom Sheet */}

@@ -1,5 +1,5 @@
-import { LoginRequest, LoginResponse, User } from '../types/auth.types';
-import { store } from '../store';
+import {LoginRequest, LoginResponse, User} from '../types/auth.types';
+import {store} from '../store';
 import {
   loginStart,
   loginSuccess,
@@ -13,12 +13,12 @@ import {
 class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
-  // private baseUrl = 'https://pwddev.thesst.com/cms/api';
-  private baseUrl = 'http://192.168.1.58:3005/cms/api';
-  // private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
-  private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
-  // private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api'
-  private adminPmsUrl = 'http://192.168.1.58:3001/admin/pms/api'
+  private baseUrl = 'https://pwddev.thesst.com/cms/api';
+  // private baseUrl = 'http://192.168.1.58:3005/cms/api';
+  private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
+  // private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
+  private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api';
+  // private adminPmsUrl = 'http://192.168.1.58:3001/admin/pms/api'
 
   private constructor() {}
 
@@ -33,7 +33,10 @@ class ApiManager {
     return store.getState().auth.token;
   }
 
-  private async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async fetchWithAuth(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<Response> {
     const headers = new Headers(options.headers);
     const token = this.getToken();
 
@@ -69,12 +72,14 @@ class ApiManager {
    * Helper for external API requests that may return success: false with error codes
    * If TOKEN_EXPIRED is returned, attempt a refresh and retry once.
    */
-  private async fetchExternalWithRetry(url: string, options: RequestInit = {}, retry: boolean = true): Promise<any> {
+  private async fetchExternalWithRetry(
+    url: string,
+    options: RequestInit = {},
+    retry: boolean = true,
+  ): Promise<any> {
     // attach token header
     const headers = new Headers(options.headers);
     const token = this.getToken();
-
-    
 
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
@@ -95,18 +100,25 @@ class ApiManager {
     }
 
     // If API returned a structured error indicating token expired, try refresh once
-    if (data && data.success === false && data.error && data.error.code === 'TOKEN_EXPIRED') {
+    if (
+      data &&
+      data.success === false &&
+      data.error &&
+      data.error.code === 'TOKEN_EXPIRED'
+    ) {
       if (!retry) {
         const msg = data.error.message || 'Token expired';
         throw new Error(msg);
       }
-      console.log("Attemt Token Refresh")
+      console.log('Attemt Token Refresh');
       // Attempt refresh
       try {
         await this.refreshToken();
       } catch (err) {
         // couldn't refresh, propagate original error message if available
-        const msg = (data.error && data.error.message) || (err instanceof Error ? err.message : 'Token refresh failed');
+        const msg =
+          (data.error && data.error.message) ||
+          (err instanceof Error ? err.message : 'Token refresh failed');
         throw new Error(msg);
       }
 
@@ -116,7 +128,8 @@ class ApiManager {
 
     // If non-OK HTTP status
     if (!response.ok) {
-      const msg = (data && (data.message || data.error?.message)) || 'Request failed';
+      const msg =
+        (data && (data.message || data.error?.message)) || 'Request failed';
       throw new Error(msg);
     }
 
@@ -136,7 +149,7 @@ class ApiManager {
     try {
       const response = await fetch(`${this.baseUrl}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(credentials),
       });
 
@@ -148,7 +161,7 @@ class ApiManager {
             token: data.data.token,
             refreshToken: data.data.refreshToken,
             user: data.data.user,
-          })
+          }),
         );
       } else {
         store.dispatch(loginFailure('Login failed'));
@@ -156,18 +169,19 @@ class ApiManager {
 
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       store.dispatch(loginFailure(message));
       throw new Error(message);
     }
   }
 
   /** ---------------- REFRESH TOKEN ---------------- */
-  public async refreshToken(): Promise<{ token: string; expiresIn: number }> {
+  public async refreshToken(): Promise<{token: string; expiresIn: number}> {
     store.dispatch(refreshTokenStart());
 
     try {
-      const { refreshToken: currentRefreshToken } = store.getState().auth;
+      const {refreshToken: currentRefreshToken} = store.getState().auth;
 
       if (!currentRefreshToken) {
         throw new Error('No refresh token available');
@@ -175,18 +189,18 @@ class ApiManager {
 
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: currentRefreshToken }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({refreshToken: currentRefreshToken}),
       });
 
       const data = await response.json();
-      console.log('Refresh Token Response = ', data)
+      console.log('Refresh Token Response = ', data);
       if (response.ok && data.success) {
         store.dispatch(
           refreshTokenSuccess({
             token: data.data.token,
             expiresIn: data.data.expiresIn,
-          })
+          }),
         );
         return data.data;
       } else {
@@ -194,7 +208,8 @@ class ApiManager {
         throw new Error(data.message || 'Token refresh failed');
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       store.dispatch(refreshTokenFailure(message));
       throw new Error(message);
     }
@@ -237,7 +252,7 @@ class ApiManager {
         ];
 
         const filteredUser: Partial<User> = Object.keys(data.data)
-          .filter((key) => allowedFields.includes(key as keyof User))
+          .filter(key => allowedFields.includes(key as keyof User))
           .reduce((obj: Partial<User>, key) => {
             obj[key as keyof User] = data.data[key];
             return obj;
@@ -248,36 +263,40 @@ class ApiManager {
 
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
 
   /** ---------------- STATS (EXTERNAL ADMIN API) ---------------- */
   public async getStats(
-  filter: string,
-  startDate?: string,
-  endDate?: string
-): Promise<any> {
-  try {
-    const token = this.getToken();
-    if (!token) throw new Error('No authentication token available');
+    filter: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
 
-    // Build query params dynamically
-    let query = `filter=${encodeURIComponent(filter)}`;
-    if (filter === 'custom' && startDate && endDate) {
-      query += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+      // Build query params dynamically
+      let query = `filter=${encodeURIComponent(filter)}`;
+      if (filter === 'custom' && startDate && endDate) {
+        query += `&start_date=${encodeURIComponent(
+          startDate,
+        )}&end_date=${encodeURIComponent(endDate)}`;
+      }
+      console.log(token);
+      console.log(query);
+      const url = `${this.adminBaseUrl}/pwdsewa/inspector/stats?${query}`;
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
     }
-    console.log(token)
-    console.log(query)
-    const url = `${this.adminBaseUrl}/pwdsewa/inspector/stats?${query}`;
-    const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-    return data;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'An error occurred';
-    throw new Error(message);
   }
-}
 
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
   public async getComplaints(
@@ -291,14 +310,10 @@ class ApiManager {
     zone_id?: string | number,
     department_id?: string | number,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<any> {
     try {
-
-
       const token = this.getToken();
-
-
 
       if (!token) throw new Error('No authentication token available');
 
@@ -313,274 +328,306 @@ class ApiManager {
       });
 
       // Append optional ID filters
-      if (category_id !== undefined && category_id !== null && category_id !== '') {
+      if (
+        category_id !== undefined &&
+        category_id !== null &&
+        category_id !== ''
+      ) {
         queryParams.append('category', String(category_id));
       }
       if (zone_id !== undefined && zone_id !== null && zone_id !== '') {
         queryParams.append('zone', String(zone_id));
       }
-      if (department_id !== undefined && department_id !== null && department_id !== '') {
+      if (
+        department_id !== undefined &&
+        department_id !== null &&
+        department_id !== ''
+      ) {
         queryParams.append('department', String(department_id));
       }
       if (filter === 'custom' && startDate && endDate) {
-        queryParams.append('start_date', startDate)
-        queryParams.append('end_date',endDate) 
+        queryParams.append('start_date', startDate);
+        queryParams.append('end_date', endDate);
       }
-      console.log(queryParams)
-      const url = `${this.adminBaseUrl}/pwdsewa/inspector/complaints?${queryParams.toString()}`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      console.log(queryParams);
+      const url = `${
+        this.adminBaseUrl
+      }/pwdsewa/inspector/complaints?${queryParams.toString()}`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
 
+  public async getProjectList(
+    department_id?: string | number,
 
- public async getProjectList(
-     department_id?: string | number,
-  
     page: number = 1,
     limit: number = 20,
-  
-  
   ): Promise<any> {
     try {
-
-
       const token = this.getToken();
 
-      console.log("toke2122n,",token);
-      
+      console.log('toke2122n,', token);
 
       if (!token) throw new Error('No authentication token available');
 
-    
-
       // Append optional ID filters
-    
+
       const url = `${this.adminPmsUrl}/projects/search?department_id=${department_id}&page=${page}&limit=${limit}`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
 
+  public async getProjectDetail(
+    projectID: string | number,
 
-   public async getProjectDetail(
-     projectID: string | number,
-  
-    endPoint: string
-,
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-
-    public async getFilterDepartmentOption(
-
-
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/departments`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-
-   public async getFilterZoneOption(
-
-id: string | number
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/departments/${id}/zones`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-
-  public async getFilterCircleOption(
-
-zoneId: string | number
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-    public async getFilterDivisionOption(
-
-circleId: string | number
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/circles/${circleId}/divisions`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-
-
-      public async getFilterSubDivisionOption(
-
-divisionId: string | number
-  
-  
-  ): Promise<any> {
-    try {
-
-
-      const token = this.getToken();
-
-      
-
-      if (!token) throw new Error('No authentication token available');
-
-    
-
-      // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
-      return data;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
-
-
-     public async getProjectDetailMedia(
-     projectID: string | number,
-  
     endPoint: string,
-    type: string
-,
-  
-  
   ): Promise<any> {
     try {
-
-
       const token = this.getToken();
-
-      
 
       if (!token) throw new Error('No authentication token available');
 
-    
-
       // Append optional ID filters
-    
-      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}?type=${type}`;
-      console.log(url)
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+
+      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterDepartmentOption(): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/departments`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterZoneOption(id: string | number): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/departments/${id}/zones`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterCircleOption(zoneId: string | number): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterDivisionOption(
+    circleId: string | number,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/circles/${circleId}/divisions`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterSubDivisionOption(
+    divisionId: string | number,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterSectorOption(): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/sectors`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterSubSectorOption(
+    sectorId: string | number,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/sectors/${sectorId}/sub-sectors`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterStatusOption(): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/project-statuses`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterFundingOption(): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/funding-sources`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getFilterWorkTypeOption(): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/work-types`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async getProjectDetailMedia(
+    projectID: string | number,
+
+    endPoint: string,
+    type: string,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+
+      if (!token) throw new Error('No authentication token available');
+
+      // Append optional ID filters
+
+      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}?type=${type}`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
@@ -592,40 +639,41 @@ divisionId: string | number
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminBaseUrl}/pwdsewa/inspector/complaints/${complaintId}`;
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
 
-
-    public async getProjectStatsDetails(departmentid: number): Promise<any> {
+  public async getProjectStatsDetails(departmentid: number): Promise<any> {
     try {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminPmsUrl}/dashboard/kpi?department_id=${departmentid}`;
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
 
-
-    public async getProjectDetails(id: number): Promise<any> {
+  public async getProjectDetails(id: number): Promise<any> {
     try {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminPmsUrl}/projects/${id}?format=json`;
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
@@ -637,10 +685,11 @@ divisionId: string | number
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminBaseUrl}/pwdsewa/inspector/assignment-options`;
-      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
@@ -658,7 +707,8 @@ divisionId: string | number
       });
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
@@ -676,7 +726,29 @@ divisionId: string | number
       });
       return data;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An error occurred';
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  public async updateProjectStatus(
+    payload: object,
+    projectId: string | number,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminBaseUrl}/projects/${projectId}/status`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
