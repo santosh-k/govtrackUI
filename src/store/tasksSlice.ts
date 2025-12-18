@@ -85,14 +85,20 @@ const initialState: TasksState = {
 export const fetchMyTasks = createAsyncThunk(
   'tasks/fetchMyTasks',
   async (
-    params: { page?: number; limit?: number; search?: string; refresh?: boolean } = {},
+    params: { page?: number; limit?: number; search?: string; refresh?: boolean; status?: string | string[]; priority?: string; task_type?: string; assigned_to?: string | number; project_id?: string | number } = {},
     { rejectWithValue }
   ) => {
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const page = params.page ?? 1;
       const limit = params.limit ?? 20;
-      const response = await ApiManager.getInstance().getMyTasks(page, limit, params.search || '');
+      const response = await ApiManager.getInstance().getMyTasks(page, limit, params.search || '', {
+        status: params.status,
+        priority: params.priority,
+        task_type: params.task_type,
+        assigned_to: params.assigned_to,
+        project_id: params.project_id,
+      });
 
       if (response?.success && response?.data) {
         try {
@@ -124,14 +130,20 @@ export const fetchMyTasks = createAsyncThunk(
 export const fetchAssignedTasks = createAsyncThunk(
   'tasks/fetchAssignedTasks',
   async (
-    params: { page?: number; limit?: number; search?: string; refresh?: boolean } = {},
+    params: { page?: number; limit?: number; search?: string; refresh?: boolean; status?: string | string[]; priority?: string; task_type?: string; assigned_to?: string | number; project_id?: string | number } = {},
     { rejectWithValue }
   ) => {
     try {
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const page = params.page ?? 1;
       const limit = params.limit ?? 20;
-      const response = await ApiManager.getInstance().getAssignedTasks(page, limit, params.search || '');
+      const response = await ApiManager.getInstance().getAssignedTasks(page, limit, params.search || '', {
+        status: params.status,
+        priority: params.priority,
+        task_type: params.task_type,
+        assigned_to: params.assigned_to,
+        project_id: params.project_id,
+      });
 
       if (response?.success && response?.data) {
         return {

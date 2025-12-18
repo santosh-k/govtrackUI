@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, StatusBar, FlatList, TouchableOpacity, Dimensions, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, FlatList, TouchableOpacity, Dimensions, Platform, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '@/components/Header';
+import TaskFilterBottomSheet from '@/components/TaskFilterBottomSheet';
 import { COLORS, SPACING } from '@/theme';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -38,7 +39,7 @@ interface Task {
   time: string;
   status: 'PENDING' | 'In Progress' | 'COMPLETED' | 'Overdue';
 }
-type TabName = 'My Tasks' | 'Assigned by Me';
+type TabName = 'My Tasks' | 'All Task';
 
 // Tasks are fetched from the API and stored in Redux
 
@@ -83,8 +84,8 @@ function TaskCard({ task, onPress }: TaskCardProps) {
         <View style={styles.dateTimeRow}>
           <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
           <Text style={styles.footerText}>{task.date}</Text>
-          <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} style={{ marginLeft: 12 }} />
-          <Text style={styles.footerText}>{task.time}</Text>
+          {/* <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} style={{ marginLeft: 12 }} />
+          <Text style={styles.footerText}>{task.time}</Text>*/}
         </View>
         <View style={styles.detailsIconContainer}>
           <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
@@ -102,8 +103,21 @@ export default function TasksScreen() {
   const [index, setIndex] = useState(0);
   const [routes] = useState([
     { key: 'myTasks', title: 'My Tasks' },
-    { key: 'assignedByMe', title: 'Assigned by Me' },
+    { key: 'assignedByMe', title: 'All Tasks' },
   ]);
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedAssignedTo, setSelectedAssignedTo] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | number | null>(null);
+  const [selectedAssignedUserId, setSelectedAssignedUserId] = useState<string | number | null>(null);
+  const [tempSelectedProject, setTempSelectedProject] = useState('');
+  const [tempSelectedAssignedUser, setTempSelectedAssignedUser] = useState('');
+  const [tempSelectedProjectId, setTempSelectedProjectId] = useState<string | number | null>(null);
+  const [tempSelectedAssignedUserId, setTempSelectedAssignedUserId] = useState<string | number | null>(null);
 
   // Deep link support
   useEffect(() => {
@@ -111,7 +125,33 @@ export default function TasksScreen() {
       if (params.tab === 'my-tasks') setIndex(0);
       else if (params.tab === 'assigned-by-me') setIndex(1);
     }
-  }, [params.tab]);
+
+    // Accept returned selections from selection screen (e.g., selectedProject, selectedProjectId, selectedAssignedUser, selectedAssignedUserId)
+    let reopenedFromSelection = false;
+    if (params.selectedProject) {
+      setTempSelectedProject(params.selectedProject as string);
+      reopenedFromSelection = true;
+    }
+    if (params.selectedProjectId) {
+      setTempSelectedProjectId(params.selectedProjectId as string | number);
+      reopenedFromSelection = true;
+    }
+    if (params.selectedAssignedUser) {
+      setTempSelectedAssignedUser(params.selectedAssignedUser as string);
+      reopenedFromSelection = true;
+    }
+    if (params.selectedAssignedUserId) {
+      setTempSelectedAssignedUserId(params.selectedAssignedUserId as string | number);
+      reopenedFromSelection = true;
+    }
+
+    // If we returned from the selection screen with new selections, re-open the filter sheet so the user can apply/inspect
+    if (reopenedFromSelection) {
+      // small delay to allow navigation stack to settle
+      setTimeout(() => setFilterVisible(true), 220);
+    }
+
+  }, [params.tab, params.selectedProject, params.selectedProjectId, params.selectedAssignedUser, params.selectedAssignedUserId]);
 
   const handleTaskPress = (task: Task) => {
     router.push({ pathname: '/(drawer)/task-details', params: { taskId: task.id } });
@@ -119,6 +159,137 @@ export default function TasksScreen() {
   const handleCreateTask = () => {
     router.push('/(drawer)/create-task');
   };
+
+  const openFilter = () => {
+    // initialize temp selections from current applied selections so the sheet starts with current filters
+    setTempSelectedProject(selectedProject || '');
+    setTempSelectedProjectId(selectedProjectId ?? null);
+    setTempSelectedAssignedUser(selectedAssignedTo || '');
+    setTempSelectedAssignedUserId(selectedAssignedUserId ?? null);
+    setFilterVisible(true);
+  };
+  const closeFilter = () => setFilterVisible(false);
+
+  const onStatusToggle = (status: string) => {
+    setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]));
+  };
+
+  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
+  const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
+
+  const onApplyFilters = (filters?: { priority?: string; task_type?: string }) => {
+    // apply project/assigned temp selections now
+    setSelectedProject(tempSelectedProject);
+    setSelectedProjectId(tempSelectedProjectId ?? null);
+    setSelectedAssignedTo(tempSelectedAssignedUser);
+    setSelectedAssignedUserId(tempSelectedAssignedUserId ?? null);
+
+    // store priority/task_type from bottom sheet
+    if (filters?.priority) setSelectedPriority(filters.priority);
+    else setSelectedPriority(null);
+
+    if (filters?.task_type) setSelectedTaskType(filters.task_type);
+    else setSelectedTaskType(null);
+
+    // trigger a refresh with the applied filters
+    const priorityParam = filters?.priority ? String(filters.priority).toUpperCase() : (selectedPriority ? String(selectedPriority).toUpperCase() : undefined);
+    const taskTypeParam = filters?.task_type ? String(filters.task_type).toUpperCase() : (selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined);
+    const statusParam = selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined;
+
+    dispatch(fetchMyTasks({
+      page: 1,
+      refresh: true,
+      search: searchQuery || undefined,
+      status: statusParam,
+      project_id: tempSelectedProjectId ?? undefined,
+      assigned_to: tempSelectedAssignedUserId ?? undefined,
+      priority: priorityParam,
+      task_type: taskTypeParam,
+    }));
+
+    dispatch(fetchAssignedTasks({
+      page: 1,
+      refresh: true,
+      search: searchQuery || undefined,
+      status: statusParam,
+      project_id: tempSelectedProjectId ?? undefined,
+      assigned_to: tempSelectedAssignedUserId ?? undefined,
+      priority: priorityParam,
+      task_type: taskTypeParam,
+    }));
+
+    closeFilter();
+  };
+
+  const onResetFilters = () => {
+    setSelectedStatuses([]);
+    setSelectedProject('');
+    setSelectedAssignedTo('');
+    setSelectedProjectId(null);
+    setSelectedAssignedUserId(null);
+    setSelectedPriority(null);
+    setSelectedTaskType(null);
+
+    // also clear temp selections
+    setTempSelectedProject('');
+    setTempSelectedProjectId(null);
+    setTempSelectedAssignedUser('');
+    setTempSelectedAssignedUserId(null);
+
+    closeFilter();
+
+    // Refresh lists without filters
+    dispatch(fetchMyTasks({ page: 1, refresh: true }));
+    dispatch(fetchAssignedTasks({ page: 1, refresh: true }));
+  };
+
+  
+  const handleProjectPress = () => {
+      global.filterSelectionCallback = (type: string, value: any) => {
+        if (type === 'project') {
+          const name = String(value.name || '');
+          const id = value.id ?? null;
+          setTempSelectedProject(name);
+          setTempSelectedProjectId(id);
+          setTimeout(() => setFilterVisible(true), 300);
+        }
+      };
+      setFilterVisible(false);
+      router.push({
+          pathname: '/(drawer)/task-data-selection-screen',
+          params: {
+            title: 'Select Projects',
+            dataKey: 'taskProjects',
+            currentValue: tempSelectedProject,
+            returnTo: 'tasks',
+            returnField: 'selectedProject',
+          },
+        });
+    };
+  const handleAssignedPress = () => {
+      global.filterSelectionCallback = (type: string, value: any) => {
+        if (type === 'assigned') {
+          const name = String(value.name || '');
+          const id = value.id ?? null;
+          setTempSelectedAssignedUser(name);
+          setTempSelectedAssignedUserId(id);
+          setTimeout(() => setFilterVisible(true), 300);
+        }
+      };
+      setFilterVisible(false);
+      router.push({
+          pathname: '/(drawer)/task-data-selection-screen',
+          params: {
+            title: 'Select Assigned User',
+            dataKey: 'user',
+            currentValue: tempSelectedAssignedUser,
+            returnTo: 'tasks',
+            returnField: 'selectedAssignedUser',
+          },
+        });
+    };
+
+ 
   const renderTask = ({ item }: { item: Task }) => <TaskCard task={item} onPress={() => handleTaskPress(item)} />;
 
   // Scenes
@@ -157,37 +328,71 @@ export default function TasksScreen() {
   const onEndReached = () => {
     if (isFetchingMore || isLoading) return;
     if (!hasMore) return;
-    dispatch(fetchMyTasks({ page: page + 1 }));
+    dispatch(fetchMyTasks({
+      page: page + 1,
+      search: searchQuery || undefined,
+      status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+      project_id: selectedProjectId ?? undefined,
+      assigned_to: selectedAssignedUserId ?? undefined,
+      priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+      task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+    }));
   };
 
   const onRefresh = () => {
-    dispatch(fetchMyTasks({ page: 1, refresh: true }));
+    dispatch(fetchMyTasks({
+      page: 1,
+      refresh: true,
+      search: searchQuery || undefined,
+      status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+      project_id: selectedProjectId ?? undefined,
+      assigned_to: selectedAssignedUserId ?? undefined,
+      priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+      task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+    }));
   };
 
   const onAssignedEndReached = () => {
     if (assignedIsFetchingMore || assignedIsLoading) return;
     if (!assignedHasMore) return;
-    dispatch(fetchAssignedTasks({ page: assignedPageState + 1 }));
+    dispatch(fetchAssignedTasks({
+      page: assignedPageState + 1,
+      search: searchQuery || undefined,
+      status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+      project_id: selectedProjectId ?? undefined,
+      assigned_to: selectedAssignedUserId ?? undefined,
+      priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+      task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+    }));
   };
 
   const onAssignedRefresh = () => {
-    dispatch(fetchAssignedTasks({ page: 1, refresh: true }));
+    dispatch(fetchAssignedTasks({
+      page: 1,
+      refresh: true,
+      search: searchQuery || undefined,
+      status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+      project_id: selectedProjectId ?? undefined,
+      assigned_to: selectedAssignedUserId ?? undefined,
+      priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+      task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+    }));
   };
 
   useEffect(() => {
-    // Load when tab is active
+    // Load when tab is active (preserve previous behavior if lists are empty)
     if (index === 0 && tasks.length === 0 && !isLoading) {
-      dispatch(fetchMyTasks({ page: 1 }));
+      dispatch(fetchMyTasks({ page: 1, search: searchQuery || undefined, status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined, project_id: selectedProjectId ?? undefined, assigned_to: selectedAssignedUserId ?? undefined, priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined, task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined }));
     }
 
     if (index === 1 && assignedTasks.length === 0 && !assignedIsLoading) {
-      dispatch(fetchAssignedTasks({ page: 1 }));
+      dispatch(fetchAssignedTasks({ page: 1, search: searchQuery || undefined, status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined, project_id: selectedProjectId ?? undefined, assigned_to: selectedAssignedUserId ?? undefined, priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined, task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined }));
     }
   }, [index]);
 
   const MyTasksRoute = () => (
     <FlatList
-      data={tasks.map(mapServerTaskToTask)}
+      data={filteredMyTasks}
       renderItem={renderTask}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
@@ -197,12 +402,21 @@ export default function TasksScreen() {
       refreshing={isRefreshing}
       onRefresh={onRefresh}
       ListFooterComponent={isFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
-      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
+      ListEmptyComponent={isLoading ? (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>Tasks Loading</Text>
+        </View>
+      ) : (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textSecondary }}>No tasks found</Text>
+        </View>
+      )}
     />
   );
   const AssignedByMeRoute = () => (
     <FlatList
-      data={assignedTasks.map(mapServerTaskToTask)}
+      data={filteredAssignedTasks}
       renderItem={renderTask}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
@@ -212,9 +426,84 @@ export default function TasksScreen() {
       refreshing={assignedIsRefreshing}
       onRefresh={onAssignedRefresh}
       ListFooterComponent={assignedIsFetchingMore ? <View style={{ padding: 12 }}><ActivityIndicator size="small" color={COLORS.primary} /></View> : null}
-      ListEmptyComponent={<View style={{ paddingTop: 24, alignItems: 'center' }}><Text style={{ color: COLORS.textSecondary }}>No tasks found</Text></View>}
+      ListEmptyComponent={assignedIsLoading ? (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>Tasks Loading</Text>
+        </View>
+      ) : (
+        <View style={{ paddingTop: 24, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textSecondary }}>No tasks found</Text>
+        </View>
+      )}
     />
   );
+
+  // Prepare mapped + filtered lists
+  const mappedMyTasks = tasks.map(mapServerTaskToTask);
+  const mappedAssignedTasks = assignedTasks.map(mapServerTaskToTask);
+
+  // Client-side fallback filters (still useful while server returns filtered results)
+  const lowerSearch = searchQuery.trim().toLowerCase();
+  const taskMatchesSearch = (t: Task) => {
+    if (!lowerSearch) return true;
+    return (
+      String(t.title).toLowerCase().includes(lowerSearch) ||
+      String(t.taskId).toLowerCase().includes(lowerSearch) ||
+      String(t.category).toLowerCase().includes(lowerSearch) ||
+      String(t.assignedBy).toLowerCase().includes(lowerSearch)
+    );
+  };
+
+  const taskMatchesStatusFilter = (t: Task) => {
+    if (!selectedStatuses.length) return true;
+    // Compare lowercase equality of status strings
+    return selectedStatuses.some((s) => s.toLowerCase() === String(t.status).toLowerCase());
+  };
+
+  const filteredMyTasks = mappedMyTasks.filter((t) => taskMatchesSearch(t) && taskMatchesStatusFilter(t));
+  const filteredAssignedTasks = mappedAssignedTasks.filter((t) => taskMatchesSearch(t) && taskMatchesStatusFilter(t));
+
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (selectedStatuses.length) count += selectedStatuses.length;
+    if (selectedPriority) count += 1;
+    if (selectedTaskType) count += 1;
+    if (selectedProjectId) count += 1;
+    if (selectedAssignedUserId) count += 1;
+    return count;
+  }, [selectedStatuses, selectedPriority, selectedTaskType, selectedProjectId, selectedAssignedUserId]);
+
+  // When search/filters change, re-fetch page 1 from server with debounce to keep lists in sync
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (index === 0) {
+        dispatch(fetchMyTasks({
+          page: 1,
+          search: searchQuery || undefined,
+          status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+          project_id: selectedProjectId ?? undefined,
+          assigned_to: selectedAssignedUserId ?? undefined,
+          priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+          task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+          refresh: true,
+        }));
+      } else {
+        dispatch(fetchAssignedTasks({
+          page: 1,
+          search: searchQuery || undefined,
+          status: selectedStatuses.length ? selectedStatuses.map(s => String(s).toUpperCase().replace(/\s+/g, '_')).join(',') : undefined,
+          project_id: selectedProjectId ?? undefined,
+          assigned_to: selectedAssignedUserId ?? undefined,
+          priority: selectedPriority ? String(selectedPriority).toUpperCase() : undefined,
+          task_type: selectedTaskType ? String(selectedTaskType).toUpperCase() : undefined,
+          refresh: true,
+        }));
+      }
+    }, 400);
+
+    return () => clearTimeout(t);
+  }, [searchQuery, selectedStatuses, selectedProjectId, selectedAssignedUserId, index]);
 
   const renderScene = SceneMap({
     myTasks: MyTasksRoute,
@@ -242,9 +531,29 @@ export default function TasksScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-      <Header title="Tasks" />
+      <Header title="Tasks" rightIconName="filter" onRightPress={openFilter} rightBadgeCount={activeFilterCount} />
 
       {renderTabBar()}
+
+      {/* Search box below tabs */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={COLORS.textSecondary} style={{ marginLeft: 12 }} />
+        <TextInput
+          placeholder="Search tasks by title, id, category or assignee"
+          placeholderTextColor={COLORS.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          returnKeyType="search"
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 8, marginRight: 8 }}>
+            <Ionicons name="close" size={18} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
+      </View>
 
       <TabView
         navigationState={{ index, routes }}
@@ -254,6 +563,21 @@ export default function TasksScreen() {
         renderTabBar={() => null} // hide default tab bar
       />
 
+      {/* Filter sheet */}
+      <TaskFilterBottomSheet
+        visible={filterVisible}
+        onClose={closeFilter}
+        selectedStatuses={selectedStatuses}
+        selectedProject={tempSelectedProject || selectedProject}
+        selectedAssignedTo={tempSelectedAssignedUser || selectedAssignedTo}
+        selectedPriority={selectedPriority}
+        selectedTaskType={selectedTaskType}
+        onStatusToggle={onStatusToggle}
+        onProjectPress={handleProjectPress}
+        onAssignedToPress={handleAssignedPress}
+        onApply={onApplyFilters}
+        onReset={onResetFilters}
+      />
       <TouchableOpacity style={styles.fab} onPress={handleCreateTask} activeOpacity={0.85}>
         <Ionicons name="add" size={24} color={COLORS.white} />
         <Text style={styles.fabText}>Create Task</Text>
@@ -271,6 +595,13 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
   tabTextActive: { color: COLORS.primary },
   listContent: { padding: SPACING.md, paddingBottom: 100 },
+  searchContainer: { flexDirection: 'row',
+     alignItems: 'center',
+      backgroundColor: COLORS.cardBackground,
+       margin: SPACING.sm, borderRadius: 12, 
+       borderWidth: 1, borderColor: 
+       COLORS.border, height: 48 },
+  searchInput: { flex: 1, paddingHorizontal: 12, color: COLORS.text, fontSize: 15 },
   taskCard: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 16,

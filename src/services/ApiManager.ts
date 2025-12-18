@@ -630,28 +630,7 @@ class ApiManager {
     }
   }
 
-  public async getProjectDetail(
-    projectID: string | number,
-
-    endPoint: string,
-  ): Promise<any> {
-    try {
-      const token = this.getToken();
-
-      if (!token) throw new Error('No authentication token available');
-
-      // Append optional ID filters
-
-      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
-      console.log(url);
-      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
-      return data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
+  
 
   public async getFilterDepartmentOption(): Promise<any> {
     try {
@@ -1023,22 +1002,7 @@ class ApiManager {
     }
   }
 
-  /** ---------------- FETCH CIRCLES BY ZONE ID (EXTERNAL ADMIN PMS API) ---------------- */
-  public async fetchCircles(zoneId: number | string): Promise<any> {
-    try {
-      const token = this.getToken();
-      if (!token) throw new Error('No authentication token available');
-
-      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
-      console.log(url);
-      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
-      return data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
+ 
 
   /** ---------------- FETCH DIVISIONS BY CIRCLE ID (EXTERNAL ADMIN PMS API) ---------------- */
   public async fetchDivisions(circleId: number | string): Promise<any> {
@@ -1056,43 +1020,79 @@ class ApiManager {
       throw new Error(message);
     }
   }
-  /** ---------------- FETCH SUBDIVISIONS BY DIVISION ID (EXTERNAL ADMIN PMS API) ---------------- */
-  public async fetchSubDivisions(divisionId: number | string): Promise<any> {
-    try {
-      const token = this.getToken();
-      if (!token) throw new Error('No authentication token available');
+ 
 
-      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
-      console.log(url);
-      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
-      return data;
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
-      throw new Error(message);
-    }
-  }
+  
 
-  /** ---------------- SEARCH PROJECTS (LIGHTWEIGHT) (EXTERNAL ADMIN PMS API) ---------------- */
-  public async searchProjectList(
-    search: string = '',
+  /** ---------------- TASKS ASSIGNED BY ME (EXTERNAL ADMIN PMS API) ---------------- */
+  public async getAssignedTasks(
     page: number = 1,
-    limit: number = 50,
+    limit: number = 20,
+    search: string = '',
+    filters: { status?: string | string[]; priority?: string; task_type?: string; assigned_to?: string | number; project_id?: string | number } = {}
   ): Promise<any> {
     try {
       const token = this.getToken();
       if (!token) throw new Error('No authentication token available');
 
-      const q = `search=${encodeURIComponent(
-        search,
-      )}&page=${page}&limit=${limit}`;
-      const url = `${this.adminPmsUrl}/projects/search-lightweight?${q}`;
-      console.log('searchProjectList ->', url);
-      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      const params = new URLSearchParams({
+      //  assigned_by_you: 'true',
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (search && search.trim().length > 0) params.append('search', search.trim());
+
+      // Optional filters
+      if (filters) {
+        if (filters.status) {
+          if (Array.isArray(filters.status)) params.append('status', filters.status.join(','));
+          else params.append('status', String(filters.status));
+        }
+        if (filters.priority) params.append('priority', String(filters.priority));
+        if (filters.task_type) params.append('task_type', String(filters.task_type));
+        if (filters.assigned_to !== undefined && filters.assigned_to !== null) params.append('assigned_to', String(filters.assigned_to));
+        if (filters.project_id !== undefined && filters.project_id !== null) params.append('project_id', String(filters.project_id));
+      }
+
+      const url = `${this.adminPmsUrl}/tasks?${params.toString()}`;
+      console.log('[ApiManager] getMyTasks url=', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      try {
+        // log exact structure and tasks info for debugging
+        console.log('[ApiManager] getMyTasks raw:', JSON.stringify(data, null, 2));
+        const tasks = data && data.data && data.data.tasks;
+        console.log('[ApiManager] getMyTasks tasks-type:', Array.isArray(tasks) ? 'array' : typeof tasks, 'length:', Array.isArray(tasks) ? tasks.length : 'n/a');
+        if (Array.isArray(tasks) && tasks.length > 0) {
+          console.log('[ApiManager] getMyTasks sampleTask:', JSON.stringify(tasks[0]));
+        }
+      } catch (e) {
+        console.warn('[ApiManager] getMyTasks logging failed', e);
+      }
       return data;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- TASK DETAILS ---------------- */
+  public async getTask(taskId: string | number): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks/${taskId}`;
+      console.log('[ApiManager] getTask url=', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      try {
+        console.log('[ApiManager] getTask raw:', JSON.stringify(data));
+      } catch (e) {
+        // ignore
+      }
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }
@@ -1117,22 +1117,158 @@ class ApiManager {
     }
   }
 
-  /** ---------------- CREATE TASK (EXTERNAL ADMIN PMS API) ---------------- */
-  public async createBottleNeck(payload: any, projectID: any): Promise<any> {
+  /**
+   * Transfer a task to another user
+   * POST /admin/pms/api/tasks/{taskId}/transfer
+   */
+  public async transferTask(taskId: string | number, payload: { to_user_id: number; transfer_reason?: string }): Promise<any> {
     try {
-      const token = this.getToken();
-      if (!token) throw new Error('No authentication token available');
-
-      const url = `${this.adminPmsUrl}/projects/${projectID}/bottleneck`;
-      console.log('[ApiManager] createTask url=', url);
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/transfer`;
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       return data;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+   public async getProjectDetail(
+     projectID: string | number,
+  
+    endPoint: string
+,
+  
+  
+  ): Promise<any> {
+    try {
+
+
+      const token = this.getToken();
+
+      
+
+      if (!token) throw new Error('No authentication token available');
+
+    
+
+      // Append optional ID filters
+    
+      const url = `${this.adminPmsUrl}/mobile/projects/${projectID}/${endPoint}`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+
+    
+
+
+   
+
+
+ 
+
+   
+
+
+
+
+    
+
+  
+
+  
+
+  
+
+  
+
+  /** ---------------- FETCH CIRCLES BY ZONE ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchCircles(zoneId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  
+  /** ---------------- FETCH SUBDIVISIONS BY DIVISION ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchSubDivisions(divisionId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
+      console.log(url)
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+  /** ---------------- FETCH USERS BY LOCATION (EXTERNAL ADMIN PMS API) ---------------- */
+  /**
+   * GET /admin/pms/api/tasks/users-by-location
+   * Optional query params: department_id, zone_id, circle_id, division_id
+   */
+  public async getUsersByLocation(
+    department_id?: string | number,
+    zone_id?: string | number,
+    circle_id?: string | number,
+    division_id?: string | number
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const q = new URLSearchParams();
+      if (department_id !== undefined && department_id !== null && String(department_id) !== '') q.append('department_id', String(department_id));
+      if (zone_id !== undefined && zone_id !== null && String(zone_id) !== '') q.append('zone_id', String(zone_id));
+      if (circle_id !== undefined && circle_id !== null && String(circle_id) !== '') q.append('circle_id', String(circle_id));
+      if (division_id !== undefined && division_id !== null && String(division_id) !== '') q.append('division_id', String(division_id));
+
+      const url = `${this.adminPmsUrl}/tasks/users-by-location${q.toString() ? `?${q.toString()}` : ''}`;
+      console.log('[ApiManager] getUsersByLocation ->', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+  
+
+
+  /** ---------------- SEARCH PROJECTS (LIGHTWEIGHT) (EXTERNAL ADMIN PMS API) ---------------- */
+  public async searchProjectList(search: string = '', page: number = 1, limit: number = 50): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const q = `search=${encodeURIComponent(search)}&page=${page}&limit=${limit}`;
+      const url = `${this.adminPmsUrl}/projects/search-lightweight?${q}`;
+      console.log('searchProjectList ->', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
       throw new Error(message);
     }
   }

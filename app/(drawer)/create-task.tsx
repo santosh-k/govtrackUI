@@ -14,6 +14,7 @@
  * @screen
  */
 
+
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   View,
@@ -36,7 +37,8 @@ import * as Location from 'expo-location';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
-import {useFocusEffect} from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 // Types
 interface LocationData {
@@ -50,10 +52,8 @@ export default function CreateTaskScreen() {
   // Use projectIdD as that's what's being passed from project-details.tsx
   const projectId = (params.projectIdD || params.projectId) as string;
   const insets = useSafeAreaInsets();
-
   // Preserve the initial projectId received when navigating from project-details
   const initialProjectIdRef = useRef<string | null>(projectId ?? null);
-
   // State
   const [taskName, setTaskName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -714,7 +714,7 @@ export default function CreateTaskScreen() {
 
             {/* Task Name */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Task Name</Text>
+              <Text style={styles.fieldLabel}>Task Title</Text>
               <TextInput
                 style={styles.textInput}
                 value={taskName}

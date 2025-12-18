@@ -90,42 +90,53 @@ export default function SettingsScreen() {
     });
   };
 
+  const handleWebPage = (title: string, url: string) => {
+  router.push({
+    pathname: '/(drawer)/webpage-screen',
+    params: { title, url },
+  });
+};
+
   const settingsItems = [
     {
       icon: 'information-circle-outline' as keyof typeof Ionicons.glyphMap,
       label: 'About Us',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('About Us'),
+      onPress: () => handleWebPage(
+        'About Us',
+        'https://pwddelhi.gov.in/about-us'
+      ),
     },
     {
       icon: 'business-outline' as keyof typeof Ionicons.glyphMap,
       label: 'Organisation Structure',
-      iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('Organisation Structure'),
+      iconColor: COLORS.blue, 
+      onPress: () => handleWebPage('Organisation Structure', 
+        'https://pwddelhi.gov.in/organization-structure'),
     },
     {
       icon: 'book-outline' as keyof typeof Ionicons.glyphMap,
       label: 'Directory',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('Directory'),
+      onPress: () => handleWebPage('Directory', 'https://pwddelhi.gov.in/organization-structure'),
     },
     {
       icon: 'globe-outline' as keyof typeof Ionicons.glyphMap,
       label: 'Website',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('Website'),
+      onPress: () => handleWebPage('Website', 'https://pwddelhi.gov.in/'),
     },
     {
       icon: 'shield-checkmark-outline' as keyof typeof Ionicons.glyphMap,
       label: 'Privacy Policy',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('Privacy Policy'),
+      onPress: () => handleWebPage('Privacy Policy', 'https://pwddelhi.gov.in/privacy-policy'),
     },
     {
       icon: 'call-outline' as keyof typeof Ionicons.glyphMap,
       label: 'Contact US',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('Contact US'),
+      onPress: () => handleWebPage('Contact US', 'https://pwddelhi.gov.in/'),
     },
     {
       icon: 'people-outline' as keyof typeof Ionicons.glyphMap,
@@ -137,7 +148,7 @@ export default function SettingsScreen() {
       icon: 'map-outline' as keyof typeof Ionicons.glyphMap,
       label: 'PWD Delhi Roadmap',
       iconColor: COLORS.blue,
-      onPress: () => handlePlaceholder('PWD Delhi Roadmap'),
+      onPress: () => handleWebPage('PWD Delhi Roadmap', 'https://pwddelhi.gov.in/road-on-map-1'),
     },
     {
       icon: 'trash-outline' as keyof typeof Ionicons.glyphMap,
