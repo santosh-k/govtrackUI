@@ -122,14 +122,11 @@
     { "id": "8", "name": "Supervision" }
   ],
   "issueTypes": [
-    { "id": "1", "name": "Material Shortage" },
-    { "id": "2", "name": "Equipment Failure" },
-    { "id": "3", "name": "Permit Delays" },
-    { "id": "4", "name": "Weather Conditions" },
-    { "id": "5", "name": "Labor Shortage" },
-    { "id": "6", "name": "Budget Constraints" },
-    { "id": "7", "name": "Design Changes" },
-    { "id": "8", "name": "Site Access Issues" }
+    { "id": "1", "name": "Low", "value": "- Minor issue, can be addressed later" },
+    { "id": "2", "name": "Medium", "value":"- Moderate impact on progress" },
+    { "id": "3", "name": "High","value":"- Significant impact, needs attention" },
+    { "id": "4", "name": "Critical", "value":"- Project blocking issue" }
+   
   ],
   "assetCategories": [
     { "id": "1", "name": "Roads" },

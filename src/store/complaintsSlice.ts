@@ -42,6 +42,8 @@ export const fetchComplaints = createAsyncThunk(
       isInfiniteScroll = false,
       category_id,
       zone_id,
+      circle_id,
+      division_id,
       department_id,
       start_date,
       end_date,
@@ -55,6 +57,8 @@ export const fetchComplaints = createAsyncThunk(
       isInfiniteScroll?: boolean;
       category_id?: string | number | null;
       zone_id?: string | number | null;
+      circle_id?: string | number | null;
+      division_id?: string | number | null;
       department_id?: string | number | null;
       start_date?: string | null;
       end_date?: string | null;
@@ -63,6 +67,8 @@ export const fetchComplaints = createAsyncThunk(
   ) => {
     try {
       // Use dynamic import to avoid circular dependency
+      console.log('StartDateSl==', start_date)
+      console.log('EndDateSl==', end_date)
       const ApiManager = (await import('@/src/services/ApiManager')).default;
       const response = await ApiManager.getInstance().getComplaints(
         stats_filter,
@@ -73,6 +79,8 @@ export const fetchComplaints = createAsyncThunk(
         search,
         category_id ?? undefined,
         zone_id ?? undefined,
+        circle_id ?? undefined,
+        division_id ?? undefined,
         department_id ?? undefined,
         start_date ?? undefined,
         end_date ?? undefined,

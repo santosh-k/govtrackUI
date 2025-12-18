@@ -89,7 +89,16 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Guest User';
   const displayDesignation = user?.designations?.[0]?.displayName || '';
   // Prefer division name, then zone, then department
-  const displayDivision = user?.division?.name || user?.zone?.name || user?.departments?.[0]?.name || '';
+  //const displayDivision = user?.division?.name || user?.zone?.name || user?.departments?.[0]?.name || '';
+  const displayDivision = user?.isZonalUser
+    ? user?.zone?.name
+    : user?.isCircleUser
+    ? user?.circle?.name
+    : user?.isDivisionUser
+    ? user?.division?.name
+    : user?.isSubDivisionUser
+    ? user?.subDivision?.name
+    : user?.division?.name;
   const handleMenuItemPress = (route: string) => {
     // Close drawer first
     props.navigation.closeDrawer();

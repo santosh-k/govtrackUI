@@ -10,15 +10,35 @@ import {
   updateUser,
 } from '../store/authSlice';
 
+import {Platform} from 'react-native';
+
 class ApiManager {
   private static instance: ApiManager;
   // private baseUrl = 'https://cms.pwddelhi.thesst.com/api';
+
+  //private baseUrl = 'https://pwd.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwd.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwd.thesst.com/admin/pms/api'
+
+  // For Staging Server
+  //private baseUrl = 'https://pwdstag.thesst.com/cms/api';
+  //private adminBaseUrl = 'https://pwdstag.thesst.com/admin/api';
+  //private adminPmsUrl = 'https://pwdstag.thesst.com/admin/pms/api';
+
+  // For Dev Server
   private baseUrl = 'https://pwddev.thesst.com/cms/api';
-  // private baseUrl = 'http://192.168.1.58:3005/cms/api';
   private adminBaseUrl = 'https://pwddev.thesst.com/admin/api';
-  // private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
   private adminPmsUrl = 'https://pwddev.thesst.com/admin/pms/api';
-  // private adminPmsUrl = 'http://192.168.1.58:3001/admin/pms/api'
+
+  //For Local Server
+  //private adminBaseUrl = 'http://192.168.1.58:3001/admin/api';
+  // private baseUrl = 'http://192.168.1.58:3005/cms/api';
+  // private adminPmsUrl = 'http://192.168.1.58:3005/admin/pms/api';
+
+  // For Live Server
+  //private baseUrl = 'https://pwddelhi.gov.in/cms/api';
+  //private adminBaseUrl = 'https://pwddelhi.gov.in/admin/api';
+  //private adminPmsUrl = 'https://pwddelhi.gov.in/admin/pms/api';
 
   private constructor() {}
 
@@ -33,19 +53,31 @@ class ApiManager {
     return store.getState().auth.token;
   }
 
+  // Helper to detect FormData-like bodies (covers RN/Expo variations)
+  private isFormData(body: any): boolean {
+    if (!body) return false;
+    if (typeof FormData !== 'undefined' && body instanceof FormData)
+      return true;
+    // Expo/React Native FormData implementations often expose append() or _parts
+    if (typeof body.append === 'function') return true;
+    if (typeof body === 'object' && '_parts' in body) return true;
+    return false;
+  }
+
   private async fetchWithAuth(
     endpoint: string,
     options: RequestInit = {},
   ): Promise<Response> {
     const headers = new Headers(options.headers);
     const token = this.getToken();
+    const isUpload = options.body instanceof FormData;
 
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
 
-    // Only set JSON Content-Type if body is not FormData
-    if (!(options.body instanceof FormData)) {
+    // Only set JSON Content-Type if body is not FormData (handle RN/Expo FormData variants)
+    if (!isUpload && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
 
@@ -78,13 +110,31 @@ class ApiManager {
     retry: boolean = true,
   ): Promise<any> {
     // attach token header
-    const headers = new Headers(options.headers);
+    const headers = new Headers(options.headers || {});
     const token = this.getToken();
 
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    if (!(options.body instanceof FormData)) {
+    // If body is FormData (including RN/Expo variants), DO NOT set Content-Type so the bridge can set proper multipart boundary
+    if (this.isFormData(options.body)) {
+      headers.delete('Content-Type');
+    } else {
       headers.set('Content-Type', 'application/json');
+    }
+
+    // Debug: log request metadata (mask token)
+    try {
+      const authHeader = headers.get('Authorization');
+      const authPresence = authHeader
+        ? `present ${authHeader.substr(0, 10)}...`
+        : 'absent';
+      console.log('[ApiManager] fetchExternalWithRetry request:', {
+        url,
+        method: options.method || 'GET',
+        auth: authPresence,
+      });
+    } catch (e) {
+      // ignore logging errors
     }
 
     const response = await fetch(url, {
@@ -95,8 +145,28 @@ class ApiManager {
     let data: any = undefined;
     try {
       data = await response.json();
+      console.log('Response', JSON.stringify(response.json));
     } catch (e) {
       // ignore JSON parse errors
+    }
+
+    // Debug: log response metadata
+    try {
+      console.log('[ApiManager] fetchExternalWithRetry response:', {
+        url,
+        status: response.status,
+        ok: response.ok,
+        data:
+          data &&
+          (data.success !== undefined
+            ? data.success
+              ? 'success'
+              : 'failure'
+            : 'no-success-flag'),
+        rawData: data,
+      });
+    } catch (e) {
+      // ignore logging errors
     }
 
     // If API returned a structured error indicating token expired, try refresh once
@@ -128,6 +198,12 @@ class ApiManager {
 
     // If non-OK HTTP status
     if (!response.ok) {
+      console.warn('Non-OK HTTP response', {
+        url,
+        options,
+        status: response.status,
+        data,
+      });
       const msg =
         (data && (data.message || data.error?.message)) || 'Request failed';
       throw new Error(msg);
@@ -135,6 +211,7 @@ class ApiManager {
 
     // If API returned success:false for other reasons
     if (data && data.success === false) {
+      console.warn('API returned success:false', {url, options, data: data});
       const msg = data.message || data.error?.message || 'Request failed';
       throw new Error(msg);
     }
@@ -142,16 +219,97 @@ class ApiManager {
     return data;
   }
 
+  private async buildDeviceInfo(provided?: any) {
+    // Lazily require react-native-device-info to avoid native module access during
+    // module initialization (which can cause RN native module null errors).
+    let DeviceInfo: any = null;
+    try {
+      // dynamic import works with metro if the package is available
+      // fall back to require for environments where import() isn't supported
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      DeviceInfo = require('react-native-device-info');
+    } catch (e) {
+      try {
+        DeviceInfo = await import('react-native-device-info');
+      } catch (err) {
+        DeviceInfo = null;
+      }
+    }
+
+    const deviceType = Platform.OS; // "android" or "ios"
+
+    // Default values in case DeviceInfo is not available or native module isn't linked yet
+    let deviceModel = 'Unknown Device';
+    let osVersion = '';
+    let appVersion = '1.0.0';
+    let deviceId = '';
+
+    try {
+      if (DeviceInfo) {
+        // Some methods are synchronous
+        if (typeof DeviceInfo.getModel === 'function')
+          deviceModel = DeviceInfo.getModel();
+        if (typeof DeviceInfo.getSystemVersion === 'function')
+          osVersion = DeviceInfo.getSystemVersion();
+        if (typeof DeviceInfo.getVersion === 'function')
+          appVersion = DeviceInfo.getVersion();
+        if (typeof DeviceInfo.getUniqueId === 'function') {
+          // getUniqueId may be async in some implementations
+          const maybeId = DeviceInfo.getUniqueId();
+          deviceId =
+            maybeId && typeof maybeId.then === 'function'
+              ? await maybeId
+              : maybeId;
+        }
+      }
+    } catch (e) {
+      // ignore errors reading device info — we will send defaults
+      console.warn('Could not read device info:', e);
+    }
+
+    // Merge with provided deviceInfo if available
+    return {
+      deviceToken: provided?.deviceToken || '',
+      deviceType,
+      deviceModel,
+      osVersion,
+      appVersion,
+      deviceId,
+    };
+  }
   /** ---------------- LOGIN ---------------- */
   public async login(credentials: LoginRequest): Promise<LoginResponse> {
     store.dispatch(loginStart());
 
     try {
+      const deviceInfo = await this.buildDeviceInfo(credentials.deviceInfo);
+
+      const payload = {
+        username: credentials.username,
+        password: credentials.password,
+        deviceInfo,
+      };
+
+      // Try FCM token
+      try {
+        if (!payload.deviceInfo.deviceToken) {
+          const notifModule = await import('./notifications');
+          if (typeof notifModule.ensureFcmToken === 'function') {
+            const token = await notifModule.ensureFcmToken();
+            if (token) payload.deviceInfo.deviceToken = token;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not obtain FCM token', e);
+      }
+      console.log(JSON.stringify(payload));
       const response = await fetch(`${this.baseUrl}/auth/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data: LoginResponse = await response.json();
 
@@ -164,7 +322,7 @@ class ApiManager {
           }),
         );
       } else {
-        store.dispatch(loginFailure('Login failed'));
+        store.dispatch(loginFailure(data.message || 'Login failed'));
       }
 
       return data;
@@ -298,6 +456,77 @@ class ApiManager {
     }
   }
 
+  /** ---------------- TASK REPLIES (EXTERNAL ADMIN PMS API) ---------------- */
+  /**
+   * Create a reply/comment for a task
+   * POST /admin/pms/api/tasks/{taskId}/replies
+   */
+  public async createTaskReply(
+    taskId: string | number,
+    payload: {comment: string; is_internal?: boolean; comment_type?: string},
+  ): Promise<any> {
+    try {
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/replies`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Upload attachments for a task (multipart/form-data)
+   * POST /admin/pms/api/tasks/{taskId}/attachments
+   * Form key: attachments (can be appended multiple times)
+   */
+  public async uploadTaskAttachments(
+    taskId: string | number,
+    formData: FormData,
+  ): Promise<any> {
+    try {
+      const url = `${this.adminPmsUrl}/tasks/${taskId}/attachments`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: formData,
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Review (approve/reject) a task reply
+   * PATCH /admin/pms/api/tasks/{taskId}/replies/{replyId}/review
+   * Note: endpoint may vary on backend; adjust as required.
+   */
+  public async reviewTaskReply(
+    replyId: string | number,
+    action: 'APPROVE' | 'REJECT',
+    payload: {remarks?: string} = {},
+  ): Promise<any> {
+    try {
+      const verb = action === 'APPROVE' ? 'approve' : 'reject';
+      const url = `${this.adminPmsUrl}/tasks/replies/${replyId}/${verb}`;
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
   /** ---------------- COMPLAINTS LIST (EXTERNAL ADMIN API) ---------------- */
   public async getComplaints(
     stats_filter: string,
@@ -308,6 +537,8 @@ class ApiManager {
     search: string = '',
     category_id?: string | number,
     zone_id?: string | number,
+    circle_id?: string | number,
+    division_id?: string | number,
     department_id?: string | number,
     startDate?: string,
     endDate?: string,
@@ -336,7 +567,17 @@ class ApiManager {
         queryParams.append('category', String(category_id));
       }
       if (zone_id !== undefined && zone_id !== null && zone_id !== '') {
-        queryParams.append('zone', String(zone_id));
+        queryParams.append('zone_id', String(zone_id));
+      }
+      if (circle_id !== undefined && circle_id !== null && circle_id !== '') {
+        queryParams.append('circle_id', String(circle_id));
+      }
+      if (
+        division_id !== undefined &&
+        division_id !== null &&
+        division_id !== ''
+      ) {
+        queryParams.append('division_id', String(division_id));
       }
       if (
         department_id !== undefined &&
@@ -720,10 +961,191 @@ class ApiManager {
       if (!token) throw new Error('No authentication token available');
 
       const url = `${this.adminBaseUrl}/pwdsewa/inspector/update-complaint-status`;
+      console.log(
+        'ApiManager.updateComplaintStatus: sending payload summary:',
+        {
+          complaint_id: payload?.complaint_id,
+          user_id: payload?.user_id,
+          status: payload?.status,
+          attachments_count: Array.isArray(payload?.attachments)
+            ? payload.attachments.length
+            : 0,
+        },
+      );
       const data = await this.fetchExternalWithRetry(url, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      //console.log('ApiManager.updateComplaintStatus: response', data);
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- LOGOUT ---------------- */
+  public async logout(): Promise<any> {
+    try {
+      // Use fetchWithAuth so Authorization header is sent when token exists
+      const response = await this.fetchWithAuth('/auth/logout', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      // Expecting { success: true, message: 'Logged out successfully' }
+      if (!response.ok || (data && data.success === false)) {
+        const msg = data?.message || 'Logout failed';
+        throw new Error(msg);
+      }
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH ZONES (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchZones(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/zones`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH CIRCLES BY ZONE ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchCircles(zoneId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/zones/${zoneId}/circles`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH DIVISIONS BY CIRCLE ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchDivisions(circleId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/circles/${circleId}/divisions`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+  /** ---------------- FETCH SUBDIVISIONS BY DIVISION ID (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchSubDivisions(divisionId: number | string): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/divisions/${divisionId}/subdivisions`;
+      console.log(url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- SEARCH PROJECTS (LIGHTWEIGHT) (EXTERNAL ADMIN PMS API) ---------------- */
+  public async searchProjectList(
+    search: string = '',
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const q = `search=${encodeURIComponent(
+        search,
+      )}&page=${page}&limit=${limit}`;
+      const url = `${this.adminPmsUrl}/projects/search-lightweight?${q}`;
+      console.log('searchProjectList ->', url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- CREATE TASK (EXTERNAL ADMIN PMS API) ---------------- */
+  public async createTask(payload: any): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks`;
+      console.log('[ApiManager] createTask url=', url);
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- CREATE TASK (EXTERNAL ADMIN PMS API) ---------------- */
+  public async createBottleNeck(payload: any, projectID: any): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/projects/${projectID}/bottleneck`;
+      console.log('[ApiManager] createTask url=', url);
+      const data = await this.fetchExternalWithRetry(url, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      return data;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
+
+  /** ---------------- FETCH FILTERED INSPECTIONS (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchFilteredInspections(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/tasks/filtered-inspections`;
+      console.log('fetchFilteredInspections ->', url);
+      const data = await this.fetchExternalWithRetry(url, {method: 'GET'});
       return data;
     } catch (error) {
       const message =

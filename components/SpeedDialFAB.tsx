@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   Animated,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '@/theme';
+import {Ionicons} from '@expo/vector-icons';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {COLORS} from '@/theme';
 
 interface SpeedDialAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -21,37 +21,37 @@ interface SpeedDialFABProps {
   actions: SpeedDialAction[];
 }
 
-export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
+export default function SpeedDialFAB({actions}: SpeedDialFABProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [animation] = useState(new Animated.Value(0));
   const [rotateAnimation] = useState(new Animated.Value(0));
 
-      const toggleMenu = () => {
-        const toValue = isOpen ? 0 : 1;
+  const toggleMenu = () => {
+    const toValue = isOpen ? 0 : 1;
 
-        Animated.parallel([
-          Animated.spring(animation, {
-            toValue,
-            friction: 5,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-          Animated.timing(rotateAnimation, {
-            toValue,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Reset rotation cleanly AFTER animation is done
-          if (!isOpen) {
-            rotateAnimation.setValue(1);
-          } else {
-            rotateAnimation.setValue(0);
-          }
-        });
+    Animated.parallel([
+      Animated.spring(animation, {
+        toValue,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnimation, {
+        toValue,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Reset rotation cleanly AFTER animation is done
+      if (!isOpen) {
+        rotateAnimation.setValue(1);
+      } else {
+        rotateAnimation.setValue(0);
+      }
+    });
 
-        setIsOpen(!isOpen);
-      };
+    setIsOpen(!isOpen);
+  };
 
   const handleActionPress = (action: SpeedDialAction) => {
     toggleMenu();
@@ -111,19 +111,21 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
                 style={[
                   styles.actionButton,
                   {
-                    transform: [{ translateY }, { scale }],
+                    transform: [{translateY}, {scale}],
                     opacity,
                   },
-                ]}
-              >
+                ]}>
                 <TouchableOpacity
                   style={styles.actionButtonTouchable}
                   onPress={() => handleActionPress(action)}
-                  activeOpacity={0.8}
-                >
+                  activeOpacity={0.8}>
                   <View style={styles.actionContent}>
                     <View style={styles.actionIconContainer}>
-                      <Ionicons name={action.icon} size={20} color={COLORS.primary} />
+                      <Ionicons
+                        name={action.icon}
+                        size={20}
+                        color={COLORS.primary}
+                      />
                     </View>
                     <Text style={styles.actionLabel}>{action.label}</Text>
                   </View>
@@ -138,10 +140,13 @@ export default function SpeedDialFAB({ actions }: SpeedDialFABProps) {
       <TouchableOpacity
         style={styles.mainFab}
         onPress={toggleMenu}
-        activeOpacity={0.8}
-      >
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Ionicons name={isOpen ? "close" : "add"} size={24} color={COLORS.white} />
+        activeOpacity={0.8}>
+        <Animated.View style={{transform: [{rotate: rotation}]}}>
+          <Ionicons
+            name={isOpen ? 'close' : 'add'}
+            size={24}
+            color={COLORS.white}
+          />
         </Animated.View>
       </TouchableOpacity>
     </>
@@ -180,7 +185,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
@@ -211,7 +216,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 8,

@@ -71,10 +71,10 @@ export const assignComplaint = createAsyncThunk<
     // call ApiManager.assignComplaint (assumes implemented)
     const res = await api.assignComplaint({
       complaint_id: Number(payload.complaintId),
-      user_id: payload.user_id ?? undefined,
+      //user_id: payload.user_id ?? undefined,
       designation_id: payload.designation_id ?? undefined,
-      department_id: payload.department_id ?? undefined,
-      subdivision_id: payload.subdivision_id ?? undefined,
+      //department_id: payload.department_id ?? undefined,
+      //subdivision_id: payload.subdivision_id ?? undefined,
       division_id: payload.division_id ?? undefined,
       comment: payload.comment ?? undefined,
       attachments: payload.attachments ?? [],
@@ -118,7 +118,6 @@ const assignmentSlice = createSlice({
       state.loading = false;
       state.error = (action.payload as string) || action.error.message || 'Failed to fetch assignment options';
     });
-
     // new assign handlers
     builder
       .addCase(assignComplaint.pending, (state) => {

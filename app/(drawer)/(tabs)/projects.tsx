@@ -148,7 +148,7 @@ export default function ProjectsDashboardScreen() {
   const [loading, setLoading] = useState(false);
 
   const navigateToProjectList = (filter: string) => {
-    router.push({
+    router.navigate({
       pathname: '/(drawer)/project-list',
       params: {filter},
     });

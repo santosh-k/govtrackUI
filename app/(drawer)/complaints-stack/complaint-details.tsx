@@ -18,6 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+// NOTE: video thumbnail functionality is loaded dynamically to avoid build-time
+// dependency errors if expo-video-thumbnails is not installed. We will try to
+// import it inside useEffect when generating poster frames.
 import { useDispatch, useSelector } from 'react-redux';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import Toast from '@/components/Toast';
@@ -32,6 +35,7 @@ import { AppDispatch } from '@/src/store/index';
 import { selectAssignment, clearLastAssignment } from '@/src/store/assignmentSlice';
 import moment from 'moment';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RootState } from '@/src/store/index';
 // const insets = useSafeAreaInsets();
 const COLORS = {
   background: '#F5F5F5',
@@ -56,9 +60,11 @@ const COLORS = {
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface MediaItem {
-  type: 'image' | 'video';
+  id: number | string;
+  type: 'image' | 'video' | 'document';
   uri: string;
   thumbnail?: string;
+  filename?: string;
 }
 
 interface ComplaintDetails {
@@ -266,7 +272,6 @@ export default function ComplaintDetailsScreen() {
   // In a real app, fetch complaint details based on ID using useLocalSearchParams()
   const params = useLocalSearchParams();
   const dispatch = useDispatch<AppDispatch>();
-
   // Redux selectors
   const complaintData = useSelector(selectComplaintDetails);
   const loading = useSelector(selectComplaintDetailsLoading);
@@ -278,6 +283,10 @@ export default function ComplaintDetailsScreen() {
   const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const user = useSelector((state: RootState) => state.auth.user);
+  // Hide update status button for non-privileged users (level_rank 1-4)
+  const hideUpdateButton = [1, 2, 3, 4].includes(Number(user?.level_rank ?? -999));
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
 
   const handleCall = (number: string) => {
    if (!number) return;
@@ -426,6 +435,61 @@ export default function ComplaintDetailsScreen() {
     setToastVisible(true);
   };
 
+  // Determine media type by URL extension (avoid relying on imageType)
+  const detectMediaTypeFromUrl = (url?: string) => {
+    if (!url) return 'image';
+    const ext = url.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase();
+    if (!ext) return 'image';
+    const videoExts = ['mp4', 'mov', 'mkv', 'webm', '3gp', 'avi', 'mpeg', 'mpg'];
+    const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'heic', 'heif'];
+    const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'ppt', 'pptx'];
+    if (videoExts.includes(ext)) return 'video';
+    if (imageExts.includes(ext)) return 'image';
+    if (docExts.includes(ext)) return 'document';
+    return 'image';
+  };
+
+  // Build mediaItems and generate thumbnail for video items (poster frame)
+  useEffect(() => {
+    if (!complaintData || !complaintData.images) {
+      setMediaItems([]);
+      return;
+    }
+
+    // Initial map
+    const initial = complaintData.images.map((img) => ({
+      id: img.id,
+      type: detectMediaTypeFromUrl(img.imagePath) as 'image' | 'video' | 'document',
+      uri: img.imagePath,
+      thumbnail: (img as any).thumbnail || undefined,
+      filename: img.caption || undefined,
+    })) as MediaItem[];
+
+    setMediaItems(initial);
+
+    // Generate thumbnails for videos where needed
+    (async () => {
+      try {
+        // @ts-ignore - optional runtime import; package may be absent
+        const VT: any = await import('expo-video-thumbnails');
+        for (const item of initial) {
+          if (item.type === 'video' && !item.thumbnail) {
+            try {
+              const result = await VT.getThumbnailAsync(item.uri, { time: 1000 });
+              if (result && result.uri) {
+                setMediaItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, thumbnail: result.uri } : p)));
+              }
+            } catch (err) {
+              console.warn('Thumbnail generation failed for', item.uri, err);
+            }
+          }
+        }
+      } catch (importErr) {
+        console.warn('expo-video-thumbnails module not available', importErr);
+      }
+    })();
+  }, [complaintData]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
@@ -530,13 +594,15 @@ export default function ComplaintDetailsScreen() {
                 {/* Two-Column Row: Complaint Type and Poll Number */}
                 <View style={styles.gridRow}>
                   <GridItem label="Complaint Type" value={complaintData.complaintType} />
-                  <GridItem label="Poll Number" value={complaintData.pollNumber} />
+                  <GridItem label="Poll Number" value={complaintData.pollNumber ? complaintData.pollNumber : ''} />
                 </View>
 
                 {/* Full-Width Row: Category */}
-                <View style={styles.fullWidthRow}>
-                  <Text style={styles.gridLabel}>Category</Text>
-                  <Text style={styles.gridValue}>{complaintData.category}</Text>
+                <View style={styles.gridRow}>
+                  <GridItem label="Category" value={complaintData.category} />
+                  {complaintData.constituencyName ? (
+                    <GridItem label="Constituency" value={complaintData.constituencyName} />
+                  ) : null}
                 </View>
                 <View style={styles.fullWidthRow}>
                   <Text style={styles.gridLabel}>Description</Text>
@@ -561,7 +627,7 @@ export default function ComplaintDetailsScreen() {
 
                     <TouchableOpacity
                       style={{ marginLeft: 8 }}
-                      onPress={() => handleCall(complaintData.reportedBy?.contactNumber)}
+                      onPress={() => complaintData.reportedBy?.contactNumber && handleCall(complaintData.reportedBy.contactNumber)}
                     >
                       <Ionicons name="call-outline" size={20} color="#030303ff" />
                     </TouchableOpacity>
@@ -606,6 +672,48 @@ export default function ComplaintDetailsScreen() {
                 )}
               </View>
             </View>
+
+            {/* Card 4: Media Attachments */}
+        {complaintData.images && complaintData.images.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Media Attachments</Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaScrollContent}
+            >
+              {mediaItems.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.mediaThumbnail}
+                  onPress={() => handleMediaPress(index)}
+                  activeOpacity={0.7}
+                >
+                  {item.type === 'video' ? (
+                    <>
+                      {item.thumbnail ? (
+                        <Image source={{ uri: item.thumbnail }} style={styles.thumbnailImage} />
+                      ) : (
+                        <View style={[styles.thumbnailImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }]}> 
+                          <Ionicons name="videocam" size={36} color="#FFFFFF" />
+                        </View>
+                      )}
+                      <View style={styles.playIconContainer} pointerEvents="none">
+                        <Ionicons name="play-circle" size={36} color="#FFFFFF" />
+                      </View>
+                    </>
+                  ) : (
+                        <Image
+                          source={{ uri: item.uri }}
+                          style={styles.thumbnailImage}
+                        />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
        {/* Card 2: Interactive Map Card */}
         <TouchableOpacity
@@ -666,32 +774,7 @@ export default function ComplaintDetailsScreen() {
           </View>
         </View>
 
-        {/* Card 4: Media Attachments */}
-        {complaintData.images && complaintData.images.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Media Attachments</Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.mediaScrollContent}
-            >
-              {complaintData.images.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.mediaThumbnail}
-                  onPress={() => handleMediaPress(index)}
-                  activeOpacity={0.7}
-                >
-                  <Image
-                    source={{ uri: item.imagePath }}
-                    style={styles.thumbnailImage}
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        
      {/*  <View style={styles.card}>
           <Text style={styles.title}>History</Text>
           {statusSteps.map((step, index) => {
@@ -751,6 +834,7 @@ export default function ComplaintDetailsScreen() {
 
       {/* Floating Action Bar */}
       <View style={styles.floatingActionBar}>
+        {/* 
         <TouchableOpacity
           style={[styles.actionBarButton, styles.assignButton]}
           onPress={handleAssignTask}
@@ -758,8 +842,9 @@ export default function ComplaintDetailsScreen() {
         >
           <Ionicons name="person-add-outline" size={20} color={COLORS.cardBackground} />
           <Text style={styles.actionBarButtonText}>Assign Task</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
+        {!hideUpdateButton && (
         <TouchableOpacity
           style={[styles.actionBarButton, styles.updateButton]}
           onPress={handleUpdateStatus}
@@ -768,15 +853,19 @@ export default function ComplaintDetailsScreen() {
           <Ionicons name="refresh-outline" size={20} color={COLORS.cardBackground} />
           <Text style={styles.actionBarButtonText}>Update Status</Text>
         </TouchableOpacity>
+        )}
       </View>
 
       {/* Media Viewer Modal */}
       {complaintData && (
         <MediaViewer
           visible={mediaViewerVisible}
-          media={complaintData.images.map((img) => ({
-            type: 'image' as const,
-            uri: img.imagePath,
+          media={mediaItems.map((m) => ({
+            id: m.id,
+            type: m.type,
+            uri: m.uri,
+            thumbnail: m.thumbnail,
+            filename: m.filename,
           }))}
           initialIndex={selectedMediaIndex}
           onClose={() => setMediaViewerVisible(false)}
@@ -788,6 +877,7 @@ export default function ComplaintDetailsScreen() {
         visible={updateSheetVisible}
         complaintId={Array.isArray(params.id) ? params.id[0] : params.id}
         currentStatus={complaintData.statusDisplay}
+        statusOptions={complaintData.statusList}
         onClose={() => setUpdateSheetVisible(false)}
         onStatusUpdated={() => {
               // 1️⃣ Close sheet

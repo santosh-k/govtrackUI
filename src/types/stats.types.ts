@@ -36,7 +36,7 @@ export interface YourComplaints {
 }
 
 export interface ComplaintSummaryItem {
-  category_id: number;
+  id: number;
   name: string;
   total: number;
   progress: number;

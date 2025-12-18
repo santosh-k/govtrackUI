@@ -10,6 +10,9 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",
@@ -20,7 +23,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile pictures."
       },
       "googleServicesFile": "./GoogleService-Info.plist",
-      "bundleIdentifier": "com.surajspx.pwddelhiapp"
+      "bundleIdentifier": "com.app.pwdAdmin"
     },
     "android": {
       "config": {
@@ -45,7 +48,7 @@
         "android.permission.VIBRATE",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.surajspx.pwddelhiapp"
+      "package": "com.app.pwdAdmin"
 
     },
     "web": {

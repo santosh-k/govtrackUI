@@ -36,7 +36,7 @@ const COLORS = {
   disabled: '#F5F5F5',
   disabledText: '#BDBDBD',
 };
-// const insets = useSafeAreaInsets();
+
 // Mock hierarchical data
 const MOCK_DATA = {
   divisions: [
@@ -203,6 +203,7 @@ function DropdownField({ label, value, placeholder, onPress, disabled = false }:
 }
 
 export default function AssignComplaintScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const complaintId = params.complaintId as string;
   console.log('ComplaintId===',complaintId)
@@ -434,8 +435,8 @@ export default function AssignComplaintScreen() {
   };
 
   const handleDesignationSelect = () => {
-    if (!department) return;
-    const des = designations.filter((d) => Number(d.departmentId) === Number(department.id));
+    if (!division) return;
+    const des = designations.filter((d) => Number(d.departmentId) === Number(division.id));
     router.push({
       pathname: '/complaints-stack/Complaint-searchable-selection',
       params: {
@@ -490,8 +491,8 @@ export default function AssignComplaintScreen() {
       attachments: [], // leave empty for now
     };
 
-    if (!payload.user_id && !payload.designation_id && !payload.department_id && !payload.subdivision_id && !payload.division_id) {
-      setToastMessage('Please select a target (user/designation/department/subdivision/division)');
+    if (!payload.designation_id && !payload.division_id) {
+      setToastMessage('Please select a target (division/designation)');
       setToastVisible(true);
       return;
     }
@@ -558,7 +559,7 @@ export default function AssignComplaintScreen() {
             placeholder="Select a division"
             onPress={handleDivisionSelect}
           />
-
+          {/* 
           <DropdownField
             label="Sub-Division"
             value={subDivision?.name}
@@ -573,15 +574,16 @@ export default function AssignComplaintScreen() {
             placeholder="Select a department"
             onPress={handleDepartmentSelect}
             disabled={!subDivision}
-          />
-
+          /> */}
+          
           <DropdownField
             label="Designation"
             value={designation?.name}
             placeholder="Select a designation"
             onPress={handleDesignationSelect}
-            disabled={!department}
+            disabled={!division}
           />
+          {/*
           <Text style={styles.sectionTitle}>Assign to a Specific User</Text>
           <Text style={styles.sectionSubtitle}>
             Search and select any user directly
@@ -592,8 +594,8 @@ export default function AssignComplaintScreen() {
             value={user?.name}
             placeholder="Search for a user"
             onPress={handleUserSelect}
-          />
-        </View>
+          /> */}
+        </View> 
 
         
 
@@ -669,7 +671,7 @@ export default function AssignComplaintScreen() {
       </ScrollView>
 
       {/* Assign Button - Always Visible */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { bottom: insets.bottom }]}>
         <TouchableOpacity
           style={styles.assignButton}
           onPress={handleAssign}
@@ -858,7 +860,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    // bottom: insets.bottom,
+     //bottom: insets.bottom,
     left: 0,
     right: 0,
     backgroundColor: COLORS.cardBackground,

@@ -39,6 +39,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import {UrlObject} from 'expo-router/build/global-state/routeInfo';
 import {store} from '@/src/store';
+import * as DocumentPicker from 'expo-document-picker';
 
 const {width, height} = Dimensions.get('window');
 
@@ -349,6 +350,8 @@ export default function ProjectDetailsScreen() {
 
   const [projectData, setProjectData] = useState(null);
 
+  const [projectDataName, setProjectDataName] = useState('');
+
   // Progress update enhancement states
   const [progressAttachments, setProgressAttachments] = useState<MediaItem[]>(
     [],
@@ -418,8 +421,6 @@ export default function ProjectDetailsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setProjectNameItem(params?.projectName as string);
-      setProjectCodeItem(params?.projectCode as string);
       if (!projectIdD || projectIdD === 'undefined') return;
       fetchProjectDetails(projectIdD, activeTab);
     }, [projectIdD, activeTab]),
@@ -448,7 +449,10 @@ export default function ProjectDetailsScreen() {
         // if (tab != 'Media') {
         setProjectData(response?.data);
         setProjectStatus(response?.data?.statusDisplay);
+        setProjectDataName(response?.data.projectName);
+        setProjectCodeItem(response?.data.projectId);
         setNewStatus(response?.data?.status);
+        setActiveTab('Overview');
         // }
         // setProjectStat(response?.data)
         setLoading(false);
@@ -1525,6 +1529,13 @@ export default function ProjectDetailsScreen() {
    * Handles media selection from gallery via AddMediaSheet
    */
   const handleMediaSelected = (result: ImagePicker.ImagePickerResult) => {
+    console.log('result2121', result);
+
+    return;
+    if (result?.length > 0) {
+      addMediaApiCall(result, 'gallery');
+    }
+    return;
     if (result.assets && result.assets[0]) {
       const newMedia: MediaItem = {
         id: `media-${Date.now()}`,
@@ -1545,8 +1556,17 @@ export default function ProjectDetailsScreen() {
   /**
    * Handles document selection via AddMediaSheet
    */
-  const handleDocumentSelected = () => {
+  const handleDocumentSelected = (
+    result: DocumentPicker.DocumentPickerResult,
+  ) => {
     // Simulate document picker
+    console.log('result', result);
+
+    if (result?.length > 0) {
+      addMediaApiCall(result, 'document');
+    }
+
+    return;
     const newDocument: MediaItem = {
       id: `doc-${Date.now()}`,
       type: 'document',
@@ -1555,6 +1575,68 @@ export default function ProjectDetailsScreen() {
     };
     setAllMediaItems([newDocument, ...allMediaItems]);
     Alert.alert('Success', 'Document uploaded successfully');
+  };
+
+  const addMediaApiCall = async (result, type) => {
+    const token = store.getState().auth.token;
+
+    try {
+      const formData = new FormData();
+
+      formData.append('latitude', '10.0001');
+      formData.append('longitude', '78.0001');
+
+      // Multiple images (React Native format)
+      // formData.append('issue_images', {
+      //   uri: attachments[0]?.uri,
+      //   type: 'image/png',
+      //   name: 'image1.png',
+      // });
+
+      result.forEach((image, index) => {
+        formData.append('files', {
+          uri: image.uri,
+          name: image.name,
+          type: image.mimeType,
+        });
+      });
+
+      console.log('formData1222221', JSON.stringify(formData));
+
+      const response = await fetch(
+        `https://pwddev.thesst.com/admin/pms/api/projects/${projectId}/media`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Accept: 'application/json',
+            // ❗ Do NOT set Content-Type here - RN will do it automatically
+          },
+          body: formData,
+        },
+      );
+
+      const res = await response.json();
+
+      if (res && res.success) {
+        console.log('dsddddd', res);
+        setShowUploadSheet(false);
+        if (type === 'document') {
+          Alert.alert('Success', 'Document uploaded successfully');
+        } else if (type === 'gallery') {
+          Alert.alert('Success', 'Media uploaded successfully');
+        } else {
+          Alert.alert('Success', 'Media uploaded successfully');
+        }
+        // clear form then inform user and navigate back
+      } else {
+        const msg = res?.message || 'Failed to create bottleneck';
+
+        Alert.alert('Error', msg);
+      }
+    } catch (error) {
+      console.log('Upload error:', error);
+    }
   };
 
   const statusColors = getStatusColors(projectStatus);
@@ -2233,13 +2315,32 @@ export default function ProjectDetailsScreen() {
 
   const renderInspectionsTab = () => (
     <View style={styles.tabContent}>
-      <FlatList
-        data={projectData?.items}
-        keyExtractor={item => item.id}
-        renderItem={renderInspectionCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {projectData?.items?.length > 0 ? (
+        <FlatList
+          data={projectData?.items}
+          keyExtractor={item => item.id}
+          renderItem={renderInspectionCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#ffffff',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '500',
+              color: '#000000',
+            }}>
+            {'No Inspection Available'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -2362,13 +2463,32 @@ export default function ProjectDetailsScreen() {
 
   const renderBottlenecksTab = () => (
     <View style={styles.tabContent}>
-      <FlatList
-        data={projectData?.items}
-        keyExtractor={item => item.id}
-        renderItem={renderBottleneckCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      {projectData?.items?.length > 0 ? (
+        <FlatList
+          data={projectData?.items}
+          keyExtractor={item => item.id}
+          renderItem={renderBottleneckCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#ffffff',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: '500',
+              color: '#000000',
+            }}>
+            {'No Bottlenecks Available'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -2491,7 +2611,7 @@ export default function ProjectDetailsScreen() {
 
         <View style={styles.headerProjectInfo}>
           <Text style={styles.headerProjectName} numberOfLines={1}>
-            {projectNameItem}
+            {projectDataName}
           </Text>
           <Text style={styles.headerProjectId}>{projectCodeItem}</Text>
         </View>
@@ -2594,7 +2714,10 @@ export default function ProjectDetailsScreen() {
               onPress: () =>
                 router.push({
                   pathname: '/(drawer)/create-bottleneck',
-                  params: {projectId, returnTab: activeTab},
+                  params: {
+                    projectId,
+                    returnTab: activeTab,
+                  },
                 }),
             },
             {
@@ -2603,7 +2726,11 @@ export default function ProjectDetailsScreen() {
               onPress: () =>
                 router.push({
                   pathname: '/(drawer)/create-task',
-                  params: {projectId, returnTab: activeTab},
+                  params: {
+                    projectIdD,
+                    returnTab: 'project',
+                    projectItemName: projectDataName,
+                  },
                 }),
             },
             {

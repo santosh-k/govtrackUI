@@ -14,10 +14,13 @@ import {
   ActionSheetIOS,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useDispatch, useSelector } from 'react-redux';
+import * as FileSystem from 'expo-file-system';
+import RNFS from 'react-native-fs';
 import Toast from './Toast';
 import {
   updateComplaintStatus,
@@ -43,11 +46,13 @@ const COLORS = {
 };
 
 const STATUS_OPTIONS = [
-  'Assigned',
-  'In Progress',
-  'Closed',
-  'Reopened',
+  ''
 ];
+
+interface StatusOption {
+  label: string;
+  value: string;
+}
 
 interface Attachment {
   uri: string;
@@ -60,6 +65,7 @@ interface UpdateActivityBottomSheetProps {
   complaintId: number | string;
   currentStatus: string;
   onClose: () => void;
+  statusOptions?: StatusOption[]; // dynamic status list from server
   onSubmit?: (status: string, description: string, attachments: Attachment[]) => void;
   onStatusUpdated?: () => void; // Callback after successful status update
 }
@@ -69,6 +75,7 @@ export default function UpdateActivityBottomSheet({
   complaintId,
   currentStatus,
   onClose,
+  statusOptions,
   onSubmit,
   onStatusUpdated,
 }: UpdateActivityBottomSheetProps) {
@@ -76,6 +83,8 @@ export default function UpdateActivityBottomSheet({
   const isLoading = useSelector(selectUpdateComplaintLoading);
   const error = useSelector(selectUpdateComplaintError);
   const successMessage = useSelector(selectUpdateComplaintSuccess);
+  const currentUser = useSelector((state: any) => state.auth?.user);
+  const insets = useSafeAreaInsets();
 
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
   const [description, setDescription] = useState('');
@@ -198,6 +207,49 @@ export default function UpdateActivityBottomSheet({
     }
   };
 
+  // Helper: determine mime type from filename or uri extension
+  const getMimeTypeFromFilename = (filename?: string, uri?: string) => {
+    const name = filename || uri || '';
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    const map: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      heic: 'image/heic',
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      csv: 'text/csv',
+      txt: 'text/plain',
+      zip: 'application/zip',
+      rar: 'application/vnd.rar',
+      '7z': 'application/x-7z-compressed',
+      svg: 'image/svg+xml',
+      apk: 'application/vnd.android.package-archive',
+    };
+    return map[ext] ?? 'application/octet-stream';
+  };
+
+  // Helper: read file as base64, fallback to RNFS if expo FileSystem fails
+  const readBase64 = async (uri: string) => {
+    try {
+      return await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    } catch (err) {
+      try {
+        return await RNFS.readFile(uri, 'base64');
+      } catch (err2) {
+        console.warn('Unable to read file as base64', err, err2);
+        return undefined;
+      }
+    }
+  };
+
     const handleSubmit = useCallback(async () => {
       if (!selectedStatus) {
         setToastMessage("Please select a status");
@@ -207,17 +259,26 @@ export default function UpdateActivityBottomSheet({
       }
 
       try {
-        // 💠 Convert UI label → API value
-        const statusMap: Record<string, string> = {
-          Assigned: "assigned",
-          "In Progress": "in_progress",
-          Closed: "closed",
-          Reopened: "reopened",
-        };
+        // 💠 Determine API status value
+        let apiStatus: string | undefined;
 
-        const apiStatus =
-          statusMap[selectedStatus] ||
-          selectedStatus.toLowerCase().replace(/\s+/g, "_");
+        // If server provided statusOptions, use matching value
+        if (statusOptions && statusOptions.length > 0) {
+          const opt = statusOptions.find((o) => o.label === selectedStatus);
+          apiStatus = opt ? opt.value : undefined;
+        }
+
+        // Fallback mapping (legacy)
+        if (!apiStatus) {
+          const statusMap: Record<string, string> = {
+            Assigned: "assigned",
+            "In Progress": "in_progress",
+            Closed: "closed",
+            Reopened: "reopened",
+          };
+
+          apiStatus = statusMap[selectedStatus] || selectedStatus.toLowerCase().replace(/\s+/g, "_");
+        }
 
         console.log("Submitting status update:", {
           complaintId,
@@ -226,17 +287,39 @@ export default function UpdateActivityBottomSheet({
           description,
         });
 
+        // 💠 Convert attachments to base64 and build payload
+        const convertedAttachments = await Promise.all(
+          attachments.map(async (att) => {
+            try {
+              const filename = att.name || (att.uri ? att.uri.split('/').pop() : 'file');
+              const mimetype = getMimeTypeFromFilename(filename, att.uri);
+              const data = await readBase64(att.uri);
+              if (!data) return undefined;
+              return { data, filename, mimetype };
+            } catch (err) {
+              console.warn('Error converting attachment', err);
+              return undefined;
+            }
+          })
+        );
+
+        const attachmentsPayload = (convertedAttachments.filter(Boolean) as any[]) || [];
+        // Log payload size summary for debugging
+        try {
+          const totalBase64Length = attachmentsPayload.reduce((acc, a) => acc + (a.data?.length || 0), 0);
+          console.log('Attachments payload - count:', attachmentsPayload.length, 'totalBase64Length:', totalBase64Length);
+        } catch (err) {
+          /* ignore */
+        }
+
         // 💠 Dispatch Redux API
         const resultAction = await dispatch(
           updateComplaintStatus({
-            complaint_id: complaintId,
+            complaint_id: Number(complaintId),
+            user_id: currentUser?.id ? Number(currentUser.id) : undefined,
             status: apiStatus,
             comment: description,
-            attachments: attachments.map((att) => ({
-              uri: att.uri,
-              type: att.type,
-              name: att.name,
-            })),
+            attachments: attachmentsPayload,
           }) as any
         );
 
@@ -287,6 +370,7 @@ export default function UpdateActivityBottomSheet({
       dispatch,
       handleReset,
       onStatusUpdated,
+      currentUser,
     ]);
   return (
     <Modal
@@ -341,7 +425,7 @@ export default function UpdateActivityBottomSheet({
               {/* Status Options */}
               {showStatusPicker && (
                 <View style={styles.statusOptions}>
-                  {STATUS_OPTIONS.map((status) => (
+                  {(statusOptions && statusOptions.length > 0 ? statusOptions.map((s) => s.label) : STATUS_OPTIONS).map((status) => (
                     <TouchableOpacity
                       key={status}
                       style={[
@@ -441,7 +525,10 @@ export default function UpdateActivityBottomSheet({
           </ScrollView>
 
           {/* Submit Button */}
-          <View style={styles.footer}>
+          <View style={[
+            styles.footer,
+            { paddingBottom: insets.bottom ? insets.bottom + 16 : (Platform.OS === 'ios' ? 34 : 24) },
+          ]}>
             <TouchableOpacity
               style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
@@ -666,8 +753,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   footer: {
-    padding: 48,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: COLORS.divider,
   },

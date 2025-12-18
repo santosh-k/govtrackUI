@@ -17,6 +17,7 @@ export interface UpdateComplaintStatusPayload {
   status: string; // 'in_progress', 'assigned', 'closed', 'reopened'
   comment?: string;
   attachments?: any[];
+  user_id?: number | string | null;
 }
 
 export interface UpdateComplaintStatusResponse {
@@ -71,6 +72,7 @@ export const updateComplaintStatus = createAsyncThunk<
       complaint_id: Number(payload.complaint_id),
       status: apiStatus,
       comment: payload.comment ?? undefined,
+      user_id: payload.user_id ?? undefined,
       attachments: payload.attachments ?? [],
     };
 

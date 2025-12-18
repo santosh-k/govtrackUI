@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useLocalSearchParams} from 'expo-router';
 import selectionData from '@/data/selectionData.json';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const COLORS = {
   background: '#F5F5F5',
@@ -30,7 +30,26 @@ interface SelectionItem {
   name: string;
 }
 
-type DataKey = 'zones' | 'departments' | 'divisions' | 'subDivisions' | 'projectTypes' | 'taskCategories' | 'issueTypes' | 'assetCategories' | 'locationTypes' | 'affectedAreas' | 'waterLoggingCauses' | 'trafficImpacts' | 'severities' | 'circles' | 'sectors' | 'subSectors' | 'fundingTypes' | 'workTypes' | 'projectStatuses';
+type DataKey =
+  | 'zones'
+  | 'departments'
+  | 'divisions'
+  | 'subDivisions'
+  | 'projectTypes'
+  | 'taskCategories'
+  | 'issueTypes'
+  | 'assetCategories'
+  | 'locationTypes'
+  | 'affectedAreas'
+  | 'waterLoggingCauses'
+  | 'trafficImpacts'
+  | 'severities'
+  | 'circles'
+  | 'sectors'
+  | 'subSectors'
+  | 'fundingTypes'
+  | 'workTypes'
+  | 'projectStatuses';
 
 export default function SelectionScreen() {
   const params = useLocalSearchParams();
@@ -52,8 +71,8 @@ export default function SelectionScreen() {
     if (searchQuery.trim() === '') {
       return allData;
     }
-    return allData.filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    return allData.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [allData, searchQuery]);
 
@@ -67,15 +86,20 @@ export default function SelectionScreen() {
     // Otherwise, it's a drawer-relative path
     let pathname: any;
     if (returnTo) {
-      pathname = returnTo.startsWith('/')
-        ? returnTo
-        : `/(drawer)/${returnTo}`;
+      pathname = returnTo.startsWith('/') ? returnTo : `/(drawer)/${returnTo}`;
     } else {
       pathname = '/(drawer)/advanced-project-search';
     }
 
     // Preserve all params except the selection-specific ones
-    const { title: _title, dataKey: _dataKey, currentValue: _currentValue, returnField: _returnField, returnTo: _returnTo, ...restParams } = params;
+    const {
+      title: _title,
+      dataKey: _dataKey,
+      currentValue: _currentValue,
+      returnField: _returnField,
+      returnTo: _returnTo,
+      ...restParams
+    } = params;
 
     router.push({
       pathname,
@@ -86,18 +110,32 @@ export default function SelectionScreen() {
     });
   };
 
-  const renderItem = ({ item }: { item: SelectionItem }) => {
+  const renderItem = ({item}: {item: SelectionItem}) => {
     const isSelected = item.name === currentValue;
 
     return (
       <TouchableOpacity
         style={[styles.listItem, isSelected && styles.listItemSelected]}
         onPress={() => handleSelectItem(item)}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.listItemText, isSelected && styles.listItemTextSelected]}>
+        activeOpacity={0.7}>
+        <Text
+          style={[
+            styles.listItemText,
+            isSelected && styles.listItemTextSelected,
+          ]}>
           {item.name}
+          {dataKey === 'issueTypes' && (
+            <Text
+              style={[
+                styles.listItemText,
+                isSelected && styles.listItemTextSelected,
+              ]}>
+              {' '}
+              {item?.value}
+            </Text>
+          )}
         </Text>
+
         {isSelected && (
           <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
         )}
@@ -109,15 +147,17 @@ export default function SelectionScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.cardBackground}
+      />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={handleBack}
-          activeOpacity={0.6}
-        >
+          activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
@@ -139,7 +179,11 @@ export default function SelectionScreen() {
           />
           {searchQuery !== '' && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={COLORS.textSecondary}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -149,13 +193,17 @@ export default function SelectionScreen() {
       <FlatList
         data={filteredData}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         ItemSeparatorComponent={renderSeparator}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color={COLORS.textLight} />
+            <Ionicons
+              name="search-outline"
+              size={64}
+              color={COLORS.textLight}
+            />
             <Text style={styles.emptyStateText}>No results found</Text>
             <Text style={styles.emptyStateSubtext}>
               Try searching with different keywords

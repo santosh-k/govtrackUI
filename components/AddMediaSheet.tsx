@@ -19,9 +19,10 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS } from '@/theme';
+import {COLORS} from '@/theme';
+import * as DocumentPicker from 'expo-document-picker';
 
 interface AddMediaSheetProps {
   /** Controls visibility of the sheet */
@@ -53,11 +54,11 @@ export default function AddMediaSheet({
     onClose();
 
     // Request camera permissions
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    const {status} = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        'Camera permission is required to take photos or videos.'
+        'Camera permission is required to take photos or videos.',
       );
       return;
     }
@@ -69,6 +70,7 @@ export default function AddMediaSheet({
         allowsEditing: false,
         quality: 0.8,
         videoMaxDuration: 60,
+        allowsMultipleSelection: false,
       });
 
       if (!result.canceled && onPhotoTaken) {
@@ -87,11 +89,11 @@ export default function AddMediaSheet({
     onClose();
 
     // Request media library permissions
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
-        'Gallery permission is required to select photos or videos.'
+        'Gallery permission is required to select photos or videos.',
       );
       return;
     }
@@ -102,7 +104,7 @@ export default function AddMediaSheet({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
         quality: 0.8,
-        allowsMultipleSelection: false,
+        allowsMultipleSelection: true,
       });
 
       if (!result.canceled && onMediaSelected) {
@@ -117,10 +119,32 @@ export default function AddMediaSheet({
   /**
    * Handles document selection
    */
-  const handlePickDocument = () => {
-    onClose();
-    if (onDocumentSelected) {
-      onDocumentSelected();
+  // const handlePickDocument = () => {
+  //   onClose();
+  //   if (onDocumentSelected) {
+  //     onDocumentSelected();
+  //   }
+  // };
+
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+        multiple: true,
+      });
+
+      if (result.canceled) return;
+
+      // result.assets = array of selected images
+      if (onDocumentSelected) {
+        onDocumentSelected(result.assets);
+      }
+    } catch (err) {
+      console.log('Document picker error:', err);
     }
   };
 
@@ -129,8 +153,7 @@ export default function AddMediaSheet({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         {/* Touchable overlay to close the sheet */}
         <TouchableOpacity
@@ -151,8 +174,7 @@ export default function AddMediaSheet({
           <TouchableOpacity
             style={styles.option}
             onPress={handleTakePhotoOrVideo}
-            activeOpacity={0.7}
-          >
+            activeOpacity={0.7}>
             <View style={styles.optionIconContainer}>
               <Ionicons name="camera" size={24} color={COLORS.primary} />
             </View>
@@ -162,15 +184,18 @@ export default function AddMediaSheet({
                 Use your camera to capture new media
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
 
           {/* Gallery option */}
           <TouchableOpacity
             style={styles.option}
             onPress={handlePickFromGallery}
-            activeOpacity={0.7}
-          >
+            activeOpacity={0.7}>
             <View style={styles.optionIconContainer}>
               <Ionicons name="images" size={24} color={COLORS.primary} />
             </View>
@@ -180,15 +205,18 @@ export default function AddMediaSheet({
                 Select existing photos or videos
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
 
           {/* Document option */}
           <TouchableOpacity
             style={styles.option}
             onPress={handlePickDocument}
-            activeOpacity={0.7}
-          >
+            activeOpacity={0.7}>
             <View style={styles.optionIconContainer}>
               <Ionicons name="document" size={24} color={COLORS.primary} />
             </View>
@@ -198,15 +226,18 @@ export default function AddMediaSheet({
                 Select a document file
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
 
           {/* Cancel button */}
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={onClose}
-            activeOpacity={0.7}
-          >
+            activeOpacity={0.7}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>

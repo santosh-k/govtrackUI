@@ -14,7 +14,7 @@
  * @screen
  */
 
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -47,12 +47,10 @@ interface LocationData {
 
 export default function CreateTaskScreen() {
   const params = useLocalSearchParams();
-  // Use projectIdD as that's what's being passed from project-details.tsx
-  const projectId = (params.projectIdD || params.projectId) as string;
+  const projectId = params.projectIdD as string;
   const insets = useSafeAreaInsets();
 
-  // Preserve the initial projectId received when navigating from project-details
-  const initialProjectIdRef = useRef<string | null>(projectId ?? null);
+  console.log('params2122', params);
 
   // State
   const [taskName, setTaskName] = useState('');
@@ -132,34 +130,16 @@ export default function CreateTaskScreen() {
     params.selectedInspectionId,
   ]);
 
-  console.log('param2s122', params);
-
   useFocusEffect(
     useCallback(() => {
       if (params?.returnTab != 'project') {
-        // resetForm();
+        resetForm();
       } else {
         setSelectedTaskType('Project Task');
         setSelectedProject(params?.projectItemName);
-        // Use preserved initial project id when available so it doesn't get lost
-        // when navigating to other selection screens and returning.
-        setSelectedProjectId(
-          initialProjectIdRef.current ?? (projectId as string | null),
-        );
       }
     }, [params?.returnTab]),
   );
-
-  // On first mount, if a projectId was provided via params, pre-fill project fields
-  useEffect(() => {
-    if (initialProjectIdRef.current) {
-      setSelectedTaskType('Project Task');
-      if (params?.projectItemName)
-        setSelectedProject(params.projectItemName as string);
-      setSelectedProjectId(initialProjectIdRef.current);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   /**
    * Request location permissions and get current location on mount
    */
@@ -292,14 +272,12 @@ export default function CreateTaskScreen() {
    * Handles back navigation
    */
   const handleGoBack = () => {
-    // If we have a projectId and we're not in a selection flow
-    if (projectId && !router.canGoBack()) {
+    if (projectId) {
       router.push({
         pathname: '/(drawer)/project-details',
         params: {projectId},
       });
     } else {
-      // Otherwise use default back behavior
       router.back();
     }
   };
@@ -486,7 +464,10 @@ export default function CreateTaskScreen() {
 
       // Attach project / inspection IDs when available
       if (selectedProjectId) {
-        payload.project_id = Number(selectedProjectId);
+        payload.project_id =
+          params?.returnTab != 'project'
+            ? Number(params?.projectIdD)
+            : Number(selectedProjectId);
       } else if (selectedProject) {
         // fallback: we only have name, not ID
         // optionally map project name, but API expects id — warn in console

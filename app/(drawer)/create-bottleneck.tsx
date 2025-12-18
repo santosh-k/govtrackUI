@@ -13,7 +13,7 @@
  * @screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -27,11 +27,12 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { COLORS, SPACING } from '@/theme';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useLocalSearchParams} from 'expo-router';
+import {COLORS, SPACING} from '@/theme';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {store} from '@/src/store';
 
 // Types
 interface Attachment {
@@ -60,6 +61,8 @@ export default function CreateBottleneckScreen() {
     }
   }, [params.selectedIssueType]);
 
+  console.log('params.selectedIssueType1212', params.selectedIssueType);
+
   /**
    * Handles back navigation
    */
@@ -69,7 +72,7 @@ export default function CreateBottleneckScreen() {
         pathname: '/(drawer)/project-details',
         params: {
           projectId,
-          ...(returnTab && { activeTab: returnTab }),
+          ...(returnTab && {activeTab: returnTab}),
         },
       });
     } else {
@@ -80,67 +83,146 @@ export default function CreateBottleneckScreen() {
   /**
    * Handles attachment selection
    */
+
+  console.log('attachments21222', attachments);
+
+  // const handleAddAttachment = () => {
+  //   Alert.alert('Add Attachment', 'Choose an option', [
+  //     {
+  //       text: 'Take Photo',
+  //       onPress: async () => {
+  //         const {status} = await ImagePicker.requestCameraPermissionsAsync();
+  //         if (status !== 'granted') {
+  //           Alert.alert('Permission needed', 'Camera permission is required');
+  //           return;
+  //         }
+
+  //         const result = await ImagePicker.launchCameraAsync({
+  //           mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  //           allowsEditing: false,
+  //           quality: 0.8,
+  //         });
+
+  //         if (!result.canceled && result.assets[0]) {
+  //           const newAttachment: Attachment = {
+  //             id: `attach-${Date.now()}`,
+  //             uri: result.assets[0].uri,
+  //             type: 'image',
+  //           };
+  //           setAttachments([...attachments, newAttachment]);
+  //         }
+  //       },
+  //     },
+  //     {
+  //       text: 'Choose from Gallery',
+  //       onPress: async () => {
+  //         const {status} =
+  //           await ImagePicker.requestMediaLibraryPermissionsAsync();
+  //         if (status !== 'granted') {
+  //           Alert.alert('Permission needed', 'Gallery permission is required');
+  //           return;
+  //         }
+
+  //         const result = await ImagePicker.launchImageLibraryAsync({
+  //           mediaTypes: ImagePicker.MediaTypeOptions.All,
+  //           allowsEditing: false,
+  //           quality: 0.8,
+  //         });
+
+  //         if (!result.canceled && result.assets[0]) {
+  //           const newAttachment: Attachment = {
+  //             id: `attach-${Date.now()}`,
+  //             uri: result.assets[0].uri,
+  //             type: result.assets[0].type === 'video' ? 'video' : 'image',
+  //           };
+  //           setAttachments([...attachments, newAttachment]);
+  //         }
+  //       },
+  //     },
+  //     {text: 'Cancel', style: 'cancel'},
+  //   ]);
+  // };
+
   const handleAddAttachment = () => {
+    if (attachments.length >= 5) {
+      Alert.alert('Limit Reached', 'You can add only up to 5 images.');
+      return;
+    }
+
     Alert.alert('Add Attachment', 'Choose an option', [
       {
         text: 'Take Photo',
         onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (attachments.length >= 5) {
+            Alert.alert('Limit Reached', 'You can add only up to 5 images.');
+            return;
+          }
+
+          const {status} = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') {
             Alert.alert('Permission needed', 'Camera permission is required');
             return;
           }
 
           const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 only images
             allowsEditing: false,
             quality: 0.8,
           });
 
           if (!result.canceled && result.assets[0]) {
             const newAttachment: Attachment = {
-              id: `attach-${Date.now()}`,
+              id: result.assets[0].fileName,
               uri: result.assets[0].uri,
-              type: 'image',
+              type: result.assets[0].mimeType, // 👈 image only
             };
             setAttachments([...attachments, newAttachment]);
           }
         },
       },
+
       {
         text: 'Choose from Gallery',
         onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (attachments.length >= 5) {
+            Alert.alert('Limit Reached', 'You can add only up to 5 images.');
+            return;
+          }
+
+          const {status} =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') {
             Alert.alert('Permission needed', 'Gallery permission is required');
             return;
           }
 
           const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 only images
             allowsEditing: false,
             quality: 0.8,
           });
 
           if (!result.canceled && result.assets[0]) {
+            console.log('result1111', result);
+
             const newAttachment: Attachment = {
-              id: `attach-${Date.now()}`,
+              id: result.assets[0].fileName,
               uri: result.assets[0].uri,
-              type: result.assets[0].type === 'video' ? 'video' : 'image',
+              type: result.assets[0].mimeType, // 👈 image only
             };
             setAttachments([...attachments, newAttachment]);
           }
         },
       },
-      { text: 'Cancel', style: 'cancel' },
+
+      {text: 'Cancel', style: 'cancel'},
     ]);
   };
-
   /**
    * Removes an attachment
    */
   const removeAttachment = (id: string) => {
-    setAttachments(attachments.filter((att) => att.id !== id));
+    setAttachments(attachments.filter(att => att.id !== id));
   };
 
   /**
@@ -160,66 +242,220 @@ export default function CreateBottleneckScreen() {
 
     setIsSubmitting(true);
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    // try {
+    //   // Simulate API call
+    //   await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Show success message and navigate back to Project Details with Bottlenecks tab active
-      Alert.alert('Success', 'Bottleneck reported successfully!', [
+    //   <
+
+    //   return
+    //   // Show success message and navigate back to Project Details with Bottlenecks tab active
+    //   Alert.alert('Success', 'Bottleneck reported successfully!', [
+    //     {
+    //       text: 'OK',
+    //       onPress: () => {
+    //         if (projectId) {
+    //           router.push({
+    //             pathname: '/(drawer)/project-details',
+    //             params: {
+    //               projectId,
+    //               activeTab: 'Bottlenecks',
+    //             },
+    //           });
+    //         } else {
+    //           router.back();
+    //         }
+    //       },
+    //     },
+    //   ]);
+    // } catch (error) {
+    //   console.error('Error creating bottleneck:', error);
+    //   Alert.alert('Error', 'Failed to report bottleneck. Please try again.');
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
+
+    const payload: any = {
+      severity: selectedIssueType.toLowerCase(),
+      description: description || undefined,
+      issue_images: attachments[0]?.uri,
+      //  task_type: mapTaskType(selectedTaskType),
+      //  priority: mapPriority(selectedPriority),
+      //  status: 'PENDING',
+      //  start_date: startDate ? moment(startDate).format('YYYY-MM-DD') : undefined,
+      //  due_date: dueDate ? moment(dueDate).format('YYYY-MM-DD') : undefined,
+      //  tags: tags
+      //    ? tags
+      //        .split(',')
+      //        .map(t => t.trim())
+      //        .filter(Boolean)
+      //    : undefined,
+    };
+
+    // try {
+    //   const ApiManagerModule = await import('@/src/services/ApiManager');
+    //   const ApiManager = ApiManagerModule.default;
+    //   const api = ApiManager.getInstance();
+    //   const res = await api.createBottleNeck(payload, projectId);
+
+    //   if (res && res.success) {
+    //     console.log('dsddddd', res);
+
+    //     // clear form then inform user and navigate back
+    //     setIsSubmitting(false);
+    //     setSelectedIssueType('');
+    //     setDescription('');
+    //     // resetForm();
+    //     Alert.alert(
+    //       'Success',
+    //       res.message || 'Bottleneck created successfully!',
+    //       [
+    //         {
+    //           text: 'OK',
+    //           onPress: () => {
+    //             // Navigate back to project details if we have projectId else go back
+    //             if (projectId) {
+    //               router.push({
+    //                 pathname: '/(drawer)/project-details',
+    //                 params: {
+    //                   projectId,
+    //                   activeTab: 'Bottlenecks',
+    //                 },
+    //               });
+    //             } else {
+    //               router.back();
+    //             }
+    //           },
+    //         },
+    //       ],
+    //     );
+    //   } else {
+    //     const msg = res?.message || 'Failed to create bottleneck';
+    //     setIsSubmitting(false);
+    //     Alert.alert('Error', msg);
+    //   }
+    // } catch (error) {
+    //   console.error('Error creating bottleneck:', error);
+    //   Alert.alert('Error', 'Failed to report bottleneck. Please try again.');
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
+    const token = store.getState().auth.token;
+
+    try {
+      const formData = new FormData();
+
+      formData.append('severity', selectedIssueType?.toLowerCase());
+      formData.append('description', description?.trim());
+
+      // Multiple images (React Native format)
+      // formData.append('issue_images', {
+      //   uri: attachments[0]?.uri,
+      //   type: 'image/png',
+      //   name: 'image1.png',
+      // });
+
+      if (attachments?.length > 0) {
+        attachments.forEach((image, index) => {
+          formData.append('issue_images', {
+            uri: image.uri,
+            name: image.id,
+            type: image.type,
+          });
+        });
+      }
+
+      console.log('formData1222221', JSON.stringify(formData));
+
+      const response = await fetch(
+        `https://pwddev.thesst.com/admin/pms/api/projects/${projectId}/bottleneck`,
         {
-          text: 'OK',
-          onPress: () => {
-            if (projectId) {
-              router.push({
-                pathname: '/(drawer)/project-details',
-                params: {
-                  projectId,
-                  activeTab: 'Bottlenecks',
-                },
-              });
-            } else {
-              router.back();
-            }
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Accept: 'application/json',
+            // ❗ Do NOT set Content-Type here - RN will do it automatically
           },
+          body: formData,
         },
-      ]);
+      );
+
+      const result = await response.json();
+
+      if (result && result.success) {
+        console.log('dsddddd', result);
+
+        // clear form then inform user and navigate back
+        setIsSubmitting(false);
+
+        // resetForm();
+        Alert.alert(
+          'Success',
+          result.message || 'Bottleneck created successfully!',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setSelectedIssueType('');
+                setDescription('');
+                setAttachments([]);
+                // Navigate back to project details if we have projectId else go back
+                if (projectId) {
+                  router.push({
+                    pathname: '/(drawer)/project-details',
+                    params: {
+                      projectId,
+                      activeTab: 'Bottlenecks',
+                    },
+                  });
+                } else {
+                  router.back();
+                }
+              },
+            },
+          ],
+        );
+      } else {
+        const msg = result?.message || 'Failed to create bottleneck';
+        setIsSubmitting(false);
+        Alert.alert('Error', msg);
+      }
     } catch (error) {
-      console.error('Error creating bottleneck:', error);
-      Alert.alert('Error', 'Failed to report bottleneck. Please try again.');
-    } finally {
+      console.log('Upload error:', error);
       setIsSubmitting(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.cardBackground} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.cardBackground}
+      />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={handleGoBack}
-          activeOpacity={0.6}
-        >
+          activeOpacity={0.6}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Bottleneck</Text>
-        <View style={{ width: 24 }} />
+        <View style={{width: 24}} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         {/* Card 1: Issue Details */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Issue Details</Text>
+          <Text style={styles.cardTitle}>Details</Text>
 
           {/* Issue Type Dropdown */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Issue Type</Text>
+            <Text style={styles.fieldLabel}>Severity Type</Text>
             <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => {
@@ -236,12 +472,27 @@ export default function CreateBottleneckScreen() {
                   },
                 });
               }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.dropdownText, !selectedIssueType && styles.placeholderText]}>
-                {selectedIssueType || 'Select issue type'}
+              activeOpacity={0.7}>
+              <Text
+                style={[
+                  styles.dropdownText,
+                  !selectedIssueType && styles.placeholderText,
+                ]}>
+                {selectedIssueType
+                  ? selectedIssueType === 'Low'
+                    ? `${selectedIssueType} - Minor issue, can be addressed later`
+                    : selectedIssueType === 'Medium'
+                    ? `${selectedIssueType} - Moderate impact on progress`
+                    : selectedIssueType === 'High'
+                    ? `${selectedIssueType} - Significant impact, needs attention`
+                    : `${selectedIssueType} - Project blocking issue`
+                  : 'Select severity type'}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={COLORS.textSecondary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -271,9 +522,12 @@ export default function CreateBottleneckScreen() {
             <TouchableOpacity
               style={styles.initialAddTile}
               onPress={handleAddAttachment}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera-outline" size={40} color={COLORS.primary} />
+              activeOpacity={0.7}>
+              <Ionicons
+                name="camera-outline"
+                size={40}
+                color={COLORS.primary}
+              />
               <Text style={styles.initialAddTileText}>Add Photo/Video</Text>
             </TouchableOpacity>
           ) : (
@@ -282,49 +536,61 @@ export default function CreateBottleneckScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.galleryScrollView}
-              contentContainerStyle={styles.galleryScrollContent}
-            >
-              {attachments.map((att) => (
+              contentContainerStyle={styles.galleryScrollContent}>
+              {attachments.map(att => (
                 <View key={att.id} style={styles.galleryThumbnail}>
-                  <Image source={{ uri: att.uri }} style={styles.galleryThumbImage} />
+                  <Image
+                    source={{uri: att.uri}}
+                    style={styles.galleryThumbImage}
+                  />
                   {att.type === 'video' && (
                     <View style={styles.videoIndicator}>
-                      <Ionicons name="play-circle" size={20} color={COLORS.white} />
+                      <Ionicons
+                        name="play-circle"
+                        size={20}
+                        color={COLORS.white}
+                      />
                     </View>
                   )}
                   <TouchableOpacity
                     style={styles.removeButton}
-                    onPress={() => removeAttachment(att.id)}
-                  >
-                    <Ionicons name="close-circle" size={24} color={COLORS.error} />
+                    onPress={() => removeAttachment(att.id)}>
+                    <Ionicons
+                      name="close-circle"
+                      size={24}
+                      color={COLORS.error}
+                    />
                   </TouchableOpacity>
                 </View>
               ))}
 
               {/* Permanent "Add More" Button */}
-              <TouchableOpacity
-                style={styles.addMoreTile}
-                onPress={handleAddAttachment}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={32} color={COLORS.primary} />
-              </TouchableOpacity>
+              {attachments.length < 5 && (
+                <TouchableOpacity
+                  style={styles.addMoreTile}
+                  onPress={handleAddAttachment}
+                  activeOpacity={0.7}>
+                  <Ionicons name="add" size={32} color={COLORS.primary} />
+                </TouchableOpacity>
+              )}
             </ScrollView>
           )}
         </View>
 
         {/* Bottom spacing for fixed button */}
-        <View style={{ height: 100 }} />
+        <View style={{height: 100}} />
       </ScrollView>
 
       {/* Fixed Submit Button */}
       <View style={styles.submitButtonContainer}>
         <TouchableOpacity
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[
+            styles.submitButton,
+            isSubmitting && styles.submitButtonDisabled,
+          ]}
           onPress={handleSubmit}
           disabled={isSubmitting}
-          activeOpacity={0.8}
-        >
+          activeOpacity={0.8}>
           {isSubmitting ? (
             <ActivityIndicator size="small" color={COLORS.white} />
           ) : (
@@ -352,7 +618,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 3,
       },
@@ -386,7 +652,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -455,7 +721,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
+        shadowOffset: {width: 0, height: -2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -518,7 +784,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -10 }, { translateY: -10 }],
+    transform: [{translateX: -10}, {translateY: -10}],
   },
   removeButton: {
     position: 'absolute',

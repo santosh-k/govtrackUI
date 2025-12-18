@@ -13,6 +13,8 @@ import {
   Platform,
   Modal,
   InteractionManager,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,6 +51,7 @@ const COLORS = {
   iconOrange: '#F57C00',
   iconTeal: '#00838F',
   iconPeach: '#D84315',
+  
 };
 
 type QuickFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
@@ -100,6 +103,7 @@ export default function ComplaintDashboardScreen() {
   const [compStats, setStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   
    
@@ -228,6 +232,7 @@ export default function ComplaintDashboardScreen() {
   if (selectedStartDate && selectedEndDate) {
     params.startDate = formatDateForApi(selectedStartDate);
     params.endDate = formatDateForApi(selectedEndDate);
+    console.log("Start and End Date added in params")
   }
 
   // Use push to navigate to complaints list
@@ -285,6 +290,29 @@ export default function ComplaintDashboardScreen() {
     
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (selectedFilter === 'custom' && selectedStartDate && selectedEndDate) {
+        const start = formatDateForApi(selectedStartDate);
+        const end = formatDateForApi(selectedEndDate);
+        await handleFetchStats('custom', start, end);
+      } else if (selectedFilter === 'month') {
+        await handleFetchStats('this_month');
+      } else if (selectedFilter === 'week') {
+        await handleFetchStats('this_week');
+      } else if (selectedFilter === 'today') {
+        await handleFetchStats('today');
+      } else {
+        await handleFetchStats('all');
+      }
+    } catch (e) {
+      console.error('Refresh failed', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [selectedFilter, selectedStartDate, selectedEndDate]);
 
   const handleCancelDateRange = () => {
     setShowCalendarModal(false);
@@ -466,10 +494,11 @@ export default function ComplaintDashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
       >
         {loading && (
-          <View style={{ alignItems: 'center', marginVertical: 32 }}>
-            <Text style={{ color: COLORS.textSecondary }}>Loading stats...</Text>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         )}
         

@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>expoapp</string>
-          <string>com.surajspx.pwddelhiapp</string>
+          <string>com.app.pwdAdmin</string>
         </array>
       </dict>
       <dict>
