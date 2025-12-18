@@ -25,6 +25,9 @@ import Header from '@/components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/src/store/index';
+
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2; // 2 columns with padding
@@ -110,8 +113,9 @@ const AlertCard: React.FC<AlertCardProps> = ({ message, type, onPress }) => {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const userName = 'Deepak Kumar';
   const currentDate = getCurrentDate();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const userName = user?.firstName + ' ' + user?.lastName;
 
   // Navigation handlers
   const navigateToProjects = () => {

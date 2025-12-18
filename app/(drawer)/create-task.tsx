@@ -582,7 +582,7 @@ export default function CreateTaskScreen() {
 
             {/* Task Name */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Task Name</Text>
+              <Text style={styles.fieldLabel}>Task Title</Text>
               <TextInput
                 style={styles.textInput}
                 value={taskName}

@@ -23,9 +23,16 @@ interface HeaderProps {
   greeting?: string;
   /** Subtitle text for dashboard mode (e.g., "Mon, 25 Sep 2024") */
   subtitle?: string;
+  /** Optional right icon name from Ionicons (e.g., 'filter', 'search') */
+  rightIconName?: string;
+  /** Optional handler for right icon press */
+  onRightPress?: () => void;
+  rightIconColor?: string;
+  /** Optional numeric badge to show on the right icon */
+  rightBadgeCount?: number;
 }
 
-export default function Header({ title, greeting, subtitle }: HeaderProps) {
+export default function Header({ title, greeting, subtitle, rightIconName, onRightPress, rightIconColor, rightBadgeCount }: HeaderProps) {
   const navigation = useNavigation();
 
   const openDrawer = () => {
@@ -61,8 +68,19 @@ export default function Header({ title, greeting, subtitle }: HeaderProps) {
         </View>
       )}
 
-      {/* Right: Spacer for balance (only needed in greeting mode) */}
-      {isGreetingMode && <View style={styles.rightSpacer} />}
+      {/* Right: Optional action button (e.g., filter) */}
+      {rightIconName && onRightPress ? (
+        <TouchableOpacity style={styles.rightButton} onPress={onRightPress} activeOpacity={0.7}>
+          <Ionicons name={rightIconName as any} size={26} color={rightIconColor || COLORS.iconColor} />
+          {typeof rightBadgeCount === 'number' && rightBadgeCount > 0 && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{rightBadgeCount > 99 ? '99+' : String(rightBadgeCount)}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ) : isGreetingMode ? (
+        <View style={styles.rightSpacer} />
+      ) : null}
     </View>
   );
 }
@@ -95,6 +113,10 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
     marginLeft: -8,
+  },
+  rightButton: {
+    padding: 8,
+    marginRight: -8,
   },
   titleContainer: {
     position: 'absolute',
@@ -141,4 +163,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  badgeContainer: {
+    position: 'absolute',
+    right: -6,
+    top: -6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  }
 });

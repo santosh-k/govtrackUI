@@ -566,7 +566,8 @@ class ApiManager {
   public async getMyTasks(
     page: number = 1,
     limit: number = 20,
-    search: string = ''
+    search: string = '',
+    filters: { status?: string | string[]; priority?: string; task_type?: string; assigned_to?: string | number; project_id?: string | number } = {}
   ): Promise<any> {
     try {
       const token = this.getToken();
@@ -579,6 +580,18 @@ class ApiManager {
       });
 
       if (search && search.trim().length > 0) params.append('search', search.trim());
+
+      // Optional filters
+      if (filters) {
+        if (filters.status) {
+          if (Array.isArray(filters.status)) params.append('status', filters.status.join(','));
+          else params.append('status', String(filters.status));
+        }
+        if (filters.priority) params.append('priority', String(filters.priority));
+        if (filters.task_type) params.append('task_type', String(filters.task_type));
+        if (filters.assigned_to !== undefined && filters.assigned_to !== null) params.append('assigned_to', String(filters.assigned_to));
+        if (filters.project_id !== undefined && filters.project_id !== null) params.append('project_id', String(filters.project_id));
+      }
 
       const url = `${this.adminPmsUrl}/tasks?${params.toString()}`;
       console.log('FetchTask URL==', url)
@@ -594,7 +607,8 @@ class ApiManager {
   public async getAssignedTasks(
     page: number = 1,
     limit: number = 20,
-    search: string = ''
+    search: string = '',
+    filters: { status?: string | string[]; priority?: string; task_type?: string; assigned_to?: string | number; project_id?: string | number } = {}
   ): Promise<any> {
     try {
       const token = this.getToken();
@@ -607,6 +621,18 @@ class ApiManager {
       });
 
       if (search && search.trim().length > 0) params.append('search', search.trim());
+
+      // Optional filters
+      if (filters) {
+        if (filters.status) {
+          if (Array.isArray(filters.status)) params.append('status', filters.status.join(','));
+          else params.append('status', String(filters.status));
+        }
+        if (filters.priority) params.append('priority', String(filters.priority));
+        if (filters.task_type) params.append('task_type', String(filters.task_type));
+        if (filters.assigned_to !== undefined && filters.assigned_to !== null) params.append('assigned_to', String(filters.assigned_to));
+        if (filters.project_id !== undefined && filters.project_id !== null) params.append('project_id', String(filters.project_id));
+      }
 
       const url = `${this.adminPmsUrl}/tasks?${params.toString()}`;
       console.log('[ApiManager] getMyTasks url=', url);
