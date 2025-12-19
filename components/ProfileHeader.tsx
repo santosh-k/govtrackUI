@@ -64,7 +64,7 @@ export default function ProfileHeader({ userData }: ProfileHeaderProps) {
         <Text style={styles.title}>Profile</Text>
       </View>
 
-      {/* Right: Edit Text + Icon */}
+      {/* Right: Edit Text + Icon 
       <TouchableOpacity
         style={styles.editButton}
         onPress={handleEdit}
@@ -72,7 +72,7 @@ export default function ProfileHeader({ userData }: ProfileHeaderProps) {
       >
         <Text style={styles.editText}>Edit</Text>
         <Ionicons name="pencil-sharp" size={16} color={COLORS.iconColor} />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }

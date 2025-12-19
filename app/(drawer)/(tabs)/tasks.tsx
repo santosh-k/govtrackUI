@@ -58,7 +58,7 @@ const getStatusColor = (status: Task['status']) => {
 // TaskCard
 interface TaskCardProps { task: Task; onPress: () => void; }
 function TaskCard({ task, onPress }: TaskCardProps) {
-  console.log('Current task Status == ', task.status)
+  //console.log('Current task Status == ', task.status)
   const statusColor = getStatusColor(task.status);
   return (
     <TouchableOpacity style={styles.taskCard} onPress={onPress} activeOpacity={0.7}>
@@ -223,7 +223,6 @@ export default function TasksScreen() {
       priority: priorityParam,
       task_type: taskTypeParam,
     }));
-
     closeFilter();
   };
 
@@ -558,7 +557,7 @@ export default function TasksScreen() {
             <Ionicons name="close" size={18} color={COLORS.textSecondary} />
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 36 }} />
+          <View style={{ width: 36 }}/>
         )}
       </View>
 
