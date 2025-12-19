@@ -1020,6 +1020,22 @@ class ApiManager {
       throw new Error(message);
     }
   }
+
+  /** ---------------- FETCH CATEGORIES (EXTERNAL ADMIN PMS API) ---------------- */
+  public async fetchCategories(): Promise<any> {
+    try {
+      const token = this.getToken();
+      if (!token) throw new Error('No authentication token available');
+
+      const url = `${this.adminPmsUrl}/categories`;
+      console.log('[ApiManager] fetchCategories url=', url);
+      const data = await this.fetchExternalWithRetry(url, { method: 'GET' });
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      throw new Error(message);
+    }
+  }
  
 
   
@@ -1121,7 +1137,16 @@ class ApiManager {
    * Transfer a task to another user
    * POST /admin/pms/api/tasks/{taskId}/transfer
    */
-  public async transferTask(taskId: string | number, payload: { to_user_id: number; transfer_reason?: string }): Promise<any> {
+  public async transferTask(taskId: string | number, payload: {
+    transfer_mode: 'to_user' | 'to_unit';
+    to_user_id?: number;
+    transfer_department_id: number;
+    transfer_zone_id?: number;
+    transfer_circle_id?: number;
+    transfer_division_id?: number;
+    transfer_sub_division_id?: number;
+    transfer_reason?: string;
+  }): Promise<any> {
     try {
       const url = `${this.adminPmsUrl}/tasks/${taskId}/transfer`;
       const data = await this.fetchExternalWithRetry(url, {

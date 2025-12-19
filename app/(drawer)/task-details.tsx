@@ -32,6 +32,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { COLORS, SPACING } from '@/theme';
 import UpdateActivityBottomSheet from '@/components/UpdateActivityBottomSheet';
 import AddMediaSheet from '@/components/AddMediaSheet';
@@ -87,7 +88,8 @@ interface TaskDetails {
   category: string;
   description: string;
   assignedBy: string;
-  date: string;
+  startDate: string;
+  dueDate: string;
   location: string;
   status: TaskStatus;
 }
@@ -99,7 +101,8 @@ const MOCK_TASK: TaskDetails = {
   title: '',
   category: 'Road Inspection',
   assignedBy: '',
-  date: '',
+  startDate: '',
+  dueDate: '',
   description: 'Conduct a thorough inspection of the NH-44 road section between KM 15 to KM 25. Check for potholes, cracks, drainage issues, and road markings. Document all findings with photos and prepare a detailed report.',
   location: 'National Highway 44, Sector 15, New Delhi, India',
   status: 'In Progress',
@@ -333,12 +336,14 @@ export default function TaskDetailsScreen() {
     }
   }, [taskId]);
 
-  // Fetch task details on mount or when taskId changes
+  // Fetch task details when screen is focused or when taskId changes
+  const isFocused = useIsFocused();
+
   React.useEffect(() => {
-    if (taskId) {
+    if (taskId && isFocused) {
       dispatch(fetchTaskDetails(taskId));
     }
-  }, [taskId]);
+  }, [taskId, isFocused]);
 
   // Map server task payload to UI models when taskDetails changes
   React.useEffect(() => {
@@ -353,7 +358,8 @@ export default function TaskDetailsScreen() {
       title: t.title,
       category: t.task_type || (t.project?.project_name ?? 'Task'),
       assignedBy: t.assignedUser ? `${t.assignedUser.first_name || ''} ${t.assignedUser.last_name || ''}`.trim() : (t.creator?.first_name ? `${t.creator.first_name} ${t.creator.last_name || ''}` : '—'),
-      date: t.due_date ? t.due_date : (t.start_date || ''),
+      startDate: t.start_date || '',
+      dueDate: t.due_date || '',
       description: t.description || '',
       location: t.project?.project_name || (t.creator?.Zone?.name ?? '—'),
       status: (function mapStatus(s: string) {
@@ -759,9 +765,16 @@ export default function TaskDetailsScreen() {
             <Text style={styles.mapLinkText}>Tap to view location on map</Text>
           </TouchableOpacity> */}
           <View style={styles.cardFooter}>
-                  <View style={styles.dateTimeRow}>
-                    <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.footerText}>{taskData.date}</Text>
+                  <View style={styles.dateColumn}>
+                    <View style={styles.dateTimeRow}>
+                      <Text style={styles.footerText}>Start Date:</Text>
+                      <Text style={styles.footerText}>{taskData.startDate}</Text>
+                    </View>
+          
+                    <View style={styles.dateTimeRow}>
+                      <Text style={styles.footerText}>Due Date:</Text>
+                      <Text style={styles.footerText}>{taskData.dueDate}</Text>
+                    </View>
                   </View>
                   {(() => {
                     const effectiveTaskIdInRender = taskData?.id || (taskDetails && taskDetails.task && String(taskDetails.task.id)) || null;
@@ -1697,5 +1710,10 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
   dateTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   footerText: { fontSize: 13, fontWeight: '500', color: COLORS.textSecondary },
+  dateColumn: {
+  flex: 1,
+  flexDirection: 'column',   // ← This stacks vertically
+  gap: 4,
+},
   detailsIconContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
 });

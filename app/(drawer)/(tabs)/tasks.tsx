@@ -35,7 +35,8 @@ interface Task {
   assignedBy: string;
   office: string;
   department: string;
-  date: string;
+  startDate: string;
+  dueDate: string;
   time: string;
   status: 'PENDING' | 'In Progress' | 'COMPLETED' | 'Overdue';
 }
@@ -81,11 +82,16 @@ function TaskCard({ task, onPress }: TaskCardProps) {
         </View>
       </View>
       <View style={styles.cardFooter}>
-        <View style={styles.dateTimeRow}>
-          <Ionicons name="calendar-outline" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.footerText}>{task.date}</Text>
-          {/* <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} style={{ marginLeft: 12 }} />
-          <Text style={styles.footerText}>{task.time}</Text>*/}
+        <View style={styles.dateColumn}>
+          <View style={styles.dateTimeRow}>
+            <Text style={styles.footerText}>Start Date:</Text>
+            <Text style={styles.footerText}>{task.startDate}</Text>
+          </View>
+
+          <View style={styles.dateTimeRow}>
+            <Text style={styles.footerText}>Due Date:</Text>
+            <Text style={styles.footerText}>{task.dueDate}</Text>
+          </View>
         </View>
         <View style={styles.detailsIconContainer}>
           <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
@@ -320,7 +326,8 @@ export default function TasksScreen() {
     assignedBy: t.assignedUser ? `${t.assignedUser.first_name || ''} ${t.assignedUser.last_name || ''}`.trim() : (t.creator?.first_name ? `${t.creator.first_name} ${t.creator.last_name || ''}` : '—'),
     office: t.project?.project_name || '—',
     department: t.assign_department_id ? String(t.assign_department_id) : '',
-    date: t.due_date ? t.due_date : (t.start_date || ''),
+    startDate: t.start_date || '',
+    dueDate: t.due_date || '',
     time: '',
     status: (t.status || 'Pending') as Task['status'],
   });
@@ -622,10 +629,41 @@ const styles = StyleSheet.create({
   assignedByText: { fontSize: 14, fontWeight: '400', color: COLORS.textSecondary },
   assignedByName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   departmentText: { fontSize: 14, fontWeight: '400', color: COLORS.textSecondary },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
-  dateTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  footerText: { fontSize: 13, fontWeight: '500', color: COLORS.textSecondary },
-  detailsIconContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' },
+  cardFooter: { 
+  flexDirection: 'row', 
+  alignItems: 'center', 
+  justifyContent: 'space-between', 
+  paddingTop: 12, 
+  borderTopWidth: 1, 
+  borderTopColor: COLORS.border 
+},
+
+dateColumn: {
+  flex: 1,
+  flexDirection: 'column',   // ← This stacks vertically
+  gap: 4,
+},
+
+dateTimeRow: { 
+  flexDirection: 'row', 
+  alignItems: 'center', 
+  gap: 6 
+},
+
+footerText: { 
+  fontSize: 13, 
+  fontWeight: '500', 
+  color: COLORS.textSecondary 
+},
+
+detailsIconContainer: { 
+  width: 32, 
+  height: 32, 
+  borderRadius: 16, 
+  backgroundColor: COLORS.background, 
+  justifyContent: 'center', 
+  alignItems: 'center' 
+},
   fab: { position: 'absolute', bottom: 24, right: 24, flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 28, gap: 8, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 8 } }) },
   fabText: { fontSize: 16, fontWeight: '600', color: COLORS.white },
 });

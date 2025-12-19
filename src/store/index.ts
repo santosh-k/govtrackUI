@@ -11,6 +11,7 @@ import updateComplaintReducer from './updateComplaintSlice';
 import locationReducer from './locationSlice';
 import tasksReducer from './tasksSlice';
 import taskDetailsReducer from './taskDetailsSlice';
+import categoriesReducer from './categoriesSlice';
 
 // Persist the root reducer and only whitelist the `auth` slice for persistence.
 const persistConfig = {
@@ -30,6 +31,7 @@ const rootReducer = combineReducers({
   location: locationReducer,
   tasks: tasksReducer,
   taskDetails: taskDetailsReducer,
+  categories: categoriesReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

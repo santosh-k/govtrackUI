@@ -75,6 +75,10 @@ export default function CreateTaskScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null,
   );
+  const [selectedCategeory, setSelectedCategeory] = useState('');
+  const [selectedCategeoryId, setSelectedCategeoryId] = useState<string | null>(
+    null,
+  );
   const [selectedInspection, setSelectedInspection] = useState('');
   const [selectedInspectionId, setSelectedInspectionId] = useState<
     string | null
@@ -119,6 +123,12 @@ export default function CreateTaskScreen() {
     if (params.selectedProjectId) {
       setSelectedProjectId(params.selectedProjectId as string);
     }
+    if (params.selectedCategeory) {
+      setSelectedCategeory(params.selectedCategeory as string);
+    }
+    if (params.selectedCategeoryId) {
+      setSelectedCategeoryId(params.selectedCategeoryId as string);
+    }
     if (params.selectedInspection) {
       setSelectedInspection(params.selectedInspection as string);
     }
@@ -130,6 +140,8 @@ export default function CreateTaskScreen() {
     params.selectedProjectId,
     params.selectedInspection,
     params.selectedInspectionId,
+    params.selectedCategeory,
+    params.selectedCategeoryId,
   ]);
 
   console.log('param2s122', params);
@@ -349,6 +361,8 @@ export default function CreateTaskScreen() {
     setSelectedTaskType('Standalone Task');
     setSelectedProject('');
     setSelectedProjectId(null);
+    setSelectedCategeory('');
+    setSelectedCategeoryId(null);
     setSelectedInspection('');
     setSelectedInspectionId(null);
     setCurrentPriority('Low');
@@ -409,6 +423,17 @@ export default function CreateTaskScreen() {
       return;
     }
 
+    if (
+      selectedTaskType != 'Project Task' &&
+      !selectedCategeoryId &&
+      !selectedCategeory
+    ) {
+      Alert.alert(
+        'Validation Error',
+        'Please select a Task Categeory',
+      );
+      return;
+    }
     // Validate assignment location: at least one of department/zone/circle/division/subDivision/designation/user
     const hasAssignment = !!(
       selectedDepartmentId ||
@@ -500,7 +525,7 @@ export default function CreateTaskScreen() {
         payload.source_type = 'inspection';
         payload.source_id = Number(selectedInspectionId);
       }
-
+     if (selectedCategeoryId) payload.category_id = Number(selectedCategeoryId);
       // Assignment fields (use IDs when available)
       if (selectedUserId) payload.assigned_to = Number(selectedUserId);
       if (selectedDesignationId)
@@ -702,6 +727,48 @@ export default function CreateTaskScreen() {
                       (selectedTaskType === 'Project Task'
                         ? 'Select Project'
                         : 'Select Inspection')}
+                  </Text>
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+           {/* Select Task Categeory (dynamic based on Task Type) */}
+            {selectedTaskType !== 'Project Task' && (
+              <View style={styles.fieldContainer}>
+                <Text style={styles.fieldLabel}>
+                  Task Categeory
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownTrigger,
+                    {
+                      opacity: params?.returnTab === 'categeory' ? 0.4 : 1,
+                    },
+                  ]}
+                  disabled={params?.returnTab === 'categeory' ? true : false}
+                  onPress={() => {
+                      router.push({
+                        pathname: '/(drawer)/task-data-selection-screen',
+                        params: {
+                          title: 'Select Categeory',
+                          dataKey: 'taskCategeory',
+                          currentValue: selectedCategeory,
+                          returnTo: 'create-task',
+                          returnField: 'selectedCategeory',
+                        },
+                      });
+                  }}
+                  activeOpacity={0.7}>
+                  <Text
+                    style={[
+                      styles.dropdownTriggerText,
+                      !selectedCategeory && styles.placeholderText,
+                    ]}>
+                    {selectedCategeory || 'Select Category'}
                   </Text>
                   <Ionicons
                     name="chevron-down"

@@ -71,6 +71,8 @@ export default function TaskTransferScreen() {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [transferReason, setTransferReason] = useState('');
+  // Transfer mode: 'jurisdiction' = To Jurisdictional Unit, 'specific_user' = To Specific User
+  const [transferMode, setTransferMode] = useState<'jurisdiction' | 'specific_user'>('jurisdiction');
   
   
   /**
@@ -158,7 +160,10 @@ export default function TaskTransferScreen() {
         params: { projectId },
       });
     } else {
-      router.back();
+       router.replace({
+        pathname: '/(drawer)/task-details',
+      });
+     // router.back();
     }
   };
 
@@ -190,7 +195,8 @@ export default function TaskTransferScreen() {
     setSelectedDesignationId(null);
     setSelectedUser('');
     setSelectedUserId(null);
-    
+    // reset transfer mode to default
+    setTransferMode('jurisdiction');
   };
 
   const handleSubmit = async () => {
@@ -200,12 +206,13 @@ export default function TaskTransferScreen() {
       return;
     }
 
-    if (!selectedZoneId) {
+   /* if (!selectedZoneId) {
       Alert.alert('Validation Error', 'Please select a Zone after selecting a Department');
       return;
-    }
+    } */
 
-    if (!selectedUserId) {
+    // Only require a specific user when transfer mode is 'To Specific User'
+    if (transferMode === 'specific_user' && !selectedUserId) {
       Alert.alert('Validation Error', 'Please select a User to transfer the task to');
       return;
     }
@@ -213,7 +220,6 @@ export default function TaskTransferScreen() {
     setIsSubmitting(true);
 
     try {
-     
       try {
         const ApiManagerModule = await import('@/src/services/ApiManager');
         const ApiManager = ApiManagerModule.default;
@@ -225,7 +231,31 @@ export default function TaskTransferScreen() {
           return;
         }
 
-        const res = await api.transferTask(effectiveTaskId, { to_user_id: Number(selectedUserId), transfer_reason: transferReason });
+        // Build payload according to selected transfer mode
+        let payload: any = {
+          transfer_mode: transferMode === 'specific_user' ? 'to_user' : 'to_unit',
+          transfer_department_id: selectedDepartmentId ? Number(selectedDepartmentId) : undefined,
+        };
+
+        if (transferMode === 'specific_user') {
+          // required fields: to_user_id, transfer_department_id
+          payload.to_user_id = Number(selectedUserId);
+          if (!payload.transfer_department_id) {
+            // defensive check, should be caught by earlier validation when required
+            Alert.alert('Validation Error', 'Please select a Department for the transfer');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
+        // Optional fields
+        if (selectedZoneId) payload.transfer_zone_id = Number(selectedZoneId);
+        if (selectedCircleId) payload.transfer_circle_id = Number(selectedCircleId);
+        if (selectedDivisionId) payload.transfer_division_id = Number(selectedDivisionId);
+        if (selectedSubDivisionId) payload.transfer_sub_division_id = Number(selectedSubDivisionId);
+        if (transferReason) payload.transfer_reason = transferReason;
+
+        const res = await api.transferTask(effectiveTaskId, payload);
 
         if (res && res.success) {
           // clear form then inform user and close transfer screen
@@ -296,6 +326,38 @@ export default function TaskTransferScreen() {
       
         
         {/* Card 3: Assign to Office/Department */}
+        {/* Transfer Mode */}
+        <View style={styles.section}>
+          <Text style={styles.fieldLabel}>Transfer Mode</Text>
+          <View style={{ flexDirection: 'row', gap: 18 }}>
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setTransferMode('jurisdiction')}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={transferMode === 'jurisdiction' ? 'radio-button-on' : 'radio-button-off'}
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.radioLabel}>To Jurisdictional Unit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.radioOption}
+              onPress={() => setTransferMode('specific_user')}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={transferMode === 'specific_user' ? 'radio-button-on' : 'radio-button-off'}
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.radioLabel}>To Specific User</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Transfer Location</Text>
           <Text style={styles.fieldLabel}>Department</Text>
@@ -421,7 +483,7 @@ export default function TaskTransferScreen() {
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
 
-           <Text style={styles.fieldLabel1}>Designation</Text>
+        {/*    <Text style={styles.fieldLabel1}>Designation</Text>
           <TouchableOpacity
             style={styles.dropdownTrigger}
             onPress={() => {
@@ -446,37 +508,41 @@ export default function TaskTransferScreen() {
               {selectedDesignation || 'Select Designation'}
             </Text>
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-           <Text style={styles.fieldLabel1}>Transfer To</Text>
-          <TouchableOpacity
-            style={styles.dropdownTrigger}
-            onPress={() => {
-              router.push({
-                pathname: '/(drawer)/task-data-selection-screen',
-                params: {
-                  title: 'Select User',
-                  dataKey: 'user',
-                  currentValue: selectedUser,
-                  returnTo: 'task-transfer',
-                  returnField: 'selectedUser',
-                  projectId: projectId || '',
-                  department: selectedDepartment || '',
-                  departmentId: selectedDepartmentId || '',
-                  zoneId: selectedZoneId || '',
-                  circleId: selectedCircleId || '',
-                  divisionId: selectedDivisionId || '',
-                  subdivisionId: selectedSubDivisionId || '',
-                },
-              });
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.dropdownTriggerText, !selectedUser && styles.placeholderText]}>
-              {selectedUser || 'Select User'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+          {transferMode === 'specific_user' && (
+            <>
+              <Text style={styles.fieldLabel1}>Transfer To</Text>
+              <TouchableOpacity
+                style={styles.dropdownTrigger}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(drawer)/task-data-selection-screen',
+                    params: {
+                      title: 'Select User',
+                      dataKey: 'user',
+                      currentValue: selectedUser,
+                      returnTo: 'task-transfer',
+                      returnField: 'selectedUser',
+                      projectId: projectId || '',
+                      department: selectedDepartment || '',
+                      departmentId: selectedDepartmentId || '',
+                      zoneId: selectedZoneId || '',
+                      circleId: selectedCircleId || '',
+                      divisionId: selectedDivisionId || '',
+                      subdivisionId: selectedSubDivisionId || '',
+                    },
+                  });
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dropdownTriggerText, !selectedUser && styles.placeholderText]}>
+                  {selectedUser || 'Select User'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </>
+          )}
             {/* Transfer Reason */}
             <View style={styles.fieldContainer}>
                 <Text style={styles.fieldLabel1}>Transfer Reason</Text>
@@ -845,4 +911,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  radioOption: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  radioLabel: { marginLeft: 6, fontSize: 15, color: COLORS.text },
 });

@@ -318,7 +318,7 @@ export default function TaskDataSelectionScreen() {
       fetchProjects('');
     } else if (dataKey === 'taskInspections') {
       fetchInspections();
-    } else if (dataKey === 'departments') {
+      } else if (dataKey === 'departments') {
       fetchDepartmentOptions();
     } else if (dataKey === 'zone' || dataKey === 'zones') {
       fetchZones();
@@ -332,6 +332,25 @@ export default function TaskDataSelectionScreen() {
       fetchAssignmentOptions();
     } else if (dataKey === 'user') {
       fetchUsersByLocation();
+    } else if (dataKey === 'taskCategeory' || dataKey === 'taskCategories' || dataKey === 'taskCategory') {
+      // Use Redux to fetch categories (new API)
+      const loadCategories = async () => {
+        setLoading(true);
+        try {
+          const { fetchCategories } = await import('@/src/store/categoriesSlice');
+          const storeModule = await import('@/src/store');
+          await storeModule.store.dispatch(fetchCategories() as any);
+          const state = storeModule.store.getState();
+          const cats = (state.categories?.items || []).map((c: any) => ({ id: String(c.id), name: c.name }));
+          setItems(cats);
+        } catch (e) {
+          console.warn('fetchCategories error', e);
+          setItems([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadCategories();
     } else {
       // static data (selectionData) will be used
       setLoading(false);
